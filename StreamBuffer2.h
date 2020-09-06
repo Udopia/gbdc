@@ -66,7 +66,7 @@ class StreamBuffer2 {
 public:
     StreamBuffer2(const char* filename) : pos(0), size(0), offset(0) {
         file = archive_read_new();
-        archive_read_support_compression_all(file);
+        archive_read_support_filter_all(file);
         archive_read_support_format_raw(file);
         int r = archive_read_open_filename(file, filename, 16384);
         if (r != ARCHIVE_OK) {
@@ -129,6 +129,9 @@ public:
         else if (end > str) {
             incPos(static_cast<intptr_t>(end - str));
             return static_cast<int>(number);
+        }
+        else {
+            throw ParserException(std::string("PARSE ERROR! Unexpected end of file while reading ") + std::string(1, buffer[pos]));
         }
     }
 

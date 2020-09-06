@@ -20,8 +20,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef GBDHash_h
 #define GBDHash_h
 
-#include <zlib.h>
-
 #include "StreamBuffer2.h"
 #include "md5/md5.h"
 
