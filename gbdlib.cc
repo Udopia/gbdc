@@ -33,8 +33,6 @@ static PyObject* gbdhash(PyObject* self, PyObject* arg) {
 
     std::string result = gbd_hash_from_dimacs(filename);
 
-    PyMem_Free((void*)filename);
-
     return Py_BuildValue("s", result.c_str());
 }
 
