@@ -8,6 +8,11 @@ pymod: Main.cc StreamBuffer2.h md5/md5.cpp md5/md5.h md5/md5_loc.h
 
 install:
 	python3 setup.py install
+	
+uninstall:
+	python3 setup.py install --record files.tmp
+	tr '\n' '\0' < files.tmp | xargs -0 sudo rm -f --
+	rm files.tmp
 
 clean:
 	rm gbdhash
