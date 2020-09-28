@@ -20,14 +20,14 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef GBDHash_h
 #define GBDHash_h
 
-#include "StreamBuffer2.h"
+#include "StreamBuffer.h"
 #include "md5/md5.h"
 
 std::string gbd_hash_from_dimacs(const char* filename) {
     unsigned char sig[MD5_SIZE];
     char str[MD5_STRING_SIZE];
     md5::md5_t md5;
-    StreamBuffer2 in(filename);
+    StreamBuffer in(filename);
     std::string clause("");
     while (!in.eof()) {
         in.skipWhitespace();
