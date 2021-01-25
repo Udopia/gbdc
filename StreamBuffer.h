@@ -135,7 +135,7 @@ public:
             return static_cast<int>(number);
         }
         else {
-            throw ParserException(std::string("PARSE ERROR! Unexpected end of file while reading ") + std::string(1, buffer[pos]));
+            throw ParserException(std::string("PARSE ERROR! Unexpected character ") + std::string(1, buffer[pos]));
         }
     }
 
