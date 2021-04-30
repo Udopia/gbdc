@@ -28,7 +28,9 @@
 *.app
 md5_t
 gbdhash
+cnftools
 
+build/
 .vscode/
 
 # autotools output

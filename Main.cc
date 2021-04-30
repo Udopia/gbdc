@@ -18,7 +18,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
  **************************************************************************************************/
 
 #include <iostream>
-#include "GBDHash.h"
+#include "src/GBDHash.h"
 
 int main(int argc, char** argv) {
     if (argc < 2) {

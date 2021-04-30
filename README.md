@@ -1,7 +1,10 @@
-# GBDHash
+# CNF Tools
+
+Standalone Application and Python Accelerator Module
 
 * Efficiently calculate the GBD-Hash for a given DIMACS CNF file
-* Uses libarchive to read compressed files, so it supports a wide range of compressed formats
+* Can read a variety of compressed formats (using libarchive)
+* Normalized output of DIMACS CNF 
 
 ## Standalone Application `gdbhash`
 

@@ -20,8 +20,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef GBDHash_h
 #define GBDHash_h
 
-#include "StreamBuffer.h"
-#include "md5/md5.h"
+#include "src/StreamBuffer.h"
+#include "lib/md5/md5.h"
 
 std::string gbd_hash_from_dimacs(const char* filename) {
     unsigned char sig[MD5_SIZE];

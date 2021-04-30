@@ -18,7 +18,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
  **************************************************************************************************/
 
 #include "Python.h"
-#include "GBDHash.h"
+#include "src/GBDHash.h"
 
 static PyObject* version(PyObject* self) {
     return Py_BuildValue("i", 1);

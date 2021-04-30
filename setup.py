@@ -21,7 +21,8 @@ from distutils.core import setup, Extension
 
 module = Extension("gbdhashc",
             libraries = ["archive"],
-            sources = ["gbdlib.cc", "md5/md5.cpp"])
+            include_dirs=["."],
+            sources = ["gbdlib.cc", "lib/md5/md5.cpp"])
 
 setup(name="gbdc", 
         version="1.0",

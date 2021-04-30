@@ -17,8 +17,8 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef StreamBuffer2_h
-#define StreamBuffer2_h
+#ifndef StreamBuffer_h
+#define StreamBuffer_h
 
 #include <iostream>
 #include <limits>
@@ -114,7 +114,7 @@ public:
 
     int readInteger() {
         skipWhitespace();
-        if (eof()) return 0; //throw ParserException(std::string("PARSE ERROR! Unexpected end of file"));
+        if (eof()) return 0; 
 
         char* str = buffer + pos;
         char* end = NULL;
