@@ -27,13 +27,24 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 void normalize(const char* filename) {
     StreamBuffer in(filename);
     std::vector<int> clause;
+    bool header = true;
     while (!in.eof()) {
         in.skipWhitespace();
         if (in.eof()) {
             break;
         }
         else if (*in == 'c') {
-            in.skipLine();
+            if (!header) {
+                in.skipLine();
+            }
+            else { // keep header comments
+                while (!in.eof() && (!isspace(*in) || isblank(*in))) {
+                    std::cout << *in;
+                    ++in;
+                }
+                in.skipWhitespace();
+                std::cout << std::endl;
+            }
         }
         else if (*in == 'p') {
             ++in;
@@ -43,6 +54,7 @@ void normalize(const char* filename) {
             int nc = in.readInteger();
             in.skipLine();
             std::cout << "p cnf " << nv << " " << nc << std::endl;
+            header = false;
         }
         else {
             clause.clear();
@@ -56,6 +68,7 @@ void normalize(const char* filename) {
                 std::cout << plit << " ";
             }
             std::cout << "0" << std::endl;
+            header = false;
         }
     }
 }

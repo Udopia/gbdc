@@ -32,6 +32,7 @@ cnftools
 
 build/
 .vscode/
+uninstall.info
 
 # autotools output
 configure

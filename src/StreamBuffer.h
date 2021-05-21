@@ -139,7 +139,7 @@ public:
         }
     }
 
-    int operator *() const {
+    char operator *() const {
         return eof() ? EOF : buffer[pos];
     }
 

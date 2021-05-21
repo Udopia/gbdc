@@ -19,12 +19,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 from distutils.core import setup, Extension
 
-module = Extension("gbdhashc",
+module = Extension("cnftools",
             libraries = ["archive"],
             include_dirs=["."],
             sources = ["gbdlib.cc", "lib/md5/md5.cpp"])
 
-setup(name="gbdc", 
+setup(name="cnftools", 
         version="1.0",
         author="Markus Iser",
         description="C++ Implementation of GBD-Hash",
