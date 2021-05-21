@@ -27,17 +27,17 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 void normalize(const char* filename) {
     StreamBuffer in(filename);
     std::vector<int> clause;
-    bool header = true;
+    int nv = 0, nc = 0, rv = 0, rc = 0;
     while (!in.eof()) {
         in.skipWhitespace();
         if (in.eof()) {
             break;
         }
         else if (*in == 'c') {
-            if (!header) {
-                in.skipLine();
+            if (nv > 0 && nc > 0) {
+                in.skipLine(); // skip comments after header
             }
-            else { // keep header comments
+            else {
                 while (!in.eof() && (!isspace(*in) || isblank(*in))) {
                     std::cout << *in;
                     ++in;
@@ -50,16 +50,16 @@ void normalize(const char* filename) {
             ++in;
             in.skipWhitespace();
             in.skipString("cnf\0");
-            int nv = in.readInteger();
-            int nc = in.readInteger();
+            nv = in.readInteger();
+            nc = in.readInteger();
             in.skipLine();
             std::cout << "p cnf " << nv << " " << nc << std::endl;
-            header = false;
         }
         else {
             clause.clear();
             for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
                 clause.push_back(plit);
+                rv = std::max(abs(plit), rv);
             }
             std::sort(clause.begin(), clause.end(), [](int l1, int l2) { return abs(l1) < abs(l2); });
             clause.erase(std::unique(clause.begin(), clause.end()), clause.end()); // remove redundant literals
@@ -68,8 +68,11 @@ void normalize(const char* filename) {
                 std::cout << plit << " ";
             }
             std::cout << "0" << std::endl;
-            header = false;
+            rc++;
         }
+    }
+    if (rc != nc || rv > nv) {
+        std::cerr << "c Warning (" << filename << "), header is: p cnf " << nv << " " << nc << ", but correct would be: p cnf " << rv << " " << rc << std::endl;
     }
 }
 
