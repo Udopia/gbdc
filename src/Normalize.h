@@ -56,17 +56,18 @@ void normalize(const char* filename) {
             std::cout << "p cnf " << nv << " " << nc << std::endl;
         }
         else {
-            clause.clear();
+            //clause.clear();
             for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
-                clause.push_back(plit);
+                //clause.push_back(plit);
+                std::cout << plit << " ";
                 rv = std::max(abs(plit), rv);
             }
-            std::sort(clause.begin(), clause.end(), [](int l1, int l2) { return abs(l1) < abs(l2); });
-            clause.erase(std::unique(clause.begin(), clause.end()), clause.end()); // remove redundant literals
-            if (std::adjacent_find(clause.begin(), clause.end(), [](int l1, int l2) { return l1 + l2 == 0; }) != clause.end()) continue; // skip tautology
-            for (int plit : clause) {
-                std::cout << plit << " ";
-            }
+            //std::sort(clause.begin(), clause.end(), [](int l1, int l2) { return abs(l1) < abs(l2); });
+            //clause.erase(std::unique(clause.begin(), clause.end()), clause.end()); // remove redundant literals
+            //if (std::adjacent_find(clause.begin(), clause.end(), [](int l1, int l2) { return l1 + l2 == 0; }) != clause.end()) continue; // skip tautology
+            //for (int plit : clause) {
+            //    std::cout << plit << " ";
+            //}
             std::cout << "0" << std::endl;
             rc++;
         }
