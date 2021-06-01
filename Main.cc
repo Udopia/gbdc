@@ -119,8 +119,22 @@ int main(int argc, char** argv) {
         F.readDimacsFromFile(filename.c_str());
         std::cerr << "c Read instance of " << F.nVars() << " variables and " << F.nClauses() << " clauses" << std::endl;
         
-        std::cerr << "Recognizing Gates " << filename << std::endl;
-        GateAnalyzer A (F, patterns, semantic, repeat);
+        std::cerr << "c Recognizing Gates " << filename << std::endl;
+        GateAnalyzer<> A (F, patterns, semantic, repeat);
+        A.analyze();
+        A.getGateFormula().printGates();
+    }
+    else if (toolname == "gates2") {
+        bool patterns = result["gates-patterns"].as<bool>();
+        bool semantic = result["gates-semantic"].as<bool>();
+        unsigned repeat = result["gates-repeat"].as<unsigned>();
+        
+        CNFFormula F;
+        F.readDimacsFromFile(filename.c_str());
+        std::cerr << "c Read instance of " << F.nVars() << " variables and " << F.nClauses() << " clauses" << std::endl;
+        
+        std::cerr << "c Recognizing Gates " << filename << std::endl;
+        GateAnalyzer<BlockList> A (F, patterns, semantic, repeat);
         A.analyze();
         A.getGateFormula().printGates();
     }

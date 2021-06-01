@@ -33,16 +33,19 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "gates/GateFormula.h"
 #include "gates/BlockList.h"
+#include "gates/OccurrenceList.h"
 
 #include "ipasir.h"
 
+template<class T = OccurrenceList>
 class GateAnalyzer {
+    
     void* S; // solver
 
     const CNFFormula& problem;
     GateFormula gate_formula;
 
-    BlockList index; // occurence-list
+    T index; // occurence-list
 
     // analyzer configuration:
     bool patterns = false;
@@ -69,31 +72,9 @@ public:
      * @brief Starting-point gate analysis: iterative root selection
      */
     void analyze() {
-        std::vector<Cl*> root_clauses;
+        std::vector<Cl*> root_clauses = index.estimateRoots();
 
-        for (unsigned int count = 0; (max == 0 || count < max); count++) {
-            root_clauses.clear();
-
-            if (count == 0) {
-                for (Cl* clause : problem) {
-                    if (clause->size() == 1) {
-                        root_clauses.push_back(clause);
-                    }
-                }
-                index.remove(root_clauses);
-            } else {
-                Lit lit = index.getMinimallyUnblockedLiteral();
-                if (lit != lit_Undef) {
-                    root_clauses = index.stripUnblockedClauses(lit);
-                } else {
-                    break;
-                }
-            }
-
-            if (root_clauses.empty()) {
-                continue;
-            }
-
+        for (unsigned count = 0; count < max && !root_clauses.empty(); count++) {
             std::vector<Lit> candidates;
             for (Cl* clause : root_clauses) {            
                 gate_formula.roots.push_back(clause);
@@ -102,6 +83,8 @@ public:
             }
 
             gate_recognition(candidates);
+
+            root_clauses = index.estimateRoots();
         }
 
         std::set<Cl*> remainder;
@@ -118,7 +101,7 @@ private:
      * @param roots 
      */
     void gate_recognition(std::vector<Lit> roots) {
-        std::cerr << "Starting recognition with roots: " << roots << std::endl;
+        std::cerr << "c Starting gate-recognition with roots: " << roots << std::endl;
         std::vector<Lit> candidates;
         std::vector<Lit> frontier { roots.begin(), roots.end() };
         while (!frontier.empty()) { // _breadth_ first search is important here
@@ -149,8 +132,7 @@ private:
 
             if (monotonic || pat && fPattern(out, fwd, bwd) || sem && fSemantic(out, fwd, bwd)) {
                 gate_formula.addGate(out, fwd, bwd); 
-                index.remove(gate_formula.getGate(out).fwd);
-                index.remove(gate_formula.getGate(out).bwd);
+                index.remove(out.var());
                 return true;
             }
         }
@@ -158,7 +140,7 @@ private:
     }
 
     // clause patterns of full encoding
-    // precondition: fwd blocks bwd on the o
+    // precondition: fwd blocks bwd on output literal o
     bool fPattern(Lit o, const For& fwd, const For& bwd) {
         // check if fwd and bwd constrain exactly the same inputs (in opposite polarity)
         std::set<Var> fwd_inp, bwd_inp;
@@ -190,7 +172,6 @@ private:
     }
 
     bool fSemantic(Lit o, const For& fwd, const For& bwd) {
-        std::cerr << "!";
         CNFFormula constraint;
         Cl clause;
         for (const For& f : { fwd, bwd }) {

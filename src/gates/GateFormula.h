@@ -196,22 +196,22 @@ public:
     }
 
     void printGates() {
-        std::cerr << "Found " << nGates() << " of with " << nMonotonicGates() << " are monotonic" << std::endl;
-        std::cerr << "Roots " << nRoots() << std::endl;
-        std::vector<Lit> outputs;
-        std::vector<bool> done(gates.size());
-        for (Cl* root : roots) {
-            outputs.insert(outputs.end(), root->begin(), root->end());
-        }
-        for (size_t i = 0; i < outputs.size(); ++i) {
-            Gate& gate = getGate(outputs[i]);
+        std::cerr << "Found " << nGates() << " gates of which " << nMonotonicGates() << " are monotonic" << std::endl;
+        std::cerr << "Number of root clauses is " << nRoots() << std::endl;
+        // std::vector<Lit> outputs;
+        // std::vector<bool> done(gates.size());
+        // for (Cl* root : roots) {
+        //     outputs.insert(outputs.end(), root->begin(), root->end());
+        // }
+        // for (size_t i = 0; i < outputs.size(); ++i) {
+        //     Gate& gate = getGate(outputs[i]);
 
-            if (gate.isDefined() && !done[outputs[i].var()]) {
-                done[outputs[i].var()] = true;
-                std::cout << gate.out << " <-> f(" << gate.inp << ")" << std::endl;
-                outputs.insert(outputs.end(), gate.inp.begin(), gate.inp.end());
-            }
-        }
+        //     if (gate.isDefined() && !done[outputs[i].var()]) {
+        //         done[outputs[i].var()] = true;
+        //         std::cout << gate.out << " <-> f(" << gate.inp << ")" << std::endl;
+        //         outputs.insert(outputs.end(), gate.inp.begin(), gate.inp.end());
+        //     }
+        // }
     }
 
     Lit getRoot() const {
