@@ -1,5 +1,5 @@
 /*************************************************************************************************
-GBDHash -- Copyright (c) 2020, Markus Iser, KIT - Karlsruhe Institute of Technology
+CNFTools -- Copyright (c) 2020, Markus Iser, KIT - Karlsruhe Institute of Technology
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -21,6 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/ipasir.h"
 #include "src/GBDHash.h"
 #include "src/Normalize.h"
+#include "src/Optimize.h"
 #include "src/util/CNFFormula.h"
 #include "src/util/SolverTypes.h"
 #include "src/util/Runtime.h"
@@ -109,6 +110,26 @@ int main(int argc, char** argv) {
     else if (toolname == "normalize") {
         std::cerr << "Normalizing " << filename << std::endl;
         normalize(filename.c_str());
+    }
+    else if (toolname == "optimize") {
+        unsigned k = result["number"].as<unsigned>();
+        std::vector<std::vector<unsigned>> runtimes;
+        std::string line;
+        while(std::getline(std::cin, line)) {
+            std::istringstream s(line);
+            std::string field;
+            std::vector<unsigned> instance_runtimes;
+            while (getline(s, field, ' ')) {
+                unsigned runtime = 10000;
+                try {
+                    runtime = stoi(field);
+                }
+                catch (const std::invalid_argument& ia) { }
+                instance_runtimes.push_back(runtime);
+            }
+            runtimes.push_back(instance_runtimes);
+        }
+        optimize(runtimes, k);
     }
     else if (toolname == "gates") {
         bool patterns = result["gates-patterns"].as<bool>();

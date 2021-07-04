@@ -1,11 +1,9 @@
 /*************************************************************************************************
-Candy -- Copyright (c) 2015-2019, Markus Iser, KIT - Karlsruhe Institute of Technology
+CNFTools -- Copyright (c) 2015, Markus Iser, KIT - Karlsruhe Institute of Technology
 * 
-* Credits go to:
+* Credits go to the authors of Glucose: Gilles Audemard, Laurent Simon
 * 
-* The authors of Glucose: Gilles Audemard, Laurent Simon
-* 
-* MYFLAG is YOURFLAG
+* This abstracts away MYFLAG (which is YOURFLAG)
 * 
 * The idea of the abstraction of the (type-)parameterized stamp stems from Felix Kutzner. 
 * Check out his SAT Solver: https://github.com/fkutzner/JamSAT

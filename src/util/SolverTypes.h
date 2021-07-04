@@ -1,9 +1,5 @@
 /*************************************************************************************************
-Candy -- Copyright (c) 2015-2019, Markus Iser, KIT - Karlsruhe Institute of Technology
-
-Candy sources are based on Glucose which is based on MiniSat (see former copyrights below). 
-Permissions and copyrights of Candy are exactly the same as Glucose and Minisat (see below).
-
+CNFTools -- Copyright (c) 2015, Markus Iser, KIT - Karlsruhe Institute of Technology
 
 --------------- Former Glucose Copyrights
 

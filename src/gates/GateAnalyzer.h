@@ -1,5 +1,5 @@
 /*************************************************************************************************
-Candy -- Copyright (c) 2015-2019, Markus Iser, KIT - Karlsruhe Institute of Technology
+CNFTools -- Copyright (c) 2015, Markus Iser, KIT - Karlsruhe Institute of Technology
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -106,9 +106,14 @@ private:
         std::vector<Lit> frontier { roots.begin(), roots.end() };
         while (!frontier.empty()) { // _breadth_ first search is important here
             candidates.swap(frontier);
+            // visit each candidate output only once per pass:
+            candidates.erase(std::unique(candidates.begin(), candidates.end()), candidates.end());
             for (Lit candidate : candidates) {
                 if (isGate(candidate, patterns, semantic)) { 
+                    unsigned middle = frontier.size();
                     frontier.insert(frontier.end(), gate_formula.getGate(candidate).inp.begin(), gate_formula.getGate(candidate).inp.end());
+                    // assert that gate.inp is sorted
+                    std::inplace_merge(frontier.begin(), frontier.begin() + middle, frontier.end()); 
                 }
             }
             candidates.clear();
