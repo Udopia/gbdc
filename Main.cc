@@ -21,59 +21,20 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/ipasir.h"
 #include "src/GBDHash.h"
 #include "src/Normalize.h"
-#include "src/Optimize.h"
 #include "src/util/CNFFormula.h"
 #include "src/util/SolverTypes.h"
 #include "src/util/Runtime.h"
 #include "src/gates/GateAnalyzer.h"
+#include "src/IndependentSet.h"
 #include "lib/cxxopts/cxxopts.hpp"
 
-void bench(unsigned n) {
-    typedef std::vector<int> IntVec;
-    typedef std::vector<IntVec> IntVecs;
-    typedef IntVec* IntVecPtr;
-    typedef std::vector<IntVec*> IntVecPtrs;
-
-    IntVecs direct;
-    IntVecPtrs pointer;
-
-    Runtime drt;
-    Runtime prt;
-
-    for (unsigned i = 0; i < n; i++) {
-        unsigned size = std::rand() % 50;
-        IntVec vec { };
-        for (unsigned j = 0; j < size; j++) vec.push_back(std::rand());
-        drt.start();
-        direct.push_back(vec);
-        drt.stop();
-        prt.start();
-        pointer.push_back(new IntVec(vec.begin(), vec.end()));
-        prt.stop();
-    }
-    std::cerr << "Initialization Time (direct): " << drt.get() << std::endl;
-    std::cerr << "Initialization Time (pointer): " << prt.get() << std::endl;
-
-    drt.reset();
-    drt.start();
-    for (IntVec vec : direct) {
-        for (int i : vec) std::cout << i;
-    }
-    std::cerr << "Access Time (direct): " << drt.stop() << std::endl;
-
-    prt.reset();
-    prt.start();
-    for (IntVec* vec : pointer) {
-        for (int i : *vec) std::cout << i;
-    }
-    std::cerr << "Access Time (pointer): " << prt.stop() << std::endl;
-}
+#include <array>
 
 int main(int argc, char** argv) {
     cxxopts::Options options("cnftools", "Toolbox for DIMACS CNF");
 
     options.add_options()
-    ("t,tool", "Select Tool: gbdhash, normalize, gates", cxxopts::value<std::string>()->default_value("gbdhash"))
+    ("t,tool", "Select Tool: gbdhash, normalize, gates, isp", cxxopts::value<std::string>()->default_value("gbdhash"))
     ("f,file", "Filename", cxxopts::value<std::string>(), "Filename")
     ("n,number", "Magic Number", cxxopts::value<unsigned>()->default_value("0"), "Magic Number")
     ("h,help", "Usage Info", cxxopts::value<bool>()->default_value("false"))
@@ -111,25 +72,9 @@ int main(int argc, char** argv) {
         std::cerr << "Normalizing " << filename << std::endl;
         normalize(filename.c_str());
     }
-    else if (toolname == "optimize") {
-        unsigned k = result["number"].as<unsigned>();
-        std::vector<std::vector<unsigned>> runtimes;
-        std::string line;
-        while(std::getline(std::cin, line)) {
-            std::istringstream s(line);
-            std::string field;
-            std::vector<unsigned> instance_runtimes;
-            while (getline(s, field, ' ')) {
-                unsigned runtime = 10000;
-                try {
-                    runtime = stoi(field);
-                }
-                catch (const std::invalid_argument& ia) { }
-                instance_runtimes.push_back(runtime);
-            }
-            runtimes.push_back(instance_runtimes);
-        }
-        optimize(runtimes, k);
+    else if (toolname == "isp") {
+        std::cerr << "Generating Independent Set Problem " << filename << std::endl;
+        generate_independent_set_problem(filename);
     }
     else if (toolname == "gates") {
         bool patterns = result["gates-patterns"].as<bool>();
@@ -158,9 +103,6 @@ int main(int argc, char** argv) {
         GateAnalyzer<BlockList> A (F, patterns, semantic, repeat);
         A.analyze();
         A.getGateFormula().printGates();
-    }
-    else if (toolname == "bench") {
-        bench(result["number"].as<unsigned>());
     }
     else if (toolname == "solve") {
         CNFFormula F;

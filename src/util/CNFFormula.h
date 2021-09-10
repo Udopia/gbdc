@@ -25,11 +25,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 class CNFFormula {
 
-private:
     For formula;
-    unsigned int variables;
+    unsigned variables;
+    unsigned literals;
 
 public:
+
     CNFFormula() : formula(), variables(0) { }
 
     CNFFormula(For& formula) : formula(), variables(0) {
@@ -67,7 +68,7 @@ public:
     }
 
     inline int newVar() {
-        return variables++;
+        return ++variables;
     }
 
     inline void clear() {
