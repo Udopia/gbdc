@@ -19,13 +19,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 from distutils.core import setup, Extension
 
-module = Extension("gdbc",
+module = Extension("gbdc",
             libraries = ["archive"],
             include_dirs=["."],
             sources = ["gbdlib.cc", "lib/md5/md5.cpp"])
 
-setup(name="gdbc", 
+setup(name="gbdc", 
         version="1.0",
         author="Markus Iser",
-        description="GDBC Accelerator Module for GDB",
+        description="GBDC Accelerator Module for GBDC",
         ext_modules=[module])
