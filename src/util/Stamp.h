@@ -24,81 +24,80 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef SRC_CANDY_CORE_STAMP_H_
-#define SRC_CANDY_CORE_STAMP_H_
+#ifndef SRC_UTIL_STAMP_H_
+#define SRC_UTIL_STAMP_H_
 
-#include <vector>
-#include <limits>
 #include <stddef.h>
 #include <assert.h>
 
+#include <vector>
+#include <limits>
+
 template <class T> class Stamp {
-private:
-	std::vector<T> stamped;
-	T stamp;
+    std::vector<T> stamped;
+    T stamp;
 
-public:
-	Stamp() : stamped() {
-		stamp = std::numeric_limits<T>::min();
-		clear();
-	}
+ public:
+    Stamp() : stamped() {
+        stamp = std::numeric_limits<T>::min();
+        clear();
+    }
 
-	Stamp(size_t size) : Stamp() {
-		stamped.resize(size, std::numeric_limits<T>::min());
-		stamp = std::numeric_limits<T>::min();
-		clear();
-	}
+    explicit Stamp(size_t size) : Stamp() {
+        stamped.resize(size, std::numeric_limits<T>::min());
+        stamp = std::numeric_limits<T>::min();
+        clear();
+    }
 
-	~Stamp() { }
+    ~Stamp() { }
 
-	void grow() {
-		stamped.push_back(std::numeric_limits<T>::min());
-	}
+    void grow() {
+        stamped.push_back(std::numeric_limits<T>::min());
+    }
 
-	void grow(size_t size) {
-		if (stamped.size() < size) {
-			stamped.resize(size, std::numeric_limits<T>::min());
-		}
-	}
+    void grow(size_t size) {
+        if (stamped.size() < size) {
+            stamped.resize(size, std::numeric_limits<T>::min());
+        }
+    }
 
-	size_t size() {
-		return stamped.size();
-	}
+    size_t size() {
+        return stamped.size();
+    }
 
-	void clear() {
-		if (stamp < std::numeric_limits<T>::max()) {
-			stamp++;
-		}
-		else {
-			std::fill(stamped.begin(), stamped.end(), std::numeric_limits<T>::min());
-			stamp = std::numeric_limits<T>::min() + 1;
-		}
-	}
+    void clear() {
+        if (stamp < std::numeric_limits<T>::max()) {
+            stamp++;
+        } else {
+            std::fill(stamped.begin(), stamped.end(), std::numeric_limits<T>::min());
+            stamp = std::numeric_limits<T>::min() + 1;
+        }
+    }
 
-	void unset(unsigned int index) {
+    void unset(unsigned int index) {
         assert(index < stamped.size());
-		stamped[index] = std::numeric_limits<T>::min();
-	}
+        stamped[index] = std::numeric_limits<T>::min();
+    }
 
-	void set(unsigned int index) {
+    void set(unsigned int index) {
         assert(index < stamped.size());
-		stamped[index] = stamp;
-	}
+        stamped[index] = stamp;
+    }
 
-    inline bool operator [](unsigned int index) const {
+    inline bool operator[] (unsigned int index) const {
         assert(index < stamped.size());
         return isStamped(index);
     }
 
-	bool isStamped(unsigned int index) const {
-		return stamped[index] == stamp;
-	}
+    bool isStamped(unsigned int index) const {
+        return stamped[index] == stamp;
+    }
 };
 
 template<>
 inline void Stamp<bool>::clear() {
-	std::fill(stamped.begin(), stamped.end(), false);
-	stamp = true;
+    std::fill(stamped.begin(), stamped.end(), false);
+    stamp = true;
 }
 
-#endif /* SRC_CANDY_CORE_STAMP_H_ */
+#endif  // SRC_UTIL_STAMP_H_

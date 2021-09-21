@@ -17,73 +17,71 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef CANDY_GATES_BLOCKLIST_H_
-#define CANDY_GATES_BLOCKLIST_H_
+#ifndef SRC_GATES_BLOCKLIST_H_
+#define SRC_GATES_BLOCKLIST_H_
+
 
 #include <vector>
 #include <set>
 #include <limits>
+#include <utility>
 
-#include "util/CNFFormula.h"
+#include "src/util/CNFFormula.h"
 
 class BlockList {
-
-private:
     const CNFFormula& problem;
 
     std::vector<For> index;
     std::vector<Cl*> unitc;
     std::vector<uint16_t> num_blocked;
 
-    #define CLAUSES_ARE_SORTED 
+    #define CLAUSES_ARE_SORTED
 #ifdef CLAUSES_ARE_SORTED
-    bool isBlocked(Lit o, Cl& c1, Cl& c2) const { // assert o \in c1 and ~o \in c2
+    bool isBlocked(Lit o, const Cl& c1, const Cl& c2) const {  // assert o \in c1 and ~o \in c2
         for (unsigned i = 0, j = 0; i < c1.size() && j < c2.size(); c1[i] < c2[j] ? ++i : ++j) {
             if (c1[i] != o && c1[i] == ~c2[j]) return true;
         }
         return false;
     }
 #else
-    bool isBlocked(Lit o, Cl& c1, Cl& c2) const { // assert o \in c1 and ~o \in c2
+    bool isBlocked(Lit o, const Cl& c1, const Cl& c2) const {  // assert o \in c1 and ~o \in c2
         for (Lit l1 : c1) if (l1 != o) for (Lit l2 : c2) if (l1 == ~l2) return true;
         return false;
     }
 #endif
 
-    bool isBlocked(Lit o, Cl* clause) const { // assert o \in clause
+    bool isBlocked(Lit o, Cl* clause) const {  // assert o \in clause
         for (Cl* c2 : index[~o]) if (!isBlocked(o, *clause, *c2)) return false;
         return true;
     }
 
     void initBlockingCounter(Lit o) {
-        int i = 0; 
+        int i = 0;
         int j = index[o].size()-1;
         while (i <= j) {
-            //std::cout << i << " <= " << j << " < " << index[o].size() << std::endl;
+            // ::cout << i << " <= " << j << " < " << index[o].size() << std::endl;
             if (isBlocked(o, index[o][i])) {
                 ++i;
-            }
-            else {
+            } else {
                 if (i < j) std::swap(index[o][i], index[o][j]);
                 --j;
             }
         }
         num_blocked[o] = i;
         if (num_blocked[o] == index[o].size()) {
-            num_blocked[~o] == index[~o].size();
+            num_blocked[~o] = index[~o].size();
         }
     }
 
-public:
-    BlockList(const CNFFormula& problem_) : problem(problem_), unitc() { 
+ public:
+    explicit BlockList(const CNFFormula& problem_) : problem(problem_), unitc() {
         index.resize(2 + 2 * problem.nVars());
         num_blocked.resize(2 + 2 * problem.nVars(), 0);
 
         for (Cl* clause : problem_) {
             if (clause->size() == 1) {
                 unitc.push_back(clause);
-            }
-            else {
+            } else {
                 for (Lit lit : *clause) {
                     index[lit].push_back(clause);
                 }
@@ -106,16 +104,14 @@ public:
                                 break;
                             }
                         }
-                        if (pos < num_blocked[lit]) { // removed clause was blocked by lit
+                        if (pos < num_blocked[lit]) {  // removed clause was blocked by lit
                             --num_blocked[lit];
                             if (num_blocked[lit] == index[lit].size()) {
-                                num_blocked[~lit] == index[~lit].size();
+                                num_blocked[~lit] = index[~lit].size();
                             }
-                        }
-                        else if (num_blocked[lit] == index[lit].size()) {
-                            num_blocked[~lit] == index[~lit].size();
-                        }
-                        else {
+                        } else if (num_blocked[lit] == index[lit].size()) {
+                            num_blocked[~lit] = index[~lit].size();
+                        } else {
                             literals.insert(~lit);
                         }
                     }
@@ -129,7 +125,7 @@ public:
         }
     }
 
-    inline const For& operator [](size_t o) const {
+    inline const For& operator[] (size_t o) const {
         return index[o];
     }
 
@@ -146,8 +142,7 @@ public:
 
         if (unitc.size() > 0) {
             std::swap(result, unitc);
-        }
-        else {
+        } else {
             Lit lit = getMinimallyUnblockedLiteral();
             if (lit != lit_Undef) {
                 result = stripUnblockedClauses(lit);
@@ -180,7 +175,6 @@ public:
 
     For stripUnblockedClauses(Lit o) {
         For result;
-        
         for (Cl* clause : index[o]) {
             if (!isBlocked(o, clause)) {
                 result.push_back(clause);
@@ -194,8 +188,7 @@ public:
                 if (lit != o) {
                     num_blocked[lit] = 0;
                     num_blocked[~lit] = 0;
-                }
-                else {
+                } else {
                     num_blocked[~lit] = index[~lit].size();
                 }
             }
@@ -203,7 +196,6 @@ public:
 
         return result;
     }
-
 };
 
-#endif
+#endif  // SRC_GATES_BLOCKLIST_H_

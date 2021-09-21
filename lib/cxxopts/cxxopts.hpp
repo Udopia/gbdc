@@ -22,8 +22,8 @@ THE SOFTWARE.
 
 */
 
-#ifndef CXXOPTS_HPP_INCLUDED
-#define CXXOPTS_HPP_INCLUDED
+#ifndef LIB_CXXOPTS_CXXOPTS_HPP_
+#define LIB_CXXOPTS_CXXOPTS_HPP_
 
 #include <cctype>
 #include <cstring>
@@ -40,6 +40,7 @@ THE SOFTWARE.
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <algorithm>
 
 #ifdef __cpp_lib_optional
 #include <optional>
@@ -60,8 +61,7 @@ THE SOFTWARE.
 #define CXXOPTS__VERSION_MINOR 0
 #define CXXOPTS__VERSION_PATCH 0
 
-namespace cxxopts
-{
+namespace cxxopts {
   static constexpr struct {
     uint8_t major, minor, patch;
   } version = {
@@ -69,13 +69,13 @@ namespace cxxopts
     CXXOPTS__VERSION_MINOR,
     CXXOPTS__VERSION_PATCH
   };
-} // namespace cxxopts
+}  // namespace cxxopts
 
-//when we ask cxxopts to use Unicode, help strings are processed using ICU,
-//which results in the correct lengths being computed for strings when they
-//are formatted for the help output
-//it is necessary to make sure that <unicode/unistr.h> can be found by the
-//compiler, and that icu-uc is linked in to the binary.
+// when we ask cxxopts to use Unicode, help strings are processed using ICU,
+// which results in the correct lengths being computed for strings when they
+// are formatted for the help output
+// it is necessary to make sure that <unicode/unistr.h> can be found by the
+// compiler, and that icu-uc is linked in to the binary.
 
 #ifdef CXXOPTS_USE_UNICODE
 #include <unicode/unistr.h>
@@ -2355,30 +2355,22 @@ Options::help(const std::vector<std::string>& help_groups) const
 
 inline
 std::vector<std::string>
-Options::groups() const
-{
+Options::groups() const {
   std::vector<std::string> g;
 
-  std::transform(
-    m_help.begin(),
-    m_help.end(),
-    std::back_inserter(g),
-    [] (const std::map<std::string, HelpGroupDetails>::value_type& pair)
-    {
+  std::transform(m_help.begin(), m_help.end(), std::back_inserter(g),
+    [] (const std::map<std::string, HelpGroupDetails>::value_type& pair) {
       return pair.first;
-    }
-  );
-
+    });
   return g;
 }
 
 inline
 const HelpGroupDetails&
-Options::group_help(const std::string& group) const
-{
+Options::group_help(const std::string& group) const {
   return m_help.at(group);
 }
 
-} // namespace cxxopts
+}  // namespace cxxopts
 
-#endif //CXXOPTS_HPP_INCLUDED
+#endif  // LIB_CXXOPTS_CXXOPTS_HPP_

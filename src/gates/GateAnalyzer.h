@@ -17,8 +17,8 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef GATE_ANALYZER
-#define GATE_ANALYZER
+#ifndef SRC_GATES_GATEANALYZER_H_
+#define SRC_GATES_GATEANALYZER_H_
 
 #include <cstdlib>
 #include <algorithm>
@@ -28,39 +28,38 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <set>
 #include <climits>
 
-#include "util/CNFFormula.h"
-#include "util/Runtime.h"
+#include "src/util/CNFFormula.h"
+#include "src/util/Runtime.h"
 
-#include "gates/GateFormula.h"
-#include "gates/BlockList.h"
-#include "gates/OccurrenceList.h"
+#include "src/gates/GateFormula.h"
+#include "src/gates/BlockList.h"
+#include "src/gates/OccurrenceList.h"
 
-#include "ipasir.h"
+#include "src/ipasir.h"
 
+// Still Slower: template<class T = BlockList>
 template<class T = OccurrenceList>
 class GateAnalyzer {
-    
-    void* S; // solver
+    void* S;  // solver
 
     const CNFFormula& problem;
     GateFormula gate_formula;
 
-    T index; // occurence-list
+    T index;  // occurence-list
 
     // analyzer configuration:
     bool patterns = false;
     bool semantic = false;
     unsigned int max = 1;
 
-public:
+ public:
     GateAnalyzer(const CNFFormula& problem_, bool patterns_, bool semantic_, int tries_) :
-        problem(problem_), gate_formula(problem_.nVars()), index(problem_), 
-        patterns (patterns_), semantic (semantic_), max (tries_)
-    {
+            problem(problem_), gate_formula(problem_.nVars()), index(problem_),
+            patterns(patterns_), semantic(semantic_), max(tries_) {
         if (semantic) S = ipasir_init();
     }
 
-    ~GateAnalyzer() { 
+    ~GateAnalyzer() {
         if (semantic) ipasir_release(S);
     }
 
@@ -76,7 +75,7 @@ public:
 
         for (unsigned count = 0; count < max && !root_clauses.empty(); count++) {
             std::vector<Lit> candidates;
-            for (Cl* clause : root_clauses) {            
+            for (Cl* clause : root_clauses) {
                 gate_formula.roots.push_back(clause);
                 candidates.insert(candidates.end(), clause->begin(), clause->end());
                 for (Lit l : *clause) gate_formula.setUsedAsInput(l);
@@ -94,7 +93,7 @@ public:
         gate_formula.remainder.insert(gate_formula.remainder.end(), remainder.begin(), remainder.end());
     }
 
-private:
+ private:
     /**
      * @brief Start hierarchical gate recognition with given root literals
      * 
@@ -104,16 +103,17 @@ private:
         std::cerr << "c Starting gate-recognition with roots: " << roots << std::endl;
         std::vector<Lit> candidates;
         std::vector<Lit> frontier { roots.begin(), roots.end() };
-        while (!frontier.empty()) { // _breadth_ first search is important here
+        while (!frontier.empty()) {  // breadth_ first search is important here
             candidates.swap(frontier);
             // visit each candidate output only once per pass:
             candidates.erase(std::unique(candidates.begin(), candidates.end()), candidates.end());
             for (Lit candidate : candidates) {
-                if (isGate(candidate, patterns, semantic)) { 
+                if (isGate(candidate, patterns, semantic)) {
                     unsigned middle = frontier.size();
-                    frontier.insert(frontier.end(), gate_formula.getGate(candidate).inp.begin(), gate_formula.getGate(candidate).inp.end());
+                    frontier.insert(frontier.end(), gate_formula.getGate(candidate).inp.begin(),
+                        gate_formula.getGate(candidate).inp.end());
                     // assert that gate.inp is sorted
-                    std::inplace_merge(frontier.begin(), frontier.begin() + middle, frontier.end()); 
+                    std::inplace_merge(frontier.begin(), frontier.begin() + middle, frontier.end());
                 }
             }
             candidates.clear();
@@ -135,8 +135,8 @@ private:
             const For& bwd = index[out];
             bool monotonic = gate_formula.isNestedMonotonic(out);
 
-            if (monotonic || pat && fPattern(out, fwd, bwd) || sem && fSemantic(out, fwd, bwd)) {
-                gate_formula.addGate(out, fwd, bwd); 
+            if (monotonic || (pat && fPattern(out, fwd, bwd)) || (sem && fSemantic(out, fwd, bwd))) {
+                gate_formula.addGate(out, fwd, bwd);
                 index.remove(out.var());
                 return true;
             }
@@ -166,12 +166,12 @@ private:
         if (bwd.size() == 1 && fixedClauseSize(fwd, 2)) {
             return true;
         }
-        // 2^n blocked clauses of size n+1 represent all input combinations 
+        // 2^n blocked clauses of size n+1 represent all input combinations
         // each combined with one output literal
         if (fwd.size() == bwd.size() && 2*fwd.size() == pow(2, fwd_inp.size()/2)) {
-            std::set<Var> vars;
-            for (Lit l : fwd_inp) vars.insert(l.var());
-            return 2*vars.size() == fwd_inp.size();
+            std::set<Lit> fwd_lits;
+            for (Cl* c : fwd) for (Lit l : *c) if (l != ~o) fwd_lits.insert(l);
+            return 2*fwd_inp.size() == fwd_lits.size();
         }
         return false;
     }
@@ -182,14 +182,16 @@ private:
         for (const For& f : { fwd, bwd }) {
             for (Cl* cl : f) {
                 for (Lit l : *cl) {
-                    if (l.var() != o.var()) clause.push_back(l);
-                    else clause.push_back(Lit(o.var(), false));
+                    if (l.var() != o.var()) {
+                        clause.push_back(l);
+                    } else {
+                        clause.push_back(Lit(o.var(), false));
+                    }
                 }
                 constraint.readClause(clause.begin(), clause.end());
                 clause.clear();
             }
-        }    
-        //constraint.normalizeVariableNames();
+        }
         for (Cl* clause : constraint) {
             for (Lit lit : *clause) {
                 ipasir_add(S, lit.toDimacs());
@@ -206,7 +208,6 @@ private:
         for (Cl* c : f) if (c->size() != n) return false;
         return true;
     }
-
 };
 
-#endif
+#endif  // SRC_GATES_GATEANALYZER_H_

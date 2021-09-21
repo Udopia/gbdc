@@ -17,47 +17,45 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef CANDY_GATES_OCCLIST_H_
-#define CANDY_GATES_OCCLIST_H_
+#ifndef SRC_GATES_OCCURRENCELIST_H_
+#define SRC_GATES_OCCURRENCELIST_H_
 
 #include <vector>
 #include <set>
 #include <limits>
+#include <utility>
 
 #include "util/CNFFormula.h"
 
 class OccurrenceList {
-
-private:
     const CNFFormula& problem;
 
     std::vector<For> index;
     std::vector<Cl*> unitc;
 
-#define CLAUSES_ARE_SORTED 
+#define CLAUSES_ARE_SORTED
 #ifdef CLAUSES_ARE_SORTED
-    bool isBlocked(Lit o, Cl& c1, Cl& c2) const { // assert o \in c1 and ~o \in c2
+    bool isBlocked(Lit o, const Cl& c1, const Cl& c2) const {  // assert o \in c1 and ~o \in c2
         for (unsigned i = 0, j = 0; i < c1.size() && j < c2.size(); c1[i] < c2[j] ? ++i : ++j) {
             if (c1[i] != o && c1[i] == ~c2[j]) return true;
         }
         return false;
     }
 #else
-    bool isBlocked(Lit o, Cl& c1, Cl& c2) const { // assert o \in c1 and ~o \in c2
+    bool isBlocked(Lit o, const Cl& c1, const Cl& c2) const {  // assert o \in c1 and ~o \in c2
         for (Lit l1 : c1) if (l1 != o) for (Lit l2 : c2) if (l1 == ~l2) return true;
         return false;
     }
 #endif
 
-public:
-    OccurrenceList(const CNFFormula& problem_) : problem(problem_), unitc() { 
+ public:
+    explicit OccurrenceList(const CNFFormula& problem_) : problem(problem_), unitc() {
         index.resize(2 + 2 * problem.nVars());
 
         for (Cl* clause : problem_) {
             if (clause->size() == 1) {
                 unitc.push_back(clause);
-            }
-            else {
+            } else {
                 for (Lit lit : *clause) {
                     index[lit].push_back(clause);
                 }
@@ -88,7 +86,7 @@ public:
         index[Lit(o, true)].clear();
     }
 
-    inline const For& operator [](size_t o) const {
+    inline const For& operator[] (size_t o) const {
         return index[o];
     }
 
@@ -112,8 +110,7 @@ public:
 
         if (unitc.size() > 0) {
             std::swap(result, unitc);
-        }
-        else {
+        } else {
             Lit lit = getMinimallyUnblockedLiteral();
             if (lit != lit_Undef) {
                 result = stripUnblockedClauses(lit);
@@ -127,7 +124,7 @@ public:
         for (int v = problem.nVars(); v > 0; v--) {
             for (Lit lit : { Lit(v, true), Lit(v, false) }) {
                 if (index[lit].size() > 0) {
-                    return lit;   
+                    return lit;
                 }
             }
         }
@@ -146,7 +143,6 @@ public:
 
         return result;
     }
-
 };
 
-#endif
+#endif  // SRC_GATES_OCCURRENCELIST_H_

@@ -17,46 +17,48 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef CNFFormula_h
-#define CNFFormula_h
+#ifndef SRC_UTIL_CNFFORMULA_H_
+#define SRC_UTIL_CNFFORMULA_H_
 
-#include "StreamBuffer.h"
-#include "util/SolverTypes.h"
+#include <vector>
+#include <algorithm>
+#include <memory>
+
+#include "src/StreamBuffer.h"
+#include "src/util/SolverTypes.h"
 
 class CNFFormula {
-
-    For formula;
+    std::shared_ptr<For> formula;
     unsigned variables;
-    unsigned literals;
 
-public:
+ public:
+    CNFFormula() : formula(new For()), variables(0) { }
 
-    CNFFormula() : formula(), variables(0) { }
-
-    CNFFormula(For& formula) : formula(), variables(0) {
+    explicit CNFFormula(const For& formula) : formula(), variables(0) {
         readClauses(formula);
     }
 
-    CNFFormula(Cl& clause) : formula(), variables(0) {
+    explicit CNFFormula(Cl& clause) : formula(), variables(0) {
         readClause(clause.begin(), clause.end());
     }
 
-    ~CNFFormula() {
-        clear();
-    }
+    // copy constructor using shared-ptr to same formula
+    CNFFormula(const CNFFormula& other) : formula(other.formula), variables(other.variables) { }
+
+    ~CNFFormula() { }
 
     typedef For::const_iterator const_iterator;
 
     inline const_iterator begin() const {
-        return formula.begin();
+        return formula->begin();
     }
 
     inline const_iterator end() const {
-        return formula.end();
+        return formula->end();
     }
 
-    inline const Cl* operator [](int i) const {
-        return formula[i];
+    inline const Cl* operator[] (int i) const {
+        return (*formula)[i];
     }
 
     inline size_t nVars() const {
@@ -64,7 +66,7 @@ public:
     }
 
     inline size_t nClauses() const {
-        return formula.size();
+        return formula->size();
     }
 
     inline int newVar() {
@@ -72,17 +74,17 @@ public:
     }
 
     inline void clear() {
-        formula.clear();
+        formula->clear();
     }
 
     // create gapless representation of variables
     void normalizeVariableNames() {
         std::vector<unsigned> name;
-        name.resize(variables+1, -1);
+        name.resize(variables+1, 0);
         unsigned int max = 0;
-        for (Cl* clause : formula) {
+        for (Cl* clause : *formula) {
             for (Lit& lit : *clause) {
-                if (name[lit.var()] == -1) name[lit.var()] = max++;
+                if (name[lit.var()] == 0) name[lit.var()] = max++;
                 lit = Lit(name[lit.var()], lit.sign());
             }
         }
@@ -99,10 +101,9 @@ public:
             }
             if (*in == 'p' || *in == 'c') {
                 in.skipLine();
-            }
-            else {
+            } else {
                 for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
-                    clause.push_back(Lit(abs(plit), plit < 0)); 
+                    clause.push_back(Lit(abs(plit), plit < 0));
                 }
                 readClause(clause.begin(), clause.end());
                 clause.clear();
@@ -114,7 +115,7 @@ public:
         readClause(list.begin(), list.end());
     }
 
-    void readClauses(For& formula) {
+    void readClauses(const For& formula) {
         for (Cl* clause : formula) {
             readClause(clause->begin(), clause->end());
         }
@@ -125,10 +126,12 @@ public:
         Cl* clause = new Cl { begin, end };
         if (clause->size() > 0) {
             // remove redundant literals
-            std::sort(clause->begin(), clause->end()); 
+            std::sort(clause->begin(), clause->end());
             clause->erase(std::unique(clause->begin(), clause->end()), clause->end());
             // skip tautologies
-            bool tautology = clause->end() != std::unique(clause->begin(), clause->end(), [](Lit l1, Lit l2) { return l1.var() == l2.var(); });
+            bool tautology = clause->end() != std::unique(clause->begin(), clause->end(), [](Lit l1, Lit l2) {
+                return l1.var() == l2.var();
+            });
             if (tautology) {
                 delete clause;
                 return;
@@ -136,15 +139,9 @@ public:
             // record maximal variable
             variables = std::max(variables, (unsigned int)clause->back().var());
         }
-        formula.push_back(clause);
+        formula->push_back(clause);
     }
-
-    // CNFFormula can only be moved, not copied
-    CNFFormula(const CNFFormula& other) = delete;
-    CNFFormula& operator=(const CNFFormula& other) = delete;
-    CNFFormula& operator=(CNFFormula&& other) = default;
-    CNFFormula(CNFFormula&& other) = default;
-
 };
 
-#endif
+#endif  // SRC_UTIL_CNFFORMULA_H_
+

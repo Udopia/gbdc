@@ -17,8 +17,10 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef GBDHash_h
-#define GBDHash_h
+#ifndef SRC_GBDHASH_H_
+#define SRC_GBDHASH_H_
+
+#include <string>
 
 #include "src/StreamBuffer.h"
 #include "lib/md5/md5.h"
@@ -36,10 +38,9 @@ std::string gbd_hash_from_dimacs(const char* filename) {
         }
         if (*in == 'p' || *in == 'c') {
             in.skipLine();
-        }
-        else {
+        } else {
             for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
-                clause.append(std::to_string(plit)); 
+                clause.append(std::to_string(plit));
                 clause.append(" ");
             }
             clause.append("0");
@@ -52,4 +53,4 @@ std::string gbd_hash_from_dimacs(const char* filename) {
     return std::string(str);
 }
 
-#endif
+#endif  // SRC_GBDHASH_H_
