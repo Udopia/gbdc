@@ -54,20 +54,24 @@ static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
     CNFStats stats(F);
     stats.analyze();
     runtime.stop();
-    std::vector<float> record = stats.SatzillaFeatures();
+    std::vector<float> record = stats.BaseFeatures();
     record.push_back(runtime.get());
+    std::vector<std::string> names = CNFStats::BaseFeatureNames();
 
-    PyObject* listObj = PyList_New(record.size());
-    if (!listObj) return nullptr;
+    // PyObject* listObj = PyList_New(record.size());
+    PyObject *dict = PyDict_New();
+    if (!dict) return nullptr;
     for (unsigned int i = 0; i < record.size(); i++) {
+        PyObject *key = Py_BuildValue("s", names[i].c_str());
         PyObject *num = PyFloat_FromDouble(static_cast<double>(record[i]));
         if (!num) {
-            Py_DECREF(listObj);
+            Py_DECREF(dict);
             return nullptr;
         }
-        PyList_SET_ITEM(listObj, i, num);
+        // PyList_SET_ITEM(listObj, i, num);
+        PyDict_SetItem(dict, key, num);
     }
-    return listObj;
+    return dict;
 }
 
 static PyMethodDef myMethods[] = {
@@ -85,6 +89,6 @@ static struct PyModuleDef myModule = {
     myMethods
 };
 
-PyMODINIT_FUNC PyInit_gbdhashc(void) {
+PyMODINIT_FUNC PyInit_gbdc(void) {
     return PyModule_Create(&myModule);
 }

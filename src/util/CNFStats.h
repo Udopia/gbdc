@@ -25,6 +25,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <iostream>
 #include <algorithm>
 #include <numeric>
+#include <string>
 
 #include "src/util/SolverTypes.h"
 #include "src/util/CNFFormula.h"
@@ -157,8 +158,8 @@ class CNFStats {
     }
 
     // Subset of Satzilla Features
-    // 2004, Nudelmann et al., Understanding Random SAT - Beyond the Clause-to-Variable Ratio
-    std::vector<float> SatzillaFeatures() {
+    // CF. 2004, Nudelmann et al., Understanding Random SAT - Beyond the Clause-to-Variable Ratio
+    std::vector<float> BaseFeatures() {
         std::vector<float> record;
 
         // ## Problem Size Features ##
@@ -207,6 +208,21 @@ class CNFStats {
         // ## Missing: LP-Based Features, DPLL Search Space, Local Search Probes
 
         return record;
+    }
+
+    static std::vector<std::string> BaseFeatureNames() {
+        return std::vector<std::string> { "clauses=", "variables=",
+            "vcg_vdegrees_mean=", "vcg_vdegrees_variance=", "vcg_vdegrees_min=", "vcg_vdegrees_max=", "vcg_vdegrees_entropy=",
+            "vcg_cdegrees_mean=", "vcg_cdegrees_variance=", "vcg_cdegrees_min=", "vcg_cdegrees_max=", "vcg_cdegrees_entropy=",
+            "vg_degrees_mean=", "vg_degrees_variance=", "vg_degrees_min=", "vg_degrees_max=", "vg_degrees_entropy=",
+            "vg_jwdegrees_mean=", "vg_jwdegrees_variance=", "vg_jwdegrees_min=", "vg_jwdegrees_max=", "vg_jwdegrees_entropy=",
+            "cg_degrees_mean=", "cg_degrees_variance=", "cg_degrees_min=", "cg_degrees_max=", "cg_degrees_entropy=",
+            "balance_clause_mean=", "balance_clause_variance=", "balance_clause_min=", "balance_clause_max=", "balance_clause_entropy=",
+            "balance_vars_mean=", "balance_vars_variance=", "balance_vars_min=", "balance_vars_max=", "balance_vars_entropy=",
+            "clause_size_1=", "clause_size_2=", "clause_size_3=", "clause_size_4=", "clause_size_5=", "clause_size_6=", "clause_size_7=", "clause_size_8=", "clause_size_9=",
+            "horn_clauses=", "horn_vars_mean=", "horn_vars_variance=", "horn_vars_min=", "horn_vars_max=", "horn_vars_entropy=",
+            "inv_horn_clauses=", "inv_horn_vars_mean=", "inv_horn_vars_variance=", "inv_horn_vars_min=", "inv_horn_vars_max=", "inv_horn_vars_entropy=", "feature_extraction_time="
+        };
     }
 };
 
