@@ -54,8 +54,8 @@ class GateAnalyzer {
 
  public:
     GateAnalyzer(const CNFFormula& problem_, bool patterns_, bool semantic_, int tries_) :
-            problem(problem_), gate_formula(problem_.nVars()), index(problem_),
-            patterns(patterns_), semantic(semantic_), max(tries_) {
+     problem(problem_), gate_formula(problem_.nVars()), index(problem_),
+     patterns(patterns_), semantic(semantic_), max(tries_) {
         if (semantic) S = ipasir_init();
     }
 
@@ -76,9 +76,8 @@ class GateAnalyzer {
         for (unsigned count = 0; count < max && !root_clauses.empty(); count++) {
             std::vector<Lit> candidates;
             for (Cl* clause : root_clauses) {
-                gate_formula.roots.push_back(clause);
+                gate_formula.addRoot(clause);
                 candidates.insert(candidates.end(), clause->begin(), clause->end());
-                for (Lit l : *clause) gate_formula.setUsedAsInput(l);
             }
 
             gate_recognition(candidates);
@@ -108,11 +107,11 @@ class GateAnalyzer {
             // visit each candidate output only once per pass:
             candidates.erase(std::unique(candidates.begin(), candidates.end()), candidates.end());
             for (Lit candidate : candidates) {
-                if (isGate(candidate, patterns, semantic)) {
+                if (isGate(candidate)) {
                     unsigned middle = frontier.size();
                     frontier.insert(frontier.end(), gate_formula.getGate(candidate).inp.begin(),
                         gate_formula.getGate(candidate).inp.end());
-                    // assert that gate.inp is sorted
+                    // requires that gate.inp is sorted
                     std::inplace_merge(frontier.begin(), frontier.begin() + middle, frontier.end());
                 }
             }
@@ -129,14 +128,22 @@ class GateAnalyzer {
      * @return true 
      * @return false 
      */
-    bool isGate(Lit out, bool pat, bool sem) {
+    bool isGate(Lit out) {
         if (index[~out].size() > 0 && index.isBlockedSet(out)) {
-            const For& fwd = index[~out];
-            const For& bwd = index[out];
-            bool monotonic = gate_formula.isNestedMonotonic(out);
+            GateType type = NONE;
 
-            if (monotonic || (pat && fPattern(out, fwd, bwd)) || (sem && fSemantic(out, fwd, bwd))) {
-                gate_formula.addGate(out, fwd, bwd);
+            if (gate_formula.isNestedMonotonic(out)) {
+                type = MONO;
+            } else if (patterns) {
+                type = fPattern(out, index[~out], index[out]);
+            }
+
+            if (type == NONE && semantic) {
+                type = fSemantic(out, index[~out], index[out]);
+            }
+
+            if (type != NONE) {
+                gate_formula.addGate(out, index[~out], index[out], type);
                 index.remove(out.var());
                 return true;
             }
@@ -146,32 +153,38 @@ class GateAnalyzer {
 
     // clause patterns of full encoding
     // precondition: fwd blocks bwd on output literal o
-    bool fPattern(Lit o, const For& fwd, const For& bwd) {
+    GateType fPattern(Lit o, const For& fwd, const For& bwd) {
         // check if fwd and bwd constrain exactly the same inputs
         std::set<Var> inp, bwd_inp;
         for (Cl* c : fwd) for (Lit l : *c) if (l != ~o) inp.insert(l.var());
         for (Cl* c : bwd) for (Lit l : *c) if (l != o) bwd_inp.insert(l.var());
         if (inp != bwd_inp) {
-            return false;
+            return NONE;
         }
         // detect or gates
         if (fwd.size() == 1 && fixedClauseSize(bwd, 2)) {
-            return true;
+            return OR;
         }
         // detect and gates
         if (bwd.size() == 1 && fixedClauseSize(fwd, 2)) {
-            return true;
+            return AND;
         }
         // 2^n blocked clauses of size n+1 represent all input combinations with an output literal
         if (fwd.size() + bwd.size() == pow(2, inp.size())) {
             if (fixedClauseSize(fwd, inp.size()+1) && fixedClauseSize(bwd, inp.size()+1)) {
-                return true;  // requires absence of redundancy
+                if (inp.size() == 1) {
+                    return TRIV;
+                }
+                if (inp.size() == 2 && fwd.size() == bwd.size()) {
+                    return EQIV;
+                }
+                return FULL;  // requires absence of redundancy
             }
         }
-        return false;
+        return NONE;
     }
 
-    bool fSemantic(Lit o, const For& fwd, const For& bwd) {
+    GateType fSemantic(Lit o, const For& fwd, const For& bwd) {
         CNFFormula constraint;
         Cl clause;
         for (const For& f : { fwd, bwd }) {
@@ -196,7 +209,7 @@ class GateAnalyzer {
         ipasir_assume(S, Lit(o.var(), true).toDimacs());
         int result = ipasir_solve(S);
         ipasir_add(S, Lit(o.var(), false).toDimacs());
-        return result == 20;
+        return result == 20 ? GENERIC : NONE;
     }
 
     bool fixedClauseSize(const For& f, unsigned int n) {
