@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
     std::string filename = result["file"].as<std::string>();
     std::string toolname = result["tool"].as<std::string>();
 
-    std::cerr << "Running " << toolname << " with " << filename << std::endl;
+    // std::cerr << "Running Tool '" << toolname << "' with " << filename << std::endl;
 
     if (toolname == "gbdhash") {
         std::cout << gbd_hash_from_dimacs(filename.c_str()) << std::endl;
@@ -87,19 +87,24 @@ int main(int argc, char** argv) {
             std::cout << names[i] << "=" << record[i] << std::endl;
         }
         std::cout << "feature_extraction_time=" << runtime.get() << std::endl;
-    } else if (toolname == "gates") {
+    } else if (toolname == "gates" || toolname == "gates2") {
         bool patterns = result["gates-patterns"].as<bool>();
         bool semantic = result["gates-semantic"].as<bool>();
         unsigned repeat = result["gates-repeat"].as<unsigned>();
 
         CNFFormula F;
         F.readDimacsFromFile(filename.c_str());
-        std::cerr << "c Read instance of " << F.nVars() << " variables and " << F.nClauses() << " clauses" << std::endl;
-
+        // std::cerr << "c Read instance of " << F.nVars() << " variables and " << F.nClauses() << " clauses" << std::endl;
         std::cerr << "c Recognizing Gates " << filename << std::endl;
-        GateAnalyzer<> A(F, patterns, semantic, repeat);
-        A.analyze();
-        A.getGateFormula().printGates();
+        if (toolname == "gates2") {
+            GateAnalyzer<> A(F, patterns, semantic, repeat);
+            A.analyze();
+            A.getGateFormula().printGates();
+        } else {
+            GateAnalyzer<BlockList> A(F, patterns, semantic, repeat);
+            A.analyze();
+            GateFormula gates = A.getGateFormula();
+        }
     } else if (toolname == "solve") {
         CNFFormula F;
         F.readDimacsFromFile(filename.c_str());

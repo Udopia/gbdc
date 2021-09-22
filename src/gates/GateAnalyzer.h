@@ -37,7 +37,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/ipasir.h"
 
-// Still Slower: template<class T = BlockList>
+
 template<class T = OccurrenceList>
 class GateAnalyzer {
     void* S;  // solver
@@ -100,7 +100,7 @@ class GateAnalyzer {
      * @param roots 
      */
     void gate_recognition(std::vector<Lit> roots) {
-        std::cerr << "c Starting gate-recognition with roots: " << roots << std::endl;
+        // std::cerr << "c Starting gate-recognition with roots: " << roots << std::endl;
         std::vector<Lit> candidates;
         std::vector<Lit> frontier { roots.begin(), roots.end() };
         while (!frontier.empty()) {  // breadth_ first search is important here
@@ -147,16 +147,12 @@ class GateAnalyzer {
     // clause patterns of full encoding
     // precondition: fwd blocks bwd on output literal o
     bool fPattern(Lit o, const For& fwd, const For& bwd) {
-        // check if fwd and bwd constrain exactly the same inputs (in opposite polarity)
-        std::set<Var> fwd_inp, bwd_inp;
-        for (Cl* c : fwd) for (Lit l : *c) if (l != ~o) fwd_inp.insert(l.var());
+        // check if fwd and bwd constrain exactly the same inputs
+        std::set<Var> inp, bwd_inp;
+        for (Cl* c : fwd) for (Lit l : *c) if (l != ~o) inp.insert(l.var());
         for (Cl* c : bwd) for (Lit l : *c) if (l != o) bwd_inp.insert(l.var());
-        if (fwd_inp != bwd_inp) {
+        if (inp != bwd_inp) {
             return false;
-        }
-        // detect equivalence gates
-        if (fwd.size() == 1 && bwd.size() == 1 && fwd.front()->size() == 2 && bwd.front()->size() == 2) {
-            return true;
         }
         // detect or gates
         if (fwd.size() == 1 && fixedClauseSize(bwd, 2)) {
@@ -166,12 +162,11 @@ class GateAnalyzer {
         if (bwd.size() == 1 && fixedClauseSize(fwd, 2)) {
             return true;
         }
-        // 2^n blocked clauses of size n+1 represent all input combinations
-        // each combined with one output literal
-        if (fwd.size() == bwd.size() && 2*fwd.size() == pow(2, fwd_inp.size()/2)) {
-            std::set<Lit> fwd_lits;
-            for (Cl* c : fwd) for (Lit l : *c) if (l != ~o) fwd_lits.insert(l);
-            return 2*fwd_inp.size() == fwd_lits.size();
+        // 2^n blocked clauses of size n+1 represent all input combinations with an output literal
+        if (fwd.size() + bwd.size() == pow(2, inp.size())) {
+            if (fixedClauseSize(fwd, inp.size()+1) && fixedClauseSize(bwd, inp.size()+1)) {
+                return true;  // requires absence of redundancy
+            }
         }
         return false;
     }
