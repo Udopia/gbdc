@@ -28,6 +28,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/util/SolverTypes.h"
 #include "src/util/Runtime.h"
 #include "src/gates/GateAnalyzer.h"
+#include "src/gates/GateFormula.h"
+#include "src/gates/GateStats.h"
 #include "src/IndependentSet.h"
 #include "lib/cxxopts/cxxopts.hpp"
 
@@ -96,15 +98,27 @@ int main(int argc, char** argv) {
         F.readDimacsFromFile(filename.c_str());
         // std::cerr << "c Read instance of " << F.nVars() << " variables and " << F.nClauses() << " clauses" << std::endl;
         std::cerr << "c Recognizing Gates " << filename << std::endl;
-        if (toolname == "gates2") {
+        Runtime runtime;
+        runtime.start();
+        GateFormula gates;
+        if (toolname == "gates") {
             GateAnalyzer<> A(F, patterns, semantic, repeat);
             A.analyze();
-            A.getGateFormula().printGates();
+            gates = A.getGateFormula();
         } else {
             GateAnalyzer<BlockList> A(F, patterns, semantic, repeat);
             A.analyze();
-            GateFormula gates = A.getGateFormula();
+            gates = A.getGateFormula();
         }
+        GateStats stats(gates);
+        stats.analyze();
+        runtime.stop();
+        std::vector<float> record = stats.GateFeatures();
+        std::vector<std::string> names = GateStats::GateFeatureNames();
+        for (unsigned i = 0; i < record.size(); i++) {
+            std::cout << names[i] << "=" << record[i] << std::endl;
+        }
+        std::cout << "gate_extraction_time=" << runtime.get() << std::endl;
     } else if (toolname == "solve") {
         CNFFormula F;
         F.readDimacsFromFile(filename.c_str());

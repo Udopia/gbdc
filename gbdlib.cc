@@ -22,6 +22,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/GBDHash.h"
 #include "src/util/CNFFormula.h"
 #include "src/util/CNFStats.h"
+#include "src/gates/GateAnalyzer.h"
+#include "src/gates/GateFormula.h"
+#include "src/gates/GateStats.h"
 #include "src/util/Runtime.h"
 
 static PyObject* version(PyObject* self) {
@@ -74,7 +77,45 @@ static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
     return dict;
 }
 
+static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
+    const char* filename;
+
+    if (!PyArg_ParseTuple(arg, "s", &filename)) {
+        return nullptr;
+    }
+
+    CNFFormula F;
+    F.readDimacsFromFile(filename);
+    Runtime runtime;
+    runtime.start();
+    GateAnalyzer<> A(F, true, true, 1);
+    A.analyze();
+    GateFormula gates = A.getGateFormula();
+    GateStats stats(gates);
+    stats.analyze();
+    runtime.stop();
+    std::vector<float> record = stats.GateFeatures();
+    record.push_back(runtime.get());
+    std::vector<std::string> names = GateStats::GateFeatureNames();
+
+    // PyObject* listObj = PyList_New(record.size());
+    PyObject *dict = PyDict_New();
+    if (!dict) return nullptr;
+    for (unsigned int i = 0; i < record.size(); i++) {
+        PyObject *key = Py_BuildValue("s", names[i].c_str());
+        PyObject *num = PyFloat_FromDouble(static_cast<double>(record[i]));
+        if (!num) {
+            Py_DECREF(dict);
+            return nullptr;
+        }
+        // PyList_SET_ITEM(listObj, i, num);
+        PyDict_SetItem(dict, key, num);
+    }
+    return dict;
+}
+
 static PyMethodDef myMethods[] = {
+    {"extract_gate_features", extract_gate_features, METH_VARARGS, "Extract Gate Features."},
     {"extract_base_features", extract_base_features, METH_VARARGS, "Extract Base Features."},
     {"gbdhash", gbdhash, METH_VARARGS, "Calculates GBD-Hash of given DIMACS CNF file."},
     {"version", (PyCFunction)version, METH_NOARGS, "Returns Version"},

@@ -143,13 +143,14 @@ class CNFStats {
 
     template <typename T>
     void push_distribution(std::vector<float>* record, std::vector<T> distribution) {
-        // mean, variance, min, max, entropy (note: using variance not variation coeff.)
-        float mean, variance, min, max, entropy;
-        mean = Mean(distribution);
-        variance = Variance(distribution, mean);
-        min = static_cast<float>(*std::min_element(distribution.begin(), distribution.end()));
-        max = static_cast<float>(*std::max_element(distribution.begin(), distribution.end()));
-        entropy = Entropy(distribution);
+        float mean = 0, variance = 0, min = 0, max = 0, entropy = 0;
+        if (distribution.size() > 0) {
+            mean = Mean(distribution);
+            variance = Variance(distribution, mean);
+            min = static_cast<float>(*std::min_element(distribution.begin(), distribution.end()));
+            max = static_cast<float>(*std::max_element(distribution.begin(), distribution.end()));
+            entropy = Entropy(distribution);
+        }
         record->push_back(mean);
         record->push_back(variance);
         record->push_back(min);
@@ -211,17 +212,17 @@ class CNFStats {
     }
 
     static std::vector<std::string> BaseFeatureNames() {
-        return std::vector<std::string> { "clauses=", "variables=",
-            "vcg_vdegrees_mean=", "vcg_vdegrees_variance=", "vcg_vdegrees_min=", "vcg_vdegrees_max=", "vcg_vdegrees_entropy=",
-            "vcg_cdegrees_mean=", "vcg_cdegrees_variance=", "vcg_cdegrees_min=", "vcg_cdegrees_max=", "vcg_cdegrees_entropy=",
-            "vg_degrees_mean=", "vg_degrees_variance=", "vg_degrees_min=", "vg_degrees_max=", "vg_degrees_entropy=",
-            "vg_jwdegrees_mean=", "vg_jwdegrees_variance=", "vg_jwdegrees_min=", "vg_jwdegrees_max=", "vg_jwdegrees_entropy=",
-            "cg_degrees_mean=", "cg_degrees_variance=", "cg_degrees_min=", "cg_degrees_max=", "cg_degrees_entropy=",
-            "balance_clause_mean=", "balance_clause_variance=", "balance_clause_min=", "balance_clause_max=", "balance_clause_entropy=",
-            "balance_vars_mean=", "balance_vars_variance=", "balance_vars_min=", "balance_vars_max=", "balance_vars_entropy=",
-            "clause_size_1=", "clause_size_2=", "clause_size_3=", "clause_size_4=", "clause_size_5=", "clause_size_6=", "clause_size_7=", "clause_size_8=", "clause_size_9=",
-            "horn_clauses=", "horn_vars_mean=", "horn_vars_variance=", "horn_vars_min=", "horn_vars_max=", "horn_vars_entropy=",
-            "inv_horn_clauses=", "inv_horn_vars_mean=", "inv_horn_vars_variance=", "inv_horn_vars_min=", "inv_horn_vars_max=", "inv_horn_vars_entropy=", "feature_extraction_time="
+        return std::vector<std::string> { "clauses", "variables",
+            "vcg_vdegrees_mean", "vcg_vdegrees_variance", "vcg_vdegrees_min", "vcg_vdegrees_max", "vcg_vdegrees_entropy",
+            "vcg_cdegrees_mean", "vcg_cdegrees_variance", "vcg_cdegrees_min", "vcg_cdegrees_max", "vcg_cdegrees_entropy",
+            "vg_degrees_mean", "vg_degrees_variance", "vg_degrees_min", "vg_degrees_max", "vg_degrees_entropy",
+            "vg_jwdegrees_mean", "vg_jwdegrees_variance", "vg_jwdegrees_min", "vg_jwdegrees_max", "vg_jwdegrees_entropy",
+            "cg_degrees_mean", "cg_degrees_variance", "cg_degrees_min", "cg_degrees_max", "cg_degrees_entropy",
+            "balance_clause_mean", "balance_clause_variance", "balance_clause_min", "balance_clause_max", "balance_clause_entropy",
+            "balance_vars_mean", "balance_vars_variance", "balance_vars_min", "balance_vars_max", "balance_vars_entropy",
+            "clause_size_1", "clause_size_2", "clause_size_3", "clause_size_4", "clause_size_5", "clause_size_6", "clause_size_7", "clause_size_8", "clause_size_9",
+            "horn_clauses", "horn_vars_mean", "horn_vars_variance", "horn_vars_min", "horn_vars_max", "horn_vars_entropy",
+            "inv_horn_clauses", "inv_horn_vars_mean", "inv_horn_vars_variance", "inv_horn_vars_min", "inv_horn_vars_max", "inv_horn_vars_entropy", "feature_extraction_time"
         };
     }
 };
