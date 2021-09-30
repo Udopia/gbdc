@@ -16,8 +16,8 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
-#ifndef SRC_GATES_GATESTATS_H_
-#define SRC_GATES_GATESTATS_H_
+#ifndef SRC_FEATURES_GATESTATS_H_
+#define SRC_FEATURES_GATESTATS_H_
 
 #include <math.h>
 
@@ -28,10 +28,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <string>
 
 #include "src/util/SolverTypes.h"
+#include "src/util/Runtime.h"
 #include "src/gates/GateFormula.h"
+#include "src/gates/GateAnalyzer.h"
 
 class GateStats {
-    GateFormula formula_;
+    CNFFormula formula_;
+    Runtime runtime;
 
  public:
     unsigned n_vars, n_gates, n_roots;
@@ -39,24 +42,30 @@ class GateStats {
 
     std::vector<unsigned> levels, levels_none, levels_generic, levels_mono, levels_and, levels_or, levels_triv, levels_equiv, levels_full;
 
-    explicit GateStats(const GateFormula& formula) :
-     formula_(formula), n_vars(formula.nVars()), n_gates(formula.nGates()), n_roots(formula.nRoots()),
+    explicit GateStats(const CNFFormula& formula) :
+     formula_(formula), n_vars(formula.nVars()), n_gates(), n_roots(),
      n_none(0), n_generic(0), n_mono(0), n_and(0), n_or(0), n_triv(0), n_equiv(0), n_full(0),
      levels(), levels_none(), levels_generic(), levels_mono(), levels_and(), levels_or(), levels_triv(), levels_equiv(), levels_full() {
-        formula_.normalizeRoots();
-        ++n_vars;
-        levels.resize(n_vars, 0);
     }
 
-    void analyze() {
+    void analyze(unsigned repeat) {
+        runtime.start();
+        GateAnalyzer<> analyzer(formula_, true, true, repeat);
+        analyzer.analyze();
+        GateFormula gates = analyzer.getGateFormula();
+        n_gates = gates.nGates();
+        n_roots = gates.nRoots();
+        gates.normalizeRoots();
+        ++n_vars;
+        levels.resize(n_vars, 0);
         // BFS for level determination
         unsigned level = 0;
-        std::vector<Lit> current({ formula_.getRoot() });
+        std::vector<Lit> current({ gates.getRoot() });
         std::vector<Lit> next;
         while (!current.empty()) {
             ++level;
             for (Lit lit : current) {
-                const Gate& gate = formula_.getGate(lit);
+                const Gate& gate = gates.getGate(lit);
                 if (gate.isDefined() && levels[lit.var()] == 0) {
                     levels[lit.var()] = level;
                     next.insert(next.end(), gate.inp.begin(), gate.inp.end());
@@ -67,7 +76,7 @@ class GateStats {
         }
         // Gate Type Counts and Levels
         for (unsigned i = 1; i <= n_vars; i++) {
-            const Gate& gate = formula_.getGate(Lit(Var(i)));
+            const Gate& gate = gates.getGate(Lit(Var(i)));
             switch (gate.type) {
                 case NONE:  // input variable
                     ++n_none;
@@ -103,6 +112,7 @@ class GateStats {
                     break;
             }
         }
+        runtime.stop();
     }
 
     template <typename T>
@@ -169,6 +179,7 @@ class GateStats {
         push_distribution(&record, levels_triv);
         push_distribution(&record, levels_equiv);
         push_distribution(&record, levels_full);
+        record.push_back(static_cast<float>(runtime.get()));
         return record;
     }
 
@@ -188,4 +199,4 @@ class GateStats {
     }
 };
 
-#endif  // SRC_GATES_GATESTATS_H_
+#endif  // SRC_FEATURES_GATESTATS_H_

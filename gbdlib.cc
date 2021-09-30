@@ -21,11 +21,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/GBDHash.h"
 #include "src/util/CNFFormula.h"
-#include "src/util/CNFStats.h"
 #include "src/gates/GateAnalyzer.h"
 #include "src/gates/GateFormula.h"
-#include "src/gates/GateStats.h"
 #include "src/util/Runtime.h"
+
+#include "src/features/CNFStats.h"
+#include "src/features/GateStats.h"
 
 static PyObject* version(PyObject* self) {
     return Py_BuildValue("i", 1);

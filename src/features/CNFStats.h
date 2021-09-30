@@ -16,8 +16,8 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
-#ifndef SRC_UTIL_CNFSTATS_H_
-#define SRC_UTIL_CNFSTATS_H_
+#ifndef SRC_FEATURES_CNFSTATS_H_
+#define SRC_FEATURES_CNFSTATS_H_
 
 #include <math.h>
 
@@ -29,9 +29,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/util/SolverTypes.h"
 #include "src/util/CNFFormula.h"
+#include "src/util/Runtime.h"
 
 class CNFStats {
     CNFFormula formula_;
+    Runtime runtime;
 
  public:
     unsigned n_vars, n_clauses, n_literals;
@@ -72,6 +74,7 @@ class CNFStats {
     }
 
     void analyze() {
+        runtime.start();
         std::vector<unsigned> literal_occurrences;
         literal_occurrences.resize(2 * formula_.nVars() + 2);
         for (Cl* clause : formula_) {
@@ -116,6 +119,7 @@ class CNFStats {
             clause_degree[cid] -= clause->size();
             ++cid;
         }
+        runtime.stop();
     }
 
     template <typename T>
@@ -158,7 +162,7 @@ class CNFStats {
         record->push_back(entropy);
     }
 
-    // Subset of Satzilla Features
+    // Subset of Satzilla Features + Other CNF Stats
     // CF. 2004, Nudelmann et al., Understanding Random SAT - Beyond the Clause-to-Variable Ratio
     std::vector<float> BaseFeatures() {
         std::vector<float> record;
@@ -208,6 +212,8 @@ class CNFStats {
 
         // ## Missing: LP-Based Features, DPLL Search Space, Local Search Probes
 
+        record.push_back(static_cast<float>(runtime.get()));
+
         return record;
     }
 
@@ -227,4 +233,4 @@ class CNFStats {
     }
 };
 
-#endif  // SRC_UTIL_CNFSTATS_H_
+#endif  // SRC_FEATURES_CNFSTATS_H_

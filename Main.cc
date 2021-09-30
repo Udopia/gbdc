@@ -20,51 +20,53 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <iostream>
 #include <array>
 
+#include "lib/argparse/argparse.hpp"
+
 #include "src/ipasir.h"
 #include "src/GBDHash.h"
 #include "src/Normalize.h"
 #include "src/util/CNFFormula.h"
-#include "src/util/CNFStats.h"
 #include "src/util/SolverTypes.h"
-#include "src/util/Runtime.h"
-#include "src/gates/GateAnalyzer.h"
-#include "src/gates/GateFormula.h"
-#include "src/gates/GateStats.h"
 #include "src/IndependentSet.h"
-#include "lib/cxxopts/cxxopts.hpp"
+
+#include "src/features/GateStats.h"
+#include "src/features/CNFStats.h"
 
 
 int main(int argc, char** argv) {
-    cxxopts::Options options("cnftools", "Toolbox for DIMACS CNF");
+    argparse::ArgumentParser program("CNF Tools");
 
-    options.add_options()
-    ("t,tool", "Select Tool: gbdhash, normalize, gates, isp", cxxopts::value<std::string>()->default_value("gbdhash"))
-    ("f,file", "Filename", cxxopts::value<std::string>(), "Filename")
-    ("h,help", "Usage Info", cxxopts::value<bool>()->default_value("false"))
-// "Gates" Tool Options:
-    ("p,gates-patterns", "Patterns", cxxopts::value<bool>()->default_value("true"))
-    ("s,gates-semantic", "Semantic", cxxopts::value<bool>()->default_value("true"))
-    ("r,gates-repeat", "Nof Root Selections", cxxopts::value<unsigned>()->default_value("1"), "Nof Root Selections");
+    program.add_argument("tool").help("Select Tool: solve, gbdhash, normalize, isp, extract, gates")
+        .default_value("gbdhash")
+        .action([](const std::string& value) {
+            static const std::vector<std::string> choices = { "solve", "gbdhash", "normalize", "isp", "extract", "gates" };
+            if (std::find(choices.begin(), choices.end(), value) != choices.end()) {
+                return value;
+            }
+            return std::string{ "gbdhash" };
+        });
 
-    options.parse_positional("file");
-    options.positional_help("Filename");
+    program.add_argument("file").help("Give Path");
 
-    cxxopts::ParseResult result;
+    program.add_argument("-r", "--repeat")
+        .help("Give number of root selections for gate recognition")
+        .default_value(1)
+        .scan<'i', int>();
+
     try {
-        result = options.parse(argc, argv);
-    } catch (cxxopts::OptionParseException& e) {
-        std::cout << e.what() << std::endl;
+        program.parse_args(argc, argv);
     }
-
-    if (result.count("help") || !result.count("file")) {
-        std::cout << options.help() << std::endl;
+    catch (const std::runtime_error& err) {
+        std::cout << err.what() << std::endl;
+        std::cout << program;
         exit(0);
     }
 
-    std::string filename = result["file"].as<std::string>();
-    std::string toolname = result["tool"].as<std::string>();
+    std::string filename = program.get("file");
+    std::string toolname = program.get("tool");
+    unsigned repeat = program.get<int>("repeat");
 
-    // std::cerr << "Running Tool '" << toolname << "' with " << filename << std::endl;
+    std::cerr << "c Running: '" << toolname << " " << filename << std::endl;
 
     if (toolname == "gbdhash") {
         std::cout << gbd_hash_from_dimacs(filename.c_str()) << std::endl;
@@ -75,54 +77,30 @@ int main(int argc, char** argv) {
         std::cerr << "Generating Independent Set Problem " << filename << std::endl;
         generate_independent_set_problem(filename);
     } else if (toolname == "extract") {
-        std::cerr << "Extracing features of " << filename << std::endl;
         CNFFormula F;
         F.readDimacsFromFile(filename.c_str());
-        Runtime runtime;
-        runtime.start();
+
         CNFStats stats(F);
         stats.analyze();
-        runtime.stop();
         std::vector<float> record = stats.BaseFeatures();
         std::vector<std::string> names = CNFStats::BaseFeatureNames();
         for (unsigned i = 0; i < record.size(); i++) {
             std::cout << names[i] << "=" << record[i] << std::endl;
         }
-        std::cout << "feature_extraction_time=" << runtime.get() << std::endl;
-    } else if (toolname == "gates" || toolname == "gates2") {
-        bool patterns = result["gates-patterns"].as<bool>();
-        bool semantic = result["gates-semantic"].as<bool>();
-        unsigned repeat = result["gates-repeat"].as<unsigned>();
-
+    } else if (toolname == "gates") {
         CNFFormula F;
         F.readDimacsFromFile(filename.c_str());
-        // std::cerr << "c Read instance of " << F.nVars() << " variables and " << F.nClauses() << " clauses" << std::endl;
-        std::cerr << "c Recognizing Gates " << filename << std::endl;
-        Runtime runtime;
-        runtime.start();
-        GateFormula gates;
-        if (toolname == "gates") {
-            GateAnalyzer<> A(F, patterns, semantic, repeat);
-            A.analyze();
-            gates = A.getGateFormula();
-        } else {
-            GateAnalyzer<BlockList> A(F, patterns, semantic, repeat);
-            A.analyze();
-            gates = A.getGateFormula();
-        }
-        GateStats stats(gates);
-        stats.analyze();
-        runtime.stop();
+
+        GateStats stats(F);
+        stats.analyze(repeat);
         std::vector<float> record = stats.GateFeatures();
         std::vector<std::string> names = GateStats::GateFeatureNames();
         for (unsigned i = 0; i < record.size(); i++) {
             std::cout << names[i] << "=" << record[i] << std::endl;
         }
-        std::cout << "gate_extraction_time=" << runtime.get() << std::endl;
     } else if (toolname == "solve") {
         CNFFormula F;
         F.readDimacsFromFile(filename.c_str());
-        std::cerr << "c Read instance of " << F.nVars() << " variables and " << F.nClauses() << " clauses" << std::endl;
 
         std::cerr << "c Intitializing Solver " << ipasir_signature() << std::endl;
         void* S = ipasir_init();

@@ -23,6 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <vector>
 #include <algorithm>
 #include <memory>
+#include <string>
 
 #include "src/StreamBuffer.h"
 #include "src/util/SolverTypes.h"
