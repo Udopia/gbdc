@@ -38,8 +38,8 @@ include_directories(cnftools PUBLIC "${PROJECT_SOURCE_DIR}/src")
 add_subdirectory("lib/md5")
 add_subdirectory("src")
 
-add_executable(cnftools Main.cc)
+add_executable(cnftools src/Main.cc)
 add_dependencies(cnftools solver)
-target_link_libraries(cnftools PUBLIC ${LIBS} solver gates util)
+target_link_libraries(cnftools PUBLIC ${LIBS} solver gates util transform features)
 
 target_include_directories(cnftools PUBLIC "${PROJECT_SOURCE_DIR}")

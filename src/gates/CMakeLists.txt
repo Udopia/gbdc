@@ -1,5 +1,5 @@
 add_library(gates OBJECT
-    GateAnalyzer.h
     BlockList.h
+    GateAnalyzer.h
     OccurrenceList.h
     GateFormula.h)

@@ -25,8 +25,8 @@
  
  */
 
-#ifndef SRC_CANDY_UTILS_RUNTIME_H_
-#define SRC_CANDY_UTILS_RUNTIME_H_
+#ifndef SRC_UTIL_RUNTIME_H_
+#define SRC_UTIL_RUNTIME_H_
 
 #include <iomanip>
 #include <iostream>
@@ -48,15 +48,15 @@ struct Runtime {
         runtime = get_wall_time() - runtime;
     }
 
-    double start() { 
+    double start() {
         double rt = runtime;
-        limp(); 
+        limp();
         return rt;
     }
 
-    double stop() { 
-        limp(); 
-        return runtime; 
+    double stop() {
+        limp();
+        return runtime;
     }
 
     double get() {
@@ -69,27 +69,25 @@ struct Runtime {
 
 #ifdef _WIN32
     double get_wall_time() {
-        LARGE_INTEGER time,freq;
-        if (!QueryPerformanceFrequency(&freq)){
+        LARGE_INTEGER time, freq;
+        if (!QueryPerformanceFrequency(&freq)) {
             //  Handle error
             return 0;
         }
-        if (!QueryPerformanceCounter(&time)){
+        if (!QueryPerformanceCounter(&time)) {
             //  Handle error
             return 0;
         }
-        return (double)time.QuadPart / freq.QuadPart;
+        return static_cast<double>(time.QuadPart / freq.QuadPart);
     }
 
     double get_cpu_time() {
-        FILETIME a,b,c,d;
-        if (GetProcessTimes(GetCurrentProcess(),&a,&b,&c,&d) != 0){
+        FILETIME a, b, c, d;
+        if (GetProcessTimes(GetCurrentProcess(), &a, &b, &c, &d) != 0) {
             //  Returns total user time.
             //  Can be tweaked to include kernel times as well.
-            return
-                (double)(d.dwLowDateTime |
-                ((unsigned long long)d.dwHighDateTime << 32)) * 0.0000001;
-        } else{
+            return (double)(d.dwLowDateTime | ((unsigned long long)d.dwHighDateTime << 32)) * 0.0000001;
+        } else {
             //  Handle error
             return 0;
         }
@@ -97,7 +95,7 @@ struct Runtime {
 #else
     double get_wall_time() {
         struct timeval time;
-        if (gettimeofday(&time, NULL)){
+        if (gettimeofday(&time, NULL)) {
             //  Handle error
             return 0;
         }
@@ -116,4 +114,4 @@ inline std::ostream& operator <<(std::ostream& stream, Runtime const& runtime) {
     return stream;
 }
 
-#endif /* SRC_CANDY_UTILS_RUNTIME_H_ */
+#endif  // SRC_UTIL_RUNTIME_H_

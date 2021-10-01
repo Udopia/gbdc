@@ -22,7 +22,7 @@ from distutils.core import setup, Extension
 module = Extension("gbdc",
             libraries = ["archive"],
             include_dirs=["."],
-            sources = ["gbdlib.cc", "lib/md5/md5.cpp"])
+            sources = ["src/gbdlib.cc", "lib/md5/md5.cpp"])
 
 setup(name="gbdc", 
         version="1.0",

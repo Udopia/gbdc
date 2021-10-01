@@ -21,13 +21,14 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <array>
 
 #include "lib/argparse/argparse.hpp"
+#include "lib/ipasir.h"
 
-#include "src/ipasir.h"
-#include "src/GBDHash.h"
-#include "src/Normalize.h"
+#include "src/util/GBDHash.h"
 #include "src/util/CNFFormula.h"
 #include "src/util/SolverTypes.h"
-#include "src/IndependentSet.h"
+
+#include "src/transform/IndependentSet.h"
+#include "src/transform/Normalize.h"
 
 #include "src/features/GateStats.h"
 #include "src/features/CNFStats.h"

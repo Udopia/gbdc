@@ -17,8 +17,8 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef SRC_STREAMBUFFER_H_
-#define SRC_STREAMBUFFER_H_
+#ifndef SRC_UTIL_STREAMBUFFER_H_
+#define SRC_UTIL_STREAMBUFFER_H_
 
 #include <archive.h>
 #include <archive_entry.h>
@@ -160,4 +160,4 @@ class StreamBuffer {
     }
 };
 
-#endif  // SRC_STREAMBUFFER_H_
+#endif  // SRC_UTIL_STREAMBUFFER_H_

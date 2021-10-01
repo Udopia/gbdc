@@ -19,11 +19,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "Python.h"
 
-#include "src/GBDHash.h"
+#include "src/util/GBDHash.h"
 #include "src/util/CNFFormula.h"
+#include "src/util/Runtime.h"
+
 #include "src/gates/GateAnalyzer.h"
 #include "src/gates/GateFormula.h"
-#include "src/util/Runtime.h"
 
 #include "src/features/CNFStats.h"
 #include "src/features/GateStats.h"
@@ -53,13 +54,10 @@ static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
 
     CNFFormula F;
     F.readDimacsFromFile(filename);
-    Runtime runtime;
-    runtime.start();
+
     CNFStats stats(F);
     stats.analyze();
-    runtime.stop();
     std::vector<float> record = stats.BaseFeatures();
-    record.push_back(runtime.get());
     std::vector<std::string> names = CNFStats::BaseFeatureNames();
 
     // PyObject* listObj = PyList_New(record.size());
@@ -87,16 +85,10 @@ static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
 
     CNFFormula F;
     F.readDimacsFromFile(filename);
-    Runtime runtime;
-    runtime.start();
-    GateAnalyzer<> A(F, true, true, 1);
-    A.analyze();
-    GateFormula gates = A.getGateFormula();
-    GateStats stats(gates);
-    stats.analyze();
-    runtime.stop();
+
+    GateStats stats(F);
+    stats.analyze(1);
     std::vector<float> record = stats.GateFeatures();
-    record.push_back(runtime.get());
     std::vector<std::string> names = GateStats::GateFeatureNames();
 
     // PyObject* listObj = PyList_New(record.size());

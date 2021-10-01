@@ -17,13 +17,13 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef SRC_NORMALIZE_H_
-#define SRC_NORMALIZE_H_
+#ifndef SRC_TRANSFORM_NORMALIZE_H_
+#define SRC_TRANSFORM_NORMALIZE_H_
 
 #include <vector>
 #include <algorithm>
 
-#include "src/StreamBuffer.h"
+#include "src/util/StreamBuffer.h"
 
 void normalize(const char* filename) {
     StreamBuffer in(filename);
@@ -66,4 +66,4 @@ void normalize(const char* filename) {
     }
 }
 
-#endif  // SRC_NORMALIZE_H_
+#endif  // SRC_TRANSFORM_NORMALIZE_H_

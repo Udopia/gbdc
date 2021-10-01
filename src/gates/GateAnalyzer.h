@@ -28,14 +28,14 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <set>
 #include <climits>
 
+#include "lib/ipasir.h"
+
 #include "src/util/CNFFormula.h"
 #include "src/util/Runtime.h"
 
 #include "src/gates/GateFormula.h"
 #include "src/gates/BlockList.h"
 #include "src/gates/OccurrenceList.h"
-
-#include "src/ipasir.h"
 
 
 template<class T = OccurrenceList>
