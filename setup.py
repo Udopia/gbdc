@@ -18,14 +18,16 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 """
 
 from distutils.core import setup, Extension
+import os
 
 module = Extension("gbdc",
-            libraries = ["archive"],
-            include_dirs=["."],
-            sources = ["src/gbdlib.cc", "lib/md5/md5.cpp"])
+        libraries = ["archive", "cadical"],
+        library_dirs=[os.path.abspath("./build/cadical/src/Cadical/build")],
+        include_dirs=["."],
+        sources = ["src/gbdlib.cc", "lib/md5/md5.cpp"])
 
 setup(name="gbdc", 
         version="1.0",
         author="Markus Iser",
-        description="GBDC Accelerator Module for GBDC",
+        description="Accelerator Module for GBD",
         ext_modules=[module])

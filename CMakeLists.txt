@@ -18,7 +18,7 @@ ExternalProject_Add(Cadical
     GIT_REPOSITORY https://github.com/arminbiere/cadical
     GIT_TAG "origin/master"
     PREFIX "${CMAKE_BINARY_DIR}/cadical"
-    CONFIGURE_COMMAND "${CADICAL_CONFIGURE}"
+    CONFIGURE_COMMAND "${CADICAL_CONFIGURE}" "-fPIC"
     BUILD_COMMAND "${CADICAL_BUILD}"
     INSTALL_COMMAND ""
     #BUILD_BYPRODUCTS "${CMAKE_BINARY_DIR}/cadical/src/Cadical/build/libcadical.a"
