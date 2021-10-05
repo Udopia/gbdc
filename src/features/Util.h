@@ -44,7 +44,7 @@ float Entropy(std::vector<unsigned> distribution) {
     std::vector<unsigned> frequency;
     for (unsigned value : distribution) {
         if (value >= frequency.size()) {
-            frequency.resize(value, 0);
+            frequency.resize(value+1, 0);
         }
         ++frequency[value];
     }
@@ -61,7 +61,7 @@ float Entropy(std::vector<float> distribution) {
     for (float value : distribution) {
         unsigned item = static_cast<unsigned>(std::round(10 * value));
         if (item >= frequency.size()) {
-            frequency.resize(item, 0);
+            frequency.resize(item+1, 0);
         }
         ++frequency[item];
     }

@@ -6,10 +6,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CADICAL_CONFIGURE "./configure")
+set(CADICAL_CONFIGURE_OPTION "-fPIC")
 set(CADICAL_BUILD make -j 8)
 if (SKIP_CADICAL) 
     message("Warning: SKIP_CADICAL suppresses rebuild of CaDiCaL")
     set(CADICAL_CONFIGURE "")
+    set(CADICAL_CONFIGURE_OPTION "")
     set(CADICAL_BUILD "")
 endif()
 
@@ -18,7 +20,7 @@ ExternalProject_Add(Cadical
     GIT_REPOSITORY https://github.com/arminbiere/cadical
     GIT_TAG "origin/master"
     PREFIX "${CMAKE_BINARY_DIR}/cadical"
-    CONFIGURE_COMMAND "${CADICAL_CONFIGURE}" "-fPIC"
+    CONFIGURE_COMMAND "${CADICAL_CONFIGURE}" "${CADICAL_CONFIGURE_OPTION}"
     BUILD_COMMAND "${CADICAL_BUILD}"
     INSTALL_COMMAND ""
     #BUILD_BYPRODUCTS "${CMAKE_BINARY_DIR}/cadical/src/Cadical/build/libcadical.a"
