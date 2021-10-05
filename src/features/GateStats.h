@@ -32,6 +32,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/gates/GateFormula.h"
 #include "src/gates/GateAnalyzer.h"
 
+#include "src/features/Util.h"
+
 class GateStats {
     CNFFormula formula_;
     Runtime runtime;
@@ -115,46 +117,6 @@ class GateStats {
         runtime.stop();
     }
 
-    template <typename T>
-    float Mean(std::vector<T> counts) {
-        float sum = static_cast<float>(std::accumulate(counts.begin(), counts.end(), 0));
-        return sum / counts.size();
-    }
-
-    template <typename T>
-    float Variance(std::vector<T> counts, float mean) {
-        float sum = static_cast<float>(std::accumulate(counts.begin(), counts.end(), 0.0,
-            [mean] (float a, unsigned b) { return a + pow(static_cast<float>(b - mean), 2); } ));
-        return sum / counts.size();
-    }
-
-    template <typename T>
-    float Entropy(std::vector<T> counts) {
-        float entropy = 0;
-        for (unsigned count : counts) {
-            float p_x = static_cast<float>(count) / counts.size();
-            if (p_x > 0) entropy -= p_x * log(p_x) / log(2);
-        }
-        return entropy;
-    }
-
-    template <typename T>
-    void push_distribution(std::vector<float>* record, std::vector<T> distribution) {
-        float mean = 0, variance = 0, min = 0, max = 0, entropy = 0;
-        if (distribution.size() > 0) {
-            mean = Mean(distribution);
-            variance = Variance(distribution, mean);
-            min = static_cast<float>(*std::min_element(distribution.begin(), distribution.end()));
-            max = static_cast<float>(*std::max_element(distribution.begin(), distribution.end()));
-            entropy = Entropy(distribution);
-        }
-        record->push_back(mean);
-        record->push_back(variance);
-        record->push_back(min);
-        record->push_back(max);
-        record->push_back(entropy);
-    }
-
     // Gate Structural Features
     std::vector<float> GateFeatures() {
         std::vector<float> record;
@@ -194,7 +156,7 @@ class GateStats {
             "levels_or_mean", "levels_or_variance", "levels_or_min", "levels_or_max", "levels_or_entropy",
             "levels_triv_mean", "levels_triv_variance", "levels_triv_min", "levels_triv_max", "levels_triv_entropy",
             "levels_equiv_mean", "levels_equiv_variance", "levels_equiv_min", "levels_equiv_max", "levels_equiv_entropy",
-            "levels_full_mean", "levels_full_variance", "levels_full_min", "levels_full_max", "levels_full_entropy", "gate_extraction_time"
+            "levels_full_mean", "levels_full_variance", "levels_full_min", "levels_full_max", "levels_full_entropy", "gate_features_runtime"
         };
     }
 };

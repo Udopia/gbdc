@@ -31,6 +31,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/util/CNFFormula.h"
 #include "src/util/Runtime.h"
 
+#include "src/features/Util.h"
+
 class CNFStats {
     CNFFormula formula_;
     Runtime runtime;
@@ -44,7 +46,6 @@ class CNFStats {
     std::vector<unsigned> variable_occurrences;  // one entry per variable (its num. of occurrences)
     // VG Node Distribution
     std::vector<unsigned> variable_degree;  // one entry per variable (its degree in the VIG)
-    std::vector<float> variable_jw_degree;  // one entry per variable (its jeroslav-wang degree in the VIG)
     // CG Node Distribution
     std::vector<unsigned> clause_degree;  // one entry per clause (number of neighbour clauses)
 
@@ -55,19 +56,20 @@ class CNFStats {
     // Horn
     unsigned horn;  // number of horn clauses
     unsigned inv_horn;  // number of inv. horn clauses
+    unsigned positive, negative;  // number of positive / negative clauses
     std::vector<unsigned> variable_horn;  // occurrences in horn clauses (per variable)
     std::vector<unsigned> variable_inv_horn;  // occurrences in inv. horn clauses (per variable)
 
     explicit CNFStats(const CNFFormula& formula) :
      formula_(formula), n_vars(formula.nVars()), n_clauses(formula.nClauses()), n_literals(0),
      clause_sizes(), clause_occurrences(), variable_occurrences(),
-     variable_degree(), variable_jw_degree(), clause_degree(),
+     variable_degree(), clause_degree(),
      pos_neg_per_clause(), pos_neg_per_variable(),
-     horn(0), inv_horn(0), variable_horn(), variable_inv_horn() {
+     horn(0), inv_horn(0), positive(0), negative(0),
+     variable_horn(), variable_inv_horn() {
         clause_sizes.resize(formula.nVars(), 0);
         variable_occurrences.resize(formula.nVars() + 1);
         variable_degree.resize(formula.nVars() + 1);
-        variable_jw_degree.resize(formula.nVars() + 1);
         clause_degree.resize(formula.nClauses(), 0);
         variable_horn.resize(formula.nVars() + 1);
         variable_inv_horn.resize(formula.nVars() + 1);
@@ -86,7 +88,7 @@ class CNFStats {
                 ++variable_occurrences[lit.var()];
                 ++literal_occurrences[lit];
                 variable_degree[lit.var()] += clause->size() - 1;
-                variable_jw_degree[lit.var()] += clause->size() / pow(2, clause->size());
+                // variable_jw_degree[lit.var()] += clause->size() / pow(2, clause->size());
                 if (lit.sign()) ++neg;
             }
             // divide min by max (not pos by neg as in satzilla)
@@ -94,12 +96,14 @@ class CNFStats {
             pos_neg_per_clause.push_back(std::max(pos, neg) > 0 ? std::min(pos, neg) / std::max(pos, neg) : 0);
             // horn
             if (neg <= 1) {
+                if (neg == 0) ++positive;
                 ++horn;
                 for (Lit lit : *clause) {
                     ++variable_horn[lit.var()];
                 }
             }
             if (pos <= 1) {
+                if (pos == 0) ++negative;
                 ++inv_horn;
                 for (Lit lit : *clause) {
                     ++variable_inv_horn[lit.var()];
@@ -122,46 +126,6 @@ class CNFStats {
         runtime.stop();
     }
 
-    template <typename T>
-    float Mean(std::vector<T> counts) {
-        float sum = static_cast<float>(std::accumulate(counts.begin(), counts.end(), 0));
-        return sum / counts.size();
-    }
-
-    template <typename T>
-    float Variance(std::vector<T> counts, float mean) {
-        float sum = static_cast<float>(std::accumulate(counts.begin(), counts.end(), 0.0,
-            [mean] (float a, unsigned b) { return a + pow(static_cast<float>(b - mean), 2); } ));
-        return sum / counts.size();
-    }
-
-    template <typename T>
-    float Entropy(std::vector<T> counts) {
-        float entropy = 0;
-        for (unsigned count : counts) {
-            float p_x = static_cast<float>(count) / counts.size();
-            if (p_x > 0) entropy -= p_x * log(p_x) / log(2);
-        }
-        return entropy;
-    }
-
-    template <typename T>
-    void push_distribution(std::vector<float>* record, std::vector<T> distribution) {
-        float mean = 0, variance = 0, min = 0, max = 0, entropy = 0;
-        if (distribution.size() > 0) {
-            mean = Mean(distribution);
-            variance = Variance(distribution, mean);
-            min = static_cast<float>(*std::min_element(distribution.begin(), distribution.end()));
-            max = static_cast<float>(*std::max_element(distribution.begin(), distribution.end()));
-            entropy = Entropy(distribution);
-        }
-        record->push_back(mean);
-        record->push_back(variance);
-        record->push_back(min);
-        record->push_back(max);
-        record->push_back(entropy);
-    }
-
     // Subset of Satzilla Features + Other CNF Stats
     // CF. 2004, Nudelmann et al., Understanding Random SAT - Beyond the Clause-to-Variable Ratio
     std::vector<float> BaseFeatures() {
@@ -174,25 +138,7 @@ class CNFStats {
         // DEL Reciprocal Ratio: V/C (including squared and cubic variants)
         // DEL Linearized Ratio: |4.26 - C/V| (including squared and cubic variants)
 
-        // ## Variable - Clause Graph Features ##
-        // Variable Node Degree Statistics:
-        push_distribution(&record, variable_occurrences);
-        // Clause Node Degree Statistics:
-        push_distribution(&record, clause_occurrences);
-
-        // ## Variable Graph Features ##
-        push_distribution(&record, variable_degree);
-        // ADD Additional VIG degree stats with different edge weights
-        push_distribution(&record, variable_jw_degree);
-
-        // ## Clause Graph Features ##
-        push_distribution(&record, clause_degree);
-        // DEL Clustering Coefficient Statistics (replace by community structure features)
-
-        // ## Balance Features ##
-        push_distribution(&record, pos_neg_per_clause);  // min over max
-        push_distribution(&record, pos_neg_per_variable);  // min over max
-        // changed to absolute numbers, not fraction of unary, binary and ternary clauses, also add more
+        // changed to absolute numbers, not fraction of unary, binary and ternary clauses, also added more
         record.push_back(clause_sizes[1]);
         record.push_back(clause_sizes[2]);
         record.push_back(clause_sizes[3]);
@@ -203,12 +149,30 @@ class CNFStats {
         record.push_back(clause_sizes[8]);
         record.push_back(clause_sizes[9]);
 
-        // ## Horn Proximity ##
-        record.push_back(horn);  // absolute value (not fraction)
-        push_distribution(&record, variable_horn);
-        // ADD inverted horn stats
+        // ## Horn, Pos, Neg Proximity ##
+        record.push_back(horn);
         record.push_back(inv_horn);
+        record.push_back(positive);
+        record.push_back(negative);
+        push_distribution(&record, variable_horn);
         push_distribution(&record, variable_inv_horn);
+
+        // ## Balance Features ##
+        push_distribution(&record, pos_neg_per_clause);  // min over max
+        push_distribution(&record, pos_neg_per_variable);  // min over max
+
+        // ## Variable - Clause Graph Features ##
+        // Variable Node Degree Statistics:
+        push_distribution(&record, variable_occurrences);
+        // Clause Node Degree Statistics:
+        push_distribution(&record, clause_occurrences);
+
+        // ## Variable Graph Features ##
+        push_distribution(&record, variable_degree);
+
+        // ## Clause Graph Features ##
+        push_distribution(&record, clause_degree);
+        // DEL Clustering Coefficient Statistics (FW: community structure features)
 
         // ## Missing: LP-Based Features, DPLL Search Space, Local Search Probes
 
@@ -219,16 +183,16 @@ class CNFStats {
 
     static std::vector<std::string> BaseFeatureNames() {
         return std::vector<std::string> { "clauses", "variables",
+            "clause_size_1", "clause_size_2", "clause_size_3", "clause_size_4", "clause_size_5", "clause_size_6", "clause_size_7", "clause_size_8", "clause_size_9",
+            "horn_clauses", "inv_horn_clauses", "positive_clauses", "negative_clauses",
+            "horn_vars_mean", "horn_vars_variance", "horn_vars_min", "horn_vars_max", "horn_vars_entropy",
+            "inv_horn_vars_mean", "inv_horn_vars_variance", "inv_horn_vars_min", "inv_horn_vars_max", "inv_horn_vars_entropy",
+            "balance_clause_mean", "balance_clause_variance", "balance_clause_min", "balance_clause_max", "balance_clause_entropy",
+            "balance_vars_mean", "balance_vars_variance", "balance_vars_min", "balance_vars_max", "balance_vars_entropy",
             "vcg_vdegrees_mean", "vcg_vdegrees_variance", "vcg_vdegrees_min", "vcg_vdegrees_max", "vcg_vdegrees_entropy",
             "vcg_cdegrees_mean", "vcg_cdegrees_variance", "vcg_cdegrees_min", "vcg_cdegrees_max", "vcg_cdegrees_entropy",
             "vg_degrees_mean", "vg_degrees_variance", "vg_degrees_min", "vg_degrees_max", "vg_degrees_entropy",
-            "vg_jwdegrees_mean", "vg_jwdegrees_variance", "vg_jwdegrees_min", "vg_jwdegrees_max", "vg_jwdegrees_entropy",
-            "cg_degrees_mean", "cg_degrees_variance", "cg_degrees_min", "cg_degrees_max", "cg_degrees_entropy",
-            "balance_clause_mean", "balance_clause_variance", "balance_clause_min", "balance_clause_max", "balance_clause_entropy",
-            "balance_vars_mean", "balance_vars_variance", "balance_vars_min", "balance_vars_max", "balance_vars_entropy",
-            "clause_size_1", "clause_size_2", "clause_size_3", "clause_size_4", "clause_size_5", "clause_size_6", "clause_size_7", "clause_size_8", "clause_size_9",
-            "horn_clauses", "horn_vars_mean", "horn_vars_variance", "horn_vars_min", "horn_vars_max", "horn_vars_entropy",
-            "inv_horn_clauses", "inv_horn_vars_mean", "inv_horn_vars_variance", "inv_horn_vars_min", "inv_horn_vars_max", "inv_horn_vars_entropy", "feature_extraction_time"
+            "cg_degrees_mean", "cg_degrees_variance", "cg_degrees_min", "cg_degrees_max", "cg_degrees_entropy", "base_features_runtime"
         };
     }
 };
