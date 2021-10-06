@@ -60,7 +60,6 @@ static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
     std::vector<float> record = stats.BaseFeatures();
     std::vector<std::string> names = CNFStats::BaseFeatureNames();
 
-    // PyObject* listObj = PyList_New(record.size());
     PyObject *dict = PyDict_New();
     if (!dict) return nullptr;
     for (unsigned int i = 0; i < record.size(); i++) {
@@ -70,7 +69,6 @@ static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
             Py_DECREF(dict);
             return nullptr;
         }
-        // PyList_SET_ITEM(listObj, i, num);
         PyDict_SetItem(dict, key, num);
     }
     return dict;
@@ -91,7 +89,6 @@ static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
     std::vector<float> record = stats.GateFeatures();
     std::vector<std::string> names = GateStats::GateFeatureNames();
 
-    // PyObject* listObj = PyList_New(record.size());
     PyObject *dict = PyDict_New();
     if (!dict) return nullptr;
     for (unsigned int i = 0; i < record.size(); i++) {
@@ -101,7 +98,6 @@ static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
             Py_DECREF(dict);
             return nullptr;
         }
-        // PyList_SET_ITEM(listObj, i, num);
         PyDict_SetItem(dict, key, num);
     }
     return dict;
