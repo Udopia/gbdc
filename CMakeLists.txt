@@ -42,6 +42,6 @@ add_subdirectory("src")
 
 add_executable(cnftools src/Main.cc)
 add_dependencies(cnftools solver)
-target_link_libraries(cnftools PUBLIC ${LIBS} solver gates util transform features)
+target_link_libraries(cnftools PUBLIC ${LIBS} solver $<TARGET_OBJECTS:gates> $<TARGET_OBJECTS:util> $<TARGET_OBJECTS:transform> $<TARGET_OBJECTS:features>)
 
 target_include_directories(cnftools PUBLIC "${PROJECT_SOURCE_DIR}")
