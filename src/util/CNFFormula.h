@@ -39,10 +39,6 @@ class CNFFormula {
         readClauses(formula);
     }
 
-    explicit CNFFormula(Cl& clause) : formula(), variables(0) {
-        readClause(clause.begin(), clause.end());
-    }
-
     // copy constructor using shared-ptr to same formula
     CNFFormula(const CNFFormula& other) : formula(other.formula), variables(other.variables) { }
 
@@ -128,16 +124,16 @@ class CNFFormula {
         if (clause->size() > 0) {
             // remove redundant literals
             std::sort(clause->begin(), clause->end());
-            clause->erase(std::unique(clause->begin(), clause->end()), clause->end());
-            // skip tautologies
-            bool tautology = clause->end() != std::unique(clause->begin(), clause->end(), [](Lit l1, Lit l2) {
-                return l1.var() == l2.var();
-            });
-            if (tautology) {
-                delete clause;
-                return;
+            for (auto it = clause->begin(), jt = clause->begin()+1; jt != clause->end(); ++jt) {
+                if (*it != *jt) {  // unique
+                    if (it->var() == jt->var()) {
+                        delete clause;
+                        return;  // no tautologies
+                    }
+                    ++it;
+                    *it = *jt;
+                }
             }
-            // record maximal variable
             variables = std::max(variables, (unsigned int)clause->back().var());
         }
         formula->push_back(clause);

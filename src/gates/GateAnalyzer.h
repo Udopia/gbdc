@@ -38,6 +38,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/gates/OccurrenceList.h"
 
 
+// T = BlockList has better root-selection heuristic but is slower in general
 template<class T = OccurrenceList>
 class GateAnalyzer {
     void* S;  // solver
@@ -104,15 +105,23 @@ class GateAnalyzer {
         std::vector<Lit> frontier { roots.begin(), roots.end() };
         while (!frontier.empty()) {  // breadth_ first search is important here
             candidates.swap(frontier);
-            // visit each candidate output only once per pass:
-            candidates.erase(std::unique(candidates.begin(), candidates.end()), candidates.end());
             for (Lit candidate : candidates) {
                 if (isGate(candidate)) {
-                    unsigned middle = frontier.size();
-                    frontier.insert(frontier.end(), gate_formula.getGate(candidate).inp.begin(),
-                        gate_formula.getGate(candidate).inp.end());
-                    // requires that gate.inp is sorted
-                    std::inplace_merge(frontier.begin(), frontier.begin() + middle, frontier.end());
+                    Gate& gate = gate_formula.getGate(candidate);
+                    // keep frontier unique
+                    unsigned pos = 0;
+                    for (auto it = gate.inp.begin(); it != gate.inp.end(); ++it) {  // gate.inp must be sorted ascendingly
+                        while (pos < frontier.size() && frontier[pos] < *it) {
+                            ++pos;
+                        }
+                        if (pos == frontier.size()) {
+                            frontier.insert(frontier.end(), it, gate.inp.end());
+                            break;
+                        } else if (frontier[pos] > *it) {
+                            frontier.insert(frontier.begin() + pos, *it);
+                        }
+                        ++pos;
+                    }
                 }
             }
             candidates.clear();

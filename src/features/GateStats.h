@@ -57,12 +57,10 @@ class GateStats {
         GateFormula gates = analyzer.getGateFormula();
         n_gates = gates.nGates();
         n_roots = gates.nRoots();
-        gates.normalizeRoots();
-        ++n_vars;
         levels.resize(n_vars, 0);
         // BFS for level determination
         unsigned level = 0;
-        std::vector<Lit> current({ gates.getRoot() });
+        std::vector<Lit> current = gates.getRoots();
         std::vector<Lit> next;
         while (!current.empty()) {
             ++level;

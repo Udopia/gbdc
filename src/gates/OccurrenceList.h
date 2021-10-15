@@ -32,6 +32,7 @@ class OccurrenceList {
 
     std::vector<For> index;
     std::vector<Cl*> unitc;
+    Lit max_literal;
 
 #define CLAUSES_ARE_SORTED
 #ifdef CLAUSES_ARE_SORTED
@@ -49,7 +50,7 @@ class OccurrenceList {
 #endif
 
  public:
-    explicit OccurrenceList(const CNFFormula& problem_) : problem(problem_), unitc() {
+    explicit OccurrenceList(const CNFFormula& problem_) : problem(problem_), unitc(), max_literal(problem.nVars(), true) {
         index.resize(2 + 2 * problem.nVars());
 
         for (Cl* clause : problem_) {
@@ -66,24 +67,28 @@ class OccurrenceList {
     ~OccurrenceList() { }
 
     void remove(Var o) {
-        for (Cl* clause : index[Lit(o, false)]) {
+        remove(Lit(o, false));
+        remove(Lit(o, true));
+    }
+
+    void remove(Lit o) {
+        for (Cl* clause : index[o]) {
             for (Lit lit : *clause) {
-                if (lit.var() != o) {
-                    For& h = index[lit];
-                    h.erase(std::remove(h.begin(), h.end(), clause), h.end());
+                if (lit != o) {
+                    // assert(std::find(index[lit].begin(), index[lit].end(), clause) != index[lit].end());
+                    auto it = index[lit].begin();
+                    while (*it != clause && it != index[lit].end()) {
+                        ++it;
+                    }
+                    while (it+1 < index[lit].end()) {
+                        *it = *(it+1);
+                        ++it;
+                    }
+                    index[lit].erase(index[lit].end()-1, index[lit].end());
                 }
             }
         }
-        index[Lit(o, false)].clear();
-        for (Cl* clause : index[Lit(o, true)]) {
-            for (Lit lit : *clause) {
-                if (lit.var() != o) {
-                    For& h = index[lit];
-                    h.erase(std::remove(h.begin(), h.end(), clause), h.end());
-                }
-            }
-        }
-        index[Lit(o, true)].clear();
+        index[o].clear();
     }
 
     inline const For& operator[] (size_t o) const {
@@ -111,33 +116,12 @@ class OccurrenceList {
         if (unitc.size() > 0) {
             std::swap(result, unitc);
         } else {
-            Lit lit = getMinimallyUnblockedLiteral();
-            if (lit != lit_Undef) {
-                result = stripUnblockedClauses(lit);
+            while (max_literal > 0 && index[max_literal].size() == 0) {
+                --max_literal;
             }
-        }
-
-        return result;
-    }
-
-    Lit getMinimallyUnblockedLiteral() {
-        for (int v = problem.nVars(); v > 0; v--) {
-            for (Lit lit : { Lit(v, true), Lit(v, false) }) {
-                if (index[lit].size() > 0) {
-                    return lit;
-                }
-            }
-        }
-        return lit_Undef;
-    }
-
-    For stripUnblockedClauses(Lit o) {
-        For result { index[o].begin(), index[o].end() };
-
-        for (Cl* clause : result) {
-            for (Lit lit : *clause) {
-                For& h = index[lit];
-                h.erase(std::remove(h.begin(), h.end(), clause), h.end());
+            if (max_literal > 0) {
+                result.swap(index[max_literal]);
+                remove(max_literal);
             }
         }
 

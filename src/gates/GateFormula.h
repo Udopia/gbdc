@@ -98,11 +98,27 @@ class GateFormula {
         gate.bwd.insert(gate.bwd.end(), bwd.begin(), bwd.end());
         gate.notMono = !isNestedMonotonic(o);
         gate.type = type;
-        for (Cl* c : fwd) for (Lit lit : *c) {
-            if (lit != ~o) gate.inp.push_back(lit);
+        for (Cl* clause : fwd) {
+            unsigned pos = 0;  // reset insert position for each clause
+            for (auto it = clause->begin(); it != clause->end(); ++it) {
+                if (*it != ~o) {
+                    while (pos < gate.inp.size() && gate.inp[pos] < *it) {
+                        ++pos;
+                    }
+                    if (pos == gate.inp.size()) {
+                        if (*it < o) {
+                            gate.inp.insert(gate.inp.end(), *it);
+                        } else {
+                            gate.inp.insert(gate.inp.end(), it, clause->end());
+                            break;
+                        }
+                    } else if (gate.inp[pos] > *it) {
+                        gate.inp.insert(gate.inp.begin() + pos, *it);
+                    }
+                    ++pos;
+                }
+            }
         }
-        sort(gate.inp.begin(), gate.inp.end());
-        gate.inp.erase(std::unique(gate.inp.begin(), gate.inp.end()), gate.inp.end());
         for (Lit lit : gate.inp) {
             inputs[lit] = true;
             direct[lit] = true;
@@ -156,6 +172,15 @@ class GateFormula {
         return artificialRoot;
     }
 
+    std::vector<Lit> getRoots() {
+        std::vector<Lit> result;
+        for (Cl* root : roots) {
+            result.insert(result.end(), root->begin(), root->end());
+        }
+        return result;
+    }
+
+    // for normalized or single-root problems only
     Lit getRoot() const {
         assert(roots.size() == 1 && roots.front()->size() == 1);
         // std::cout << roots.size() << " " << roots.front()->size();

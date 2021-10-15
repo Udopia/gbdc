@@ -127,6 +127,16 @@ struct Lit {
     inline bool operator< (Lit p) const {
         return x < p.x;
     }  // p and ~p will be adjacent
+
+    inline Lit& operator++ () {
+        ++x;
+        return *this;
+    }
+
+    inline Lit& operator-- () {
+        --x;
+        return *this;
+    }
 };
 
 inline Var operator"" _V(unsigned long long n) {
