@@ -16,6 +16,8 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
+#ifndef SRC_TRANSFORM_INDEPENDENTSET_H_
+#define SRC_TRANSFORM_INDEPENDENTSET_H_
 
 #include <string>
 #include <vector>
@@ -24,42 +26,46 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 void generate_independent_set_problem(std::string filename) {
     CNFFormula F;
-    std::vector<std::vector<unsigned>> occ;
+    std::vector<std::vector<unsigned>> literal2nodes;
     F.readDimacsFromFile(filename.c_str());
-    occ.resize(2 * F.nVars() + 2);
+    literal2nodes.resize(2 * F.nVars() + 2);
     unsigned nNodes = 0;
     unsigned nEdges = 0;
-    unsigned node = 0;
+    unsigned nodeId = 1;
     for (Cl* clause : F) {
-        nNodes += clause->size();
-        nEdges += (clause->size() * (clause->size() - 1)) / 2;
+        nNodes += clause->size();  // one node per literal occurence
+        nEdges += (clause->size() * (clause->size() - 1)) / 2;  // number of edges in clique
         for (unsigned i = 0; i < clause->size(); i++) {
-            unsigned var1 = node + i + 1;
-            occ[(*clause)[i]].push_back(var1);
+            literal2nodes[(*clause)[i]].push_back(nodeId + i);  // remember nodeids of literals
         }
-        node += clause->size();
+        nodeId += clause->size();
     }
     for (unsigned i = 1; i <= F.nVars(); i++) {
-        nEdges += occ[Lit(Var(i), false)].size() * occ[Lit(Var(i), true)].size();
+        // count edges between nodes for opposite literals
+        nEdges += literal2nodes[Lit(Var(i), false)].size() * literal2nodes[Lit(Var(i), true)].size();
     }
     std::cout << "c satisfiable iff independent set size is " << F.nClauses() << std::endl;
     std::cout << "p edge " << nNodes << " " << nEdges << std::endl;
-    node = 0;
+    nodeId = 0;
+    // generate cliques
     for (Cl* clause : F) {
         for (unsigned i = 0; i < clause->size(); i++) {
-            unsigned var1 = node + i + 1;
+            unsigned var1 = nodeId + i;
             for (unsigned j = i; j < clause->size(); j++) {
-                unsigned var2 = node + j + 1;
+                unsigned var2 = nodeId + j;
                 std::cout << var1 << " " << var2 << " 0" << std::endl;
             }
         }
-        node += clause->size();
+        nodeId += clause->size();
     }
+    // generate edges between nodes for opposite literals
     for (unsigned i = 1; i <= F.nVars(); i++) {
-        for (unsigned node1 : occ[Lit(Var(i), false)]) {
-            for (unsigned node2 : occ[Lit(Var(i), true)]) {
+        for (unsigned node1 : literal2nodes[Lit(Var(i), false)]) {
+            for (unsigned node2 : literal2nodes[Lit(Var(i), true)]) {
                 std::cout << node1 << " " << node2 << " 0" << std::endl;
             }
         }
     }
 }
+
+#endif  // SRC_TRANSFORM_INDEPENDENTSET_H_
