@@ -76,6 +76,15 @@ struct Var {
     }
 };
 
+namespace std {
+template<>
+struct hash<Var> {
+    inline size_t operator()(const Var& var) const {
+        return hash<unsigned>{}(var.id);
+    }
+};
+}
+
 struct Lit {
     unsigned x;
 
@@ -94,6 +103,14 @@ struct Lit {
 
     inline Var var() const {
         return Var(x >> 1);
+    }
+
+    inline Lit positive() const {
+        return Lit(var(), false);
+    }
+
+    inline Lit negative() const {
+        return Lit(var(), true);
     }
 
     inline int toDimacs() {
@@ -138,6 +155,15 @@ struct Lit {
         return *this;
     }
 };
+
+namespace std {
+template<>
+struct hash<Lit> {
+    inline size_t operator()(const Lit& lit) const {
+        return hash<unsigned>{}(lit.x);
+    }
+};
+}
 
 inline Var operator"" _V(unsigned long long n) {
     return Var((uint32_t)n);

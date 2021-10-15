@@ -25,7 +25,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <memory>
 #include <cmath>
 #include <vector>
-#include <set>
+#include <unordered_set>
 #include <climits>
 
 #include "lib/ipasir.h"
@@ -39,6 +39,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 
 // T = BlockList has better root-selection heuristic but is slower in general
+// BlockList can not be used atm as I changed the interface in favor of more hard wired code,
+// i.e., specifically the "swap from index" in gate_formula.addGate
 template<class T = OccurrenceList>
 class GateAnalyzer {
     void* S;  // solver
@@ -86,7 +88,7 @@ class GateAnalyzer {
             root_clauses = index.estimateRoots();
         }
 
-        std::set<Cl*> remainder;
+        std::unordered_set<Cl*> remainder;
         for (size_t lit = 0; lit < index.size(); lit++) {
             remainder.insert(index[lit].begin(), index[lit].end());
         }
@@ -101,50 +103,61 @@ class GateAnalyzer {
      */
     void gate_recognition(std::vector<Lit> roots) {
         // std::cerr << "c Starting gate-recognition with roots: " << roots << std::endl;
-        std::vector<Lit> candidates;
-        std::vector<Lit> frontier { roots.begin(), roots.end() };
-        while (!frontier.empty()) {  // breadth_ first search is important here
-            candidates.swap(frontier);
+        std::vector<Lit> candidates { roots.begin(), roots.end() };
+        std::unordered_set<Lit> frontier;
+        while (!candidates.empty()) {  // breadth_ first search is important here
             for (Lit candidate : candidates) {
-                if (isGate(candidate)) {
+                if (checkAddGate(candidate)) {
                     Gate& gate = gate_formula.getGate(candidate);
-                    // keep frontier unique
-                    unsigned pos = 0;
-                    for (auto it = gate.inp.begin(); it != gate.inp.end(); ++it) {  // gate.inp must be sorted ascendingly
-                        while (pos < frontier.size() && frontier[pos] < *it) {
-                            ++pos;
-                        }
-                        if (pos == frontier.size()) {
-                            frontier.insert(frontier.end(), it, gate.inp.end());
-                            break;
-                        } else if (frontier[pos] > *it) {
-                            frontier.insert(frontier.begin() + pos, *it);
-                        }
-                        ++pos;
-                    }
+                    index.remove(gate.fwd);
+                    index.remove(gate.bwd);
+                    frontier.insert(gate.inp.begin(), gate.inp.end());
                 }
             }
+            // std::cout << "frontier size " << frontier.size() << std::endl;
             candidates.clear();
+            candidates.insert(candidates.end(), frontier.begin(), frontier.end());
+            frontier.clear();
         }
     }
 
     /**
-     * @brief Test if index contains a gate definition for candidate output literal 'out'
-     * 
-     * @param out candidate output literal
-     * @param pat use gate patterns
-     * @param sem use semantic recognition
-     * @return true 
-     * @return false 
+     * @brief checks if index contains a gate definition for the given candidate output and adds gate if positive
+     * @return true if clauses encode gate, false otherwise
      */
-    bool isGate(Lit out) {
+    bool checkAddGate(Lit out) {
+        // std::cout << "check add gate " << out << std::endl;
         if (index[~out].size() > 0 && index.isBlockedSet(out)) {
             GateType type = NONE;
+
+            // collect unique input literals of potential gate
+            std::vector<Lit> inp;
+            for (Cl* clause : index[~out]) {
+                unsigned pos = 0;  // reset insert position for each clause
+                for (auto it = clause->begin(); it != clause->end(); ++it) {
+                    if (*it != ~out) {
+                        while (pos < inp.size() && inp[pos] < *it) {
+                            ++pos;
+                        }
+                        if (pos == inp.size()) {
+                            // append all except for ~out and break
+                            for (; *it < ~out; ++it) {
+                                inp.insert(inp.end(), *it);
+                            }
+                            inp.insert(inp.end(), ++it, clause->end());
+                            break;
+                        } else if (inp[pos] > *it) {
+                            inp.insert(inp.begin() + pos, *it);
+                        }  // else: do not insert duplicate
+                        ++pos;
+                    }
+                }
+            }
 
             if (gate_formula.isNestedMonotonic(out)) {
                 type = MONO;
             } else if (patterns) {
-                type = fPattern(out, index[~out], index[out]);
+                type = fPattern(out, index[~out], index[out], inp);
             }
 
             if (type == NONE && semantic) {
@@ -152,8 +165,7 @@ class GateAnalyzer {
             }
 
             if (type != NONE) {
-                gate_formula.addGate(out, index[~out], index[out], type);
-                index.remove(out.var());
+                gate_formula.addGate(type, out, index[~out], index[out], inp);
                 return true;
             }
         }
@@ -162,12 +174,18 @@ class GateAnalyzer {
 
     // clause patterns of full encoding
     // precondition: fwd blocks bwd on output literal o
-    GateType fPattern(Lit o, const For& fwd, const For& bwd) {
+    GateType fPattern(Lit o, const For& fwd, const For& bwd, std::vector<Lit> inp) {
         // check if fwd and bwd constrain exactly the same inputs
-        std::set<Var> inp, bwd_inp;
-        for (Cl* c : fwd) for (Lit l : *c) if (l != ~o) inp.insert(l.var());
-        for (Cl* c : bwd) for (Lit l : *c) if (l != o) bwd_inp.insert(l.var());
-        if (inp != bwd_inp) {
+        std::unordered_set<Var> fwd_vars;
+        std::unordered_set<Var> bwd_vars;
+        for (Lit l : inp) fwd_vars.insert(l.var());
+        for (Cl* c : bwd) for (Lit l : *c) if (l != o) {
+            bool inserted = std::get<1>(bwd_vars.insert(l.var()));
+            if (inserted && !fwd_vars.count(l.var())) {  // ensure: bwd_vars \subseteq fwd_vars
+                return NONE;
+            }
+        }
+        if (fwd_vars.size() > bwd_vars.size()) {  // ensure: fwd_vars \subseteq bwd_vars
             return NONE;
         }
         // detect or gates
@@ -178,46 +196,38 @@ class GateAnalyzer {
         if (bwd.size() == 1 && fixedClauseSize(fwd, 2)) {
             return AND;
         }
+        // under the preconditions (blocked set, same inputs) the follwing holds:
         // 2^n blocked clauses of size n+1 represent all input combinations with an output literal
-        if (fwd.size() + bwd.size() == pow(2, inp.size())) {
-            if (fixedClauseSize(fwd, inp.size()+1) && fixedClauseSize(bwd, inp.size()+1)) {
-                if (inp.size() == 1) {
+        if (fwd.size() + bwd.size() == std::uint64_t(1) << fwd_vars.size()) {
+            if (fixedClauseSize(fwd, fwd_vars.size()+1) && fixedClauseSize(bwd, fwd_vars.size()+1)) {
+                if (fwd_vars.size() == 1) {
                     return TRIV;
                 }
-                if (inp.size() == 2 && fwd.size() == bwd.size()) {
+                if (fwd_vars.size() == 2 && fwd.size() == bwd.size()) {
                     return EQIV;
                 }
-                return FULL;  // requires absence of redundancy
+                return FULL;  // requires absence of redundancy (taken care of in cnfformula; except checks for duplicate clauses!)
             }
         }
         return NONE;
     }
 
     GateType fSemantic(Lit o, const For& fwd, const For& bwd) {
-        CNFFormula constraint;
-        Cl clause;
         for (const For& f : { fwd, bwd }) {
             for (Cl* cl : f) {
-                for (Lit l : *cl) {
-                    if (l.var() != o.var()) {
-                        clause.push_back(l);
+                for (Lit lit : *cl) {
+                    if (lit.var() != o.var()) {
+                        ipasir_add(S, lit.toDimacs());
                     } else {
-                        clause.push_back(Lit(o.var(), false));
+                        ipasir_add(S, lit.positive().toDimacs());
                     }
                 }
-                constraint.readClause(clause.begin(), clause.end());
-                clause.clear();
+                ipasir_add(S, 0);
             }
         }
-        for (Cl* clause : constraint) {
-            for (Lit lit : *clause) {
-                ipasir_add(S, lit.toDimacs());
-            }
-            ipasir_add(S, 0);
-        }
-        ipasir_assume(S, Lit(o.var(), true).toDimacs());
+        ipasir_assume(S, o.negative().toDimacs());
         int result = ipasir_solve(S);
-        ipasir_add(S, Lit(o.var(), false).toDimacs());
+        ipasir_add(S, o.positive().toDimacs());
         return result == 20 ? GENERIC : NONE;
     }
 

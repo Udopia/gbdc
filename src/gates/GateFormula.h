@@ -42,11 +42,11 @@ enum GateType {
 
 
 struct Gate {
+    GateType type = NONE;
     Lit out = lit_Undef;
     For fwd, bwd;
     bool notMono = false;
     std::vector<Lit> inp;
-    GateType type = NONE;
 
     inline bool isDefined() const { return out != lit_Undef; }
     inline bool hasNonMonotonicParent() const { return notMono; }
@@ -91,34 +91,15 @@ class GateFormula {
         return !inputs[lit] || !inputs[~lit];
     }
 
-    void addGate(Lit o, const For& fwd, const For& bwd, GateType type) {
+    void addGate(GateType type, Lit o, For fwd, For bwd, std::vector<Lit> inp) {
         Gate& gate = gates[o.var()];
-        gate.out = o;
-        gate.fwd.insert(gate.fwd.end(), fwd.begin(), fwd.end());
-        gate.bwd.insert(gate.bwd.end(), bwd.begin(), bwd.end());
-        gate.notMono = !isNestedMonotonic(o);
         gate.type = type;
-        for (Cl* clause : fwd) {
-            unsigned pos = 0;  // reset insert position for each clause
-            for (auto it = clause->begin(); it != clause->end(); ++it) {
-                if (*it != ~o) {
-                    while (pos < gate.inp.size() && gate.inp[pos] < *it) {
-                        ++pos;
-                    }
-                    if (pos == gate.inp.size()) {
-                        if (*it < o) {
-                            gate.inp.insert(gate.inp.end(), *it);
-                        } else {
-                            gate.inp.insert(gate.inp.end(), it, clause->end());
-                            break;
-                        }
-                    } else if (gate.inp[pos] > *it) {
-                        gate.inp.insert(gate.inp.begin() + pos, *it);
-                    }
-                    ++pos;
-                }
-            }
-        }
+        gate.out = o;
+        gate.fwd.swap(fwd);
+        gate.bwd.swap(bwd);
+        gate.notMono = !isNestedMonotonic(o);
+        gate.inp.swap(inp);
+
         for (Lit lit : gate.inp) {
             inputs[lit] = true;
             direct[lit] = true;

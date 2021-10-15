@@ -66,29 +66,21 @@ class OccurrenceList {
 
     ~OccurrenceList() { }
 
-    void remove(Var o) {
-        remove(Lit(o, false));
-        remove(Lit(o, true));
-    }
-
-    void remove(Lit o) {
-        for (Cl* clause : index[o]) {
-            for (Lit lit : *clause) {
-                if (lit != o) {
-                    // assert(std::find(index[lit].begin(), index[lit].end(), clause) != index[lit].end());
-                    auto it = index[lit].begin();
-                    while (*it != clause && it != index[lit].end()) {
-                        ++it;
-                    }
-                    while (it+1 < index[lit].end()) {
-                        *it = *(it+1);
-                        ++it;
-                    }
-                    index[lit].erase(index[lit].end()-1, index[lit].end());
+    void remove(const For& list) {
+        for (Cl* clause : list) for (Lit lit : *clause) {
+            if (!index[lit].empty()) {
+                // assert(std::find(index[lit].begin(), index[lit].end(), clause) != index[lit].end());
+                auto it = index[lit].begin();
+                while (*it != clause && it != index[lit].end()) {
+                    ++it;
                 }
+                while (it+1 < index[lit].end()) {
+                    *it = *(it+1);
+                    ++it;
+                }
+                index[lit].erase(index[lit].end()-1, index[lit].end());
             }
         }
-        index[o].clear();
     }
 
     inline const For& operator[] (size_t o) const {
@@ -121,7 +113,7 @@ class OccurrenceList {
             }
             if (max_literal > 0) {
                 result.swap(index[max_literal]);
-                remove(max_literal);
+                remove(result);
             }
         }
 
