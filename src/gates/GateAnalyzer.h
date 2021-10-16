@@ -136,7 +136,7 @@ class GateAnalyzer {
                 unsigned pos = 0;  // reset insert position for each clause
                 for (auto it = clause->begin(); it != clause->end(); ++it) {
                     if (*it != ~out) {
-                        while (pos < inp.size() && inp[pos] < *it) {
+                        while (pos < inp.size() && inp[pos] < *it) {  // clauses are sorted ;)
                             ++pos;
                         }
                         if (pos == inp.size()) {
@@ -196,8 +196,9 @@ class GateAnalyzer {
         if (bwd.size() == 1 && fixedClauseSize(fwd, 2)) {
             return AND;
         }
-        // under the preconditions (blocked set, same inputs) the follwing holds:
+        // under the preconditions (blocked set, same inputs, absence of redundancy) the follwing holds:
         // 2^n blocked clauses of size n+1 represent all input combinations with an output literal
+        // Note that CNFFormula's input sanitizer takes care of inner-clause redundency but does not check for duplicate clauses!
         if (fwd.size() + bwd.size() == std::uint64_t(1) << fwd_vars.size()) {
             if (fixedClauseSize(fwd, fwd_vars.size()+1) && fixedClauseSize(bwd, fwd_vars.size()+1)) {
                 if (fwd_vars.size() == 1) {
@@ -206,7 +207,7 @@ class GateAnalyzer {
                 if (fwd_vars.size() == 2 && fwd.size() == bwd.size()) {
                     return EQIV;
                 }
-                return FULL;  // requires absence of redundancy (taken care of in cnfformula; except checks for duplicate clauses!)
+                return FULL;
             }
         }
         return NONE;
