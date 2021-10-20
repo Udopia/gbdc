@@ -9,7 +9,7 @@ CNF Tools provide the command-line program `cnftools` and the python module `gdb
 
 Input to all tools is a SAT instances given as a DIMACS CNF file which can be given in a variety of compressed formats (supported by libarchive). The following tools are provided:
 
-* GBDHash:
+* GBD Hash:
 > Calculates the identifier for the given instance which is used in [GBD Tools](https://pypi.org/project/gbd-tools/) for data organization. GBD Tools themselves use the provided python module `gdbc` if installed (with priority over its own fallback implementation in Python).
 * Feature Extractors:
     * Base Features: The features cover degree distributions of well-known graph representations of a given instance and many more (see code for details).
@@ -30,7 +30,7 @@ Input to all tools is a SAT instances given as a DIMACS CNF file which can be gi
 
 * The tool `gbdhash` uses the [MD5 Hash implementation of Micheal Flyod](https://github.com/CommanderBubble/MD5). This is under MIT licence and resides in CNF Tools `lib` folder.
 
-* Gate feature extraction uses a SAT Solver via the [IPSIR Interface](https://github.com/biotomas/ipasir). For this application, CNF Tools use the SAT Solver [CaDiCaL (by Armin Biere)](http://fmv.jku.at/cadical/) which underlies the MIT License.
+* Gate feature extraction uses a SAT Solver via the [IPASIR Interface](https://github.com/biotomas/ipasir). For this application, CNF Tools use the SAT Solver [CaDiCaL (by Armin Biere)](http://fmv.jku.at/cadical/) which underlies the MIT License.
 
 
 ## Publications

@@ -31,7 +31,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "lib/ipasir.h"
 
 #include "src/util/CNFFormula.h"
-#include "src/util/Runtime.h"
+#include "src/util/ResourceLimits.h"
 
 #include "src/gates/GateFormula.h"
 #include "src/gates/BlockList.h"
@@ -45,7 +45,9 @@ template<class T = OccurrenceList>
 class GateAnalyzer {
     void* S;  // solver
 
-    const CNFFormula& problem;
+    const CNFFormula& formula_;
+    const ResourceLimits& limits_;
+
     GateFormula gate_formula;
 
     T index;  // occurence-list
@@ -53,12 +55,13 @@ class GateAnalyzer {
     // analyzer configuration:
     bool patterns = false;
     bool semantic = false;
-    unsigned int max = 1;
+    unsigned max_ = 1;
+    unsigned verbose_ = 0;
 
  public:
-    GateAnalyzer(const CNFFormula& problem_, bool patterns_, bool semantic_, int tries_) :
-     problem(problem_), gate_formula(problem_.nVars()), index(problem_),
-     patterns(patterns_), semantic(semantic_), max(tries_) {
+    GateAnalyzer(const CNFFormula& formula, const ResourceLimits& limits, bool patterns_, bool semantic_, unsigned max, unsigned verbose = 0) :
+     formula_(formula), limits_(limits), gate_formula(formula.nVars(), verbose), index(formula),
+     patterns(patterns_), semantic(semantic_), max_(max), verbose_(verbose) {
         if (semantic) S = ipasir_init();
     }
 
@@ -76,7 +79,7 @@ class GateAnalyzer {
     void analyze() {
         std::vector<Cl*> root_clauses = index.estimateRoots();
 
-        for (unsigned count = 0; count < max && !root_clauses.empty(); count++) {
+        for (unsigned count = 0; count < max_ && !root_clauses.empty(); count++) {
             std::vector<Lit> candidates;
             for (Cl* clause : root_clauses) {
                 gate_formula.addRoot(clause);
@@ -106,6 +109,8 @@ class GateAnalyzer {
         std::vector<Lit> candidates { roots.begin(), roots.end() };
         std::unordered_set<Lit> frontier;
         while (!candidates.empty()) {  // breadth_ first search is important here
+            // std::cout << "Number of Candidates: " << candidates.size() << std::endl;
+            limits_.within_limits_or_throw();
             for (Lit candidate : candidates) {
                 if (checkAddGate(candidate)) {
                     Gate& gate = gate_formula.getGate(candidate);
@@ -121,6 +126,49 @@ class GateAnalyzer {
         }
     }
 
+    std::vector<Lit> getInputLiterals(Lit output, const For& clauses) {
+        std::vector<Lit> inp;
+        for (Cl* clause : clauses) {
+            unsigned pos = 0;  // reset insert position for each clause
+            for (auto it = clause->begin(); it != clause->end(); ++it) {
+                if (*it != output) {
+                    while (pos < inp.size() && inp[pos] < *it) {  // clauses are sorted ;)
+                        ++pos;
+                    }
+                    if (pos == inp.size()) {
+                        // append all except for ~out and break
+                        for (; *it < output; ++it) {
+                            inp.insert(inp.end(), *it);
+                        }
+                        inp.insert(inp.end(), ++it, clause->end());
+                        break;
+                    } else if (inp[pos] > *it) {
+                        inp.insert(inp.begin() + pos, *it);
+                    }  // else: do not insert duplicate
+                    ++pos;
+                }
+            }
+        }
+        return inp;
+    }
+
+    unsigned constrainSameInputVariables(Lit o, const For& fwd, const For& bwd) {
+        // check if fwd and bwd constrain exactly the same inputs, return 0 on failure, otherwise return number of input variables
+        std::unordered_set<Var> fwd_vars;
+        std::unordered_set<Var> bwd_vars;
+        for (Cl* c : fwd) for (Lit l : *c) if (l != ~o) fwd_vars.insert(l.var());
+        for (Cl* c : bwd) for (Lit l : *c) if (l != o) {
+            bool inserted = std::get<1>(bwd_vars.insert(l.var()));
+            if (inserted && !fwd_vars.count(l.var())) {  // ensure: bwd_vars \subseteq fwd_vars
+                return 0;
+            }
+        }
+        if (fwd_vars.size() > bwd_vars.size()) {  // ensure: fwd_vars \subseteq bwd_vars
+            return 0;
+        }
+        return fwd_vars.size();
+    }
+
     /**
      * @brief checks if index contains a gate definition for the given candidate output and adds gate if positive
      * @return true if clauses encode gate, false otherwise
@@ -130,42 +178,23 @@ class GateAnalyzer {
         if (index[~out].size() > 0 && index.isBlockedSet(out)) {
             GateType type = NONE;
 
-            // collect unique input literals of potential gate
-            std::vector<Lit> inp;
-            for (Cl* clause : index[~out]) {
-                unsigned pos = 0;  // reset insert position for each clause
-                for (auto it = clause->begin(); it != clause->end(); ++it) {
-                    if (*it != ~out) {
-                        while (pos < inp.size() && inp[pos] < *it) {  // clauses are sorted ;)
-                            ++pos;
-                        }
-                        if (pos == inp.size()) {
-                            // append all except for ~out and break
-                            for (; *it < ~out; ++it) {
-                                inp.insert(inp.end(), *it);
-                            }
-                            inp.insert(inp.end(), ++it, clause->end());
-                            break;
-                        } else if (inp[pos] > *it) {
-                            inp.insert(inp.begin() + pos, *it);
-                        }  // else: do not insert duplicate
-                        ++pos;
-                    }
-                }
-            }
-
             if (gate_formula.isNestedMonotonic(out)) {
                 type = MONO;
             } else if (patterns) {
-                type = fPattern(out, index[~out], index[out], inp);
+                unsigned input_size = constrainSameInputVariables(out, index[~out], index[out]);
+                if (input_size > 0) {
+                    type = fPattern(out, index[~out], index[out], input_size);
+                }
             }
 
             if (type == NONE && semantic) {
-                type = fSemantic(out, index[~out], index[out]);
+                if (index[~out].size() > 1 && index[out].size() > 1) {  // case excluded by patterns
+                    type = fSemantic(out, index[~out], index[out]);
+                }
             }
 
             if (type != NONE) {
-                gate_formula.addGate(type, out, index[~out], index[out], inp);
+                gate_formula.addGate(type, out, index[~out], index[out], getInputLiterals(~out, index[~out]));
                 return true;
             }
         }
@@ -174,22 +203,11 @@ class GateAnalyzer {
 
     // clause patterns of full encoding
     // precondition: fwd blocks bwd on output literal o
-    GateType fPattern(Lit o, const For& fwd, const For& bwd, std::vector<Lit> inp) {
-        // check if fwd and bwd constrain exactly the same inputs
-        std::unordered_set<Var> fwd_vars;
-        std::unordered_set<Var> bwd_vars;
-        for (Lit l : inp) fwd_vars.insert(l.var());
-        for (Cl* c : bwd) for (Lit l : *c) if (l != o) {
-            bool inserted = std::get<1>(bwd_vars.insert(l.var()));
-            if (inserted && !fwd_vars.count(l.var())) {  // ensure: bwd_vars \subseteq fwd_vars
-                return NONE;
-            }
-        }
-        if (fwd_vars.size() > bwd_vars.size()) {  // ensure: fwd_vars \subseteq bwd_vars
-            return NONE;
-        }
+    // fwd and bwd constrain same input variables
+    GateType fPattern(Lit o, const For& fwd, const For& bwd, unsigned input_size) {
         // detect or gates
         if (fwd.size() == 1 && fixedClauseSize(bwd, 2)) {
+            if (input_size == 1) return TRIV;
             return OR;
         }
         // detect and gates
@@ -199,14 +217,9 @@ class GateAnalyzer {
         // under the preconditions (blocked set, same inputs, absence of redundancy) the follwing holds:
         // 2^n blocked clauses of size n+1 represent all input combinations with an output literal
         // Note that CNFFormula's input sanitizer takes care of inner-clause redundency but does not check for duplicate clauses!
-        if (fwd.size() + bwd.size() == std::uint64_t(1) << fwd_vars.size()) {
-            if (fixedClauseSize(fwd, fwd_vars.size()+1) && fixedClauseSize(bwd, fwd_vars.size()+1)) {
-                if (fwd_vars.size() == 1) {
-                    return TRIV;
-                }
-                if (fwd_vars.size() == 2 && fwd.size() == bwd.size()) {
-                    return EQIV;
-                }
+        if (fwd.size() + bwd.size() == std::uint64_t(1) << input_size) {
+            if (fixedClauseSize(fwd, input_size+1) && fixedClauseSize(bwd, input_size+1)) {
+                if (input_size == 2 && fwd.size() == bwd.size()) return EQIV;
                 return FULL;
             }
         }
@@ -214,6 +227,9 @@ class GateAnalyzer {
     }
 
     GateType fSemantic(Lit o, const For& fwd, const For& bwd) {
+        // std::cout << "Semantic check for " << fwd.size() + bwd.size() << " clauses" << std::endl;
+        // std::cout << fwd << std::endl;
+        // std::cout << bwd << std::endl;
         for (const For& f : { fwd, bwd }) {
             for (Cl* cl : f) {
                 for (Lit lit : *cl) {

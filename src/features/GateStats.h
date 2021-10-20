@@ -28,31 +28,29 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <string>
 
 #include "src/util/SolverTypes.h"
-#include "src/util/Runtime.h"
+#include "src/util/ResourceLimits.h"
+
 #include "src/gates/GateFormula.h"
 #include "src/gates/GateAnalyzer.h"
 
 #include "src/features/Util.h"
 
 class GateStats {
-    CNFFormula formula_;
-    Runtime runtime;
+    const CNFFormula& formula_;
+    const ResourceLimits& limits_;
+    std::vector<float> record;
 
  public:
     unsigned n_vars, n_gates, n_roots;
     unsigned n_none, n_generic, n_mono, n_and, n_or, n_triv, n_equiv, n_full;
 
-    std::vector<unsigned> levels, levels_none, levels_generic, levels_mono, levels_and, levels_or, levels_triv, levels_equiv, levels_full;
+    explicit GateStats(const CNFFormula& formula, const ResourceLimits& limits) :
+     formula_(formula), limits_(limits), record(), n_vars(formula.nVars()), n_gates(), n_roots(),
+     n_none(0), n_generic(0), n_mono(0), n_and(0), n_or(0), n_triv(0), n_equiv(0), n_full(0) { }
 
-    explicit GateStats(const CNFFormula& formula) :
-     formula_(formula), n_vars(formula.nVars()), n_gates(), n_roots(),
-     n_none(0), n_generic(0), n_mono(0), n_and(0), n_or(0), n_triv(0), n_equiv(0), n_full(0),
-     levels(), levels_none(), levels_generic(), levels_mono(), levels_and(), levels_or(), levels_triv(), levels_equiv(), levels_full() {
-    }
-
-    void analyze(unsigned repeat) {
-        runtime.start();
-        GateAnalyzer<> analyzer(formula_, true, true, repeat);
+    void analyze(unsigned repeat, unsigned verbose) {
+        std::vector<unsigned> levels, levels_none, levels_generic, levels_mono, levels_and, levels_or, levels_triv, levels_equiv, levels_full;
+        GateAnalyzer<> analyzer(formula_, limits_, true, true, repeat, verbose);
         analyzer.analyze();
         GateFormula gates = analyzer.getGateFormula();
         n_gates = gates.nGates();
@@ -112,12 +110,6 @@ class GateStats {
                     break;
             }
         }
-        runtime.stop();
-    }
-
-    // Gate Structural Features
-    std::vector<float> GateFeatures() {
-        std::vector<float> record;
         record.push_back(n_vars);
         record.push_back(n_gates);
         record.push_back(n_roots);
@@ -139,7 +131,11 @@ class GateStats {
         push_distribution(&record, levels_triv);
         push_distribution(&record, levels_equiv);
         push_distribution(&record, levels_full);
-        record.push_back(static_cast<float>(runtime.get()));
+        record.push_back(static_cast<float>(limits_.get_runtime()));
+    }
+
+    // Gate Structural Features
+    std::vector<float> GateFeatures() {
         return record;
     }
 

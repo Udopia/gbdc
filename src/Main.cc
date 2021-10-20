@@ -35,9 +35,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 
 int main(int argc, char** argv) {
-    argparse::ArgumentParser program("CNF Tools");
+    argparse::ArgumentParser argparse("CNF Tools");
 
-    program.add_argument("tool").help("Select Tool: solve, gbdhash, normalize, isp, extract, gates")
+    argparse.add_argument("tool").help("Select Tool: solve, gbdhash, normalize, isp, extract, gates")
         .default_value("gbdhash")
         .action([](const std::string& value) {
             static const std::vector<std::string> choices = { "solve", "gbdhash", "normalize", "isp", "extract", "gates" };
@@ -47,25 +47,42 @@ int main(int argc, char** argv) {
             return std::string{ "gbdhash" };
         });
 
-    program.add_argument("file").help("Give Path");
+    argparse.add_argument("file").help("Give Path");
 
-    program.add_argument("-r", "--repeat")
+    argparse.add_argument("-t", "--timeout")
+        .help("Timeout in seconds (default: 0, disabled)")
+        .default_value(0)
+        .scan<'i', int>();
+
+    argparse.add_argument("-m", "--memout")
+        .help("Memout in megabytes (default: 0, disabled)")
+        .default_value(0)
+        .scan<'i', int>();
+
+    argparse.add_argument("-v", "--verbose")
+        .help("Verbosity level (default: 0, disabled)")
+        .default_value(0)
+        .scan<'i', int>();
+
+    argparse.add_argument("-r", "--repeat")
         .help("Give number of root selections for gate recognition")
         .default_value(1)
         .scan<'i', int>();
 
     try {
-        program.parse_args(argc, argv);
+        argparse.parse_args(argc, argv);
     }
     catch (const std::runtime_error& err) {
         std::cout << err.what() << std::endl;
-        std::cout << program;
+        std::cout << argparse;
         exit(0);
     }
 
-    std::string filename = program.get("file");
-    std::string toolname = program.get("tool");
-    unsigned repeat = program.get<int>("repeat");
+    std::string filename = argparse.get("file");
+    std::string toolname = argparse.get("tool");
+    int repeat = argparse.get<int>("repeat");
+    ResourceLimits limits(argparse.get<int>("timeout"), argparse.get<int>("memout"));
+    int verbose = argparse.get<int>("verbose");
 
     std::cerr << "c Running: '" << toolname << " " << filename << std::endl;
 
@@ -78,10 +95,10 @@ int main(int argc, char** argv) {
         std::cerr << "Generating Independent Set Problem " << filename << std::endl;
         generate_independent_set_problem(filename);
     } else if (toolname == "extract") {
-        CNFFormula F;
-        F.readDimacsFromFile(filename.c_str());
+        CNFFormula formula;
+        formula.readDimacsFromFile(filename.c_str());
 
-        CNFStats stats(F);
+        CNFStats stats(formula, limits);
         stats.analyze();
         std::vector<float> record = stats.BaseFeatures();
         std::vector<std::string> names = CNFStats::BaseFeatureNames();
@@ -89,31 +106,16 @@ int main(int argc, char** argv) {
             std::cout << names[i] << "=" << record[i] << std::endl;
         }
     } else if (toolname == "gates") {
-        CNFFormula F;
-        F.readDimacsFromFile(filename.c_str());
-
-        GateStats stats(F);
-        stats.analyze(repeat);
+        CNFFormula formula;
+        formula.readDimacsFromFile(filename.c_str());
+        std::cout << "Finished Reading " << std::endl;
+        GateStats stats(formula, limits);
+        stats.analyze(repeat, verbose);
         std::vector<float> record = stats.GateFeatures();
         std::vector<std::string> names = GateStats::GateFeatureNames();
         for (unsigned i = 0; i < record.size(); i++) {
             std::cout << names[i] << "=" << record[i] << std::endl;
         }
-    } else if (toolname == "solve") {
-        CNFFormula F;
-        F.readDimacsFromFile(filename.c_str());
-
-        std::cerr << "c Intitializing Solver " << ipasir_signature() << std::endl;
-        void* S = ipasir_init();
-        for (Cl* clause : F) {
-            for (Lit lit : *clause) {
-                ipasir_add(S, lit.toDimacs());
-            }
-            ipasir_add(S, 0);
-        }
-        int res = ipasir_solve(S);
-        std::cout << ((res == 10) ? "s SATISFIABLE" : "s UNSATISFIABLE") << std::endl;
-        ipasir_release(S);
     }
 
     return 0;

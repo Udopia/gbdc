@@ -1,5 +1,5 @@
 /*************************************************************************************************
-CNFTools -- Copyright (c) 2015, Markus Iser, KIT - Karlsruhe Institute of Technology
+CNFTools -- Copyright (c) 2021, Markus Iser, KIT - Karlsruhe Institute of Technology
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -27,6 +27,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/util/StreamBuffer.h"
 #include "src/util/SolverTypes.h"
+#include "src/util/ResourceLimits.h"
 
 class CNFFormula {
     std::shared_ptr<For> formula;
@@ -124,6 +125,7 @@ class CNFFormula {
         if (clause->size() > 0) {
             // remove redundant literals
             std::sort(clause->begin(), clause->end());
+            unsigned dup = 0;
             for (auto it = clause->begin(), jt = clause->begin()+1; jt != clause->end(); ++jt) {
                 if (*it != *jt) {  // unique
                     if (it->var() == jt->var()) {
@@ -132,8 +134,12 @@ class CNFFormula {
                     }
                     ++it;
                     *it = *jt;
+                } else {
+                    ++dup;
                 }
             }
+            clause->resize(clause->size() - dup);
+            clause->shrink_to_fit();
             variables = std::max(variables, (unsigned int)clause->back().var());
         }
         formula->push_back(clause);
