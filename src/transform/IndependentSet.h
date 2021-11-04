@@ -21,13 +21,22 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <string>
 #include <vector>
+#include <fstream>
+#include <memory>
 
-#include "util/CNFFormula.h"
+#include "src/util/CNFFormula.h"
 
-void generate_independent_set_problem(std::string filename) {
+void generate_independent_set_problem(std::string filename, std::string output) {
     CNFFormula F;
     std::vector<std::vector<unsigned>> literal2nodes;
     F.readDimacsFromFile(filename.c_str());
+    std::shared_ptr<std::ostream> of;
+    if (output != "-") {
+        of.reset(new std::ofstream(output.c_str(), std::ofstream::out));
+    } else {
+        of.reset(&std::cout, [](...){});
+    }
+
     literal2nodes.resize(2 * F.nVars() + 2);
     unsigned nNodes = 0;
     unsigned nEdges = 0;
@@ -44,8 +53,9 @@ void generate_independent_set_problem(std::string filename) {
         // count edges between nodes for opposite literals
         nEdges += literal2nodes[Lit(Var(i), false)].size() * literal2nodes[Lit(Var(i), true)].size();
     }
-    std::cout << "c satisfiable iff independent set size is " << F.nClauses() << std::endl;
-    std::cout << "p edge " << nNodes << " " << nEdges << std::endl;
+    *of << "c satisfiable iff maximum independent set size is " << F.nClauses() << std::endl;
+    *of << "c kis nNodes nEdges k" << std::endl;
+    *of << "p kis " << nNodes << " " << nEdges << " " << F.nClauses() << std::endl;
     nodeId = 0;
     // generate cliques
     for (Cl* clause : F) {
@@ -53,7 +63,8 @@ void generate_independent_set_problem(std::string filename) {
             unsigned var1 = nodeId + i;
             for (unsigned j = i; j < clause->size(); j++) {
                 unsigned var2 = nodeId + j;
-                std::cout << var1 << " " << var2 << " 0" << std::endl;
+                *of << var1 << " " << var2 << " 0" << std::endl;
+                *of << var2 << " " << var1 << " 0" << std::endl;
             }
         }
         nodeId += clause->size();
@@ -62,7 +73,8 @@ void generate_independent_set_problem(std::string filename) {
     for (unsigned i = 1; i <= F.nVars(); i++) {
         for (unsigned node1 : literal2nodes[Lit(Var(i), false)]) {
             for (unsigned node2 : literal2nodes[Lit(Var(i), true)]) {
-                std::cout << node1 << " " << node2 << " 0" << std::endl;
+                *of << node1 << " " << node2 << " 0" << std::endl;
+                *of << node2 << " " << node1 << " 0" << std::endl;
             }
         }
     }

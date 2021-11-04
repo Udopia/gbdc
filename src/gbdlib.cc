@@ -25,6 +25,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/features/CNFStats.h"
 #include "src/features/GateStats.h"
+#include "src/transform/IndependentSet.h"
 
 static PyObject* version(PyObject* self) {
     return Py_BuildValue("i", 1);
@@ -128,9 +129,21 @@ static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
     return dict;
 }
 
+static PyObject* transform_cnf_to_kis(PyObject* self, PyObject* arg) {
+    const char* filename;
+    const char* output;
+
+    if (PyArg_ParseTuple(arg, "ss", &filename, &output)) {
+        generate_independent_set_problem(std::string(filename), std::string(output));
+    }
+
+    return Py_None;
+}
+
 static PyMethodDef myMethods[] = {
     {"extract_gate_features", extract_gate_features, METH_VARARGS, "Extract Gate Features."},
     {"extract_base_features", extract_base_features, METH_VARARGS, "Extract Base Features."},
+    {"transform_cnf_to_kis", transform_cnf_to_kis, METH_VARARGS, "Create kISP Instance from SAT Instance."},
     {"gbdhash", gbdhash, METH_VARARGS, "Calculates GBD-Hash of given DIMACS CNF file."},
     {"version", (PyCFunction)version, METH_NOARGS, "Returns Version"},
     {nullptr, nullptr, 0, nullptr}
