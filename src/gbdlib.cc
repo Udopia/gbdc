@@ -129,7 +129,7 @@ static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
     return dict;
 }
 
-static PyObject* transform_cnf_to_kis(PyObject* self, PyObject* arg) {
+static PyObject* cnf2kis(PyObject* self, PyObject* arg) {
     const char* filename;
     const char* output;
 
@@ -143,7 +143,7 @@ static PyObject* transform_cnf_to_kis(PyObject* self, PyObject* arg) {
 static PyMethodDef myMethods[] = {
     {"extract_gate_features", extract_gate_features, METH_VARARGS, "Extract Gate Features."},
     {"extract_base_features", extract_base_features, METH_VARARGS, "Extract Base Features."},
-    {"transform_cnf_to_kis", transform_cnf_to_kis, METH_VARARGS, "Create kISP Instance from SAT Instance."},
+    {"cnf2kis", cnf2kis, METH_VARARGS, "Create k-ISP Instance from given CNF Instance."},
     {"gbdhash", gbdhash, METH_VARARGS, "Calculates GBD-Hash of given DIMACS CNF file."},
     {"version", (PyCFunction)version, METH_NOARGS, "Returns Version"},
     {nullptr, nullptr, 0, nullptr}

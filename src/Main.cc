@@ -37,10 +37,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 int main(int argc, char** argv) {
     argparse::ArgumentParser argparse("CNF Tools");
 
-    argparse.add_argument("tool").help("Select Tool: solve, gbdhash, normalize, isp, extract, gates")
+    argparse.add_argument("tool").help("Select Tool: solve, gbdhash, normalize, cnf2kis, extract, gates")
         .default_value("gbdhash")
         .action([](const std::string& value) {
-            static const std::vector<std::string> choices = { "solve", "gbdhash", "normalize", "isp", "extract", "gates" };
+            static const std::vector<std::string> choices = { "solve", "gbdhash", "normalize", "cnf2kis", "extract", "gates" };
             if (std::find(choices.begin(), choices.end(), value) != choices.end()) {
                 return value;
             }
@@ -84,14 +84,14 @@ int main(int argc, char** argv) {
     ResourceLimits limits(argparse.get<int>("timeout"), argparse.get<int>("memout"));
     int verbose = argparse.get<int>("verbose");
 
-    std::cerr << "c Running: '" << toolname << " " << filename << std::endl;
+    std::cerr << "c Running: " << toolname << " " << filename << std::endl;
 
     if (toolname == "gbdhash") {
         std::cout << gbd_hash_from_dimacs(filename.c_str()) << std::endl;
     } else if (toolname == "normalize") {
         std::cerr << "Normalizing " << filename << std::endl;
         normalize(filename.c_str());
-    } else if (toolname == "isp") {
+    } else if (toolname == "cnf2kis") {
         std::cerr << "Generating Independent Set Problem " << filename << std::endl;
         generate_independent_set_problem(filename, std::string("-"));
     } else if (toolname == "extract") {
