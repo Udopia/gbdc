@@ -56,7 +56,7 @@ void generate_independent_set_problem(std::string filename, std::string output) 
     *of << "c satisfiable iff maximum independent set size is " << F.nClauses() << std::endl;
     *of << "c kis nNodes nEdges k" << std::endl;
     *of << "p kis " << nNodes << " " << nEdges << " " << F.nClauses() << std::endl;
-    nodeId = 0;
+    nodeId = 1;
     // generate cliques
     for (Cl* clause : F) {
         for (unsigned i = 0; i < clause->size(); i++) {
@@ -64,7 +64,9 @@ void generate_independent_set_problem(std::string filename, std::string output) 
             for (unsigned j = i; j < clause->size(); j++) {
                 unsigned var2 = nodeId + j;
                 *of << var1 << " " << var2 << " 0" << std::endl;
-                *of << var2 << " " << var1 << " 0" << std::endl;
+                if (var1 != var2) {
+                    *of << var2 << " " << var1 << " 0" << std::endl;
+                }
             }
         }
         nodeId += clause->size();
