@@ -63,8 +63,8 @@ void generate_independent_set_problem(std::string filename, std::string output) 
             unsigned var1 = nodeId + i;
             for (unsigned j = i; j < clause->size(); j++) {
                 unsigned var2 = nodeId + j;
-                *of << var1 << " " << var2 << " 0" << std::endl;
                 if (var1 != var2) {
+                    *of << var1 << " " << var2 << " 0" << std::endl;
                     *of << var2 << " " << var1 << " 0" << std::endl;
                 }
             }
