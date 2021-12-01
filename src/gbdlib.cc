@@ -132,12 +132,48 @@ static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
 static PyObject* cnf2kis(PyObject* self, PyObject* arg) {
     const char* filename;
     const char* output;
+    unsigned maxEdges, maxNodes;
 
-    if (PyArg_ParseTuple(arg, "ss", &filename, &output)) {
-        generate_independent_set_problem(std::string(filename), std::string(output));
+    if (!PyArg_ParseTuple(arg, "ssII", &filename, &output, &maxEdges, &maxNodes)) {
+        return nullptr;
     }
 
-    return Py_None;
+    PyObject *dict = PyDict_New();
+    if (!dict) return nullptr;
+
+    IndependentSetFromCNF gen(filename);
+    unsigned nNodes = gen.numNodes();
+    unsigned nEdges = gen.numEdges();
+    unsigned minK = gen.minK();
+
+    PyObject *key = Py_BuildValue("s", "nodes");
+    PyObject *val = Py_BuildValue("I", nNodes);
+    PyDict_SetItem(dict, key, val);
+
+    key = Py_BuildValue("s", "edges");
+    val = Py_BuildValue("I", nEdges);
+    PyDict_SetItem(dict, key, val);
+
+    key = Py_BuildValue("s", "k");
+    val = Py_BuildValue("I", minK);
+    PyDict_SetItem(dict, key, val);
+
+    if (maxEdges > 0 && nEdges > maxEdges || maxNodes > 0 && nNodes > maxNodes) {
+        return dict;
+    }
+
+    gen.generate_independent_set_problem(output);
+    std::string hash = gbd_hash_from_dimacs(output);
+
+    key = Py_BuildValue("s", "hash");
+    val = Py_BuildValue("s", hash.c_str());
+    PyDict_SetItem(dict, key, val);
+
+    key = Py_BuildValue("s", "local");
+    val = Py_BuildValue("s", output);
+    PyDict_SetItem(dict, key, val);
+
+    return dict;
 }
 
 static PyMethodDef myMethods[] = {

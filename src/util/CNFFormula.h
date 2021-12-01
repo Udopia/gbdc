@@ -36,8 +36,8 @@ class CNFFormula {
  public:
     CNFFormula() : formula(new For()), variables(0) { }
 
-    explicit CNFFormula(const For& formula) : formula(), variables(0) {
-        readClauses(formula);
+    explicit CNFFormula(const char* filename) : CNFFormula() {
+        readDimacsFromFile(filename);
     }
 
     // copy constructor using shared-ptr to same formula

@@ -28,7 +28,7 @@ Input to all tools is a SAT instances given as a DIMACS CNF file which can be gi
 
 * The program `cnftools` uses [`argparse.h` by Pranav Srinivas Kumar](https://github.com/p-ranav/argparse) to parse Command-Line Arguments. This is under MIT licence and resides in CNF Tools `lib` folder. It requires C++17 (and gcc 8+) to build.
 
-* The tool `gbdhash` uses the [MD5 Hash implementation of Micheal Flyod](https://github.com/CommanderBubble/MD5). This is under MIT licence and resides in CNF Tools `lib` folder.
+* The tool `gbdhash` uses the [MD5 Hash implementation of Michael Lloyd](https://github.com/CommanderBubble/MD5). This is under MIT licence and resides in CNF Tools `lib` folder.
 
 * Gate feature extraction uses a SAT Solver via the [IPASIR Interface](https://github.com/biotomas/ipasir). For this application, CNF Tools use the SAT Solver [CaDiCaL (by Armin Biere)](http://fmv.jku.at/cadical/) which underlies the MIT License.
 

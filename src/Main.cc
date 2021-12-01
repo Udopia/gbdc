@@ -93,7 +93,8 @@ int main(int argc, char** argv) {
         normalize(filename.c_str());
     } else if (toolname == "cnf2kis") {
         std::cerr << "Generating Independent Set Problem " << filename << std::endl;
-        generate_independent_set_problem(filename, std::string("-"));
+        IndependentSetFromCNF gen(filename.c_str());
+        gen.generate_independent_set_problem();
     } else if (toolname == "extract") {
         CNFFormula formula;
         formula.readDimacsFromFile(filename.c_str());

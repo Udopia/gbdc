@@ -27,9 +27,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/util/StreamBuffer.h"
 
 std::string gbd_hash_from_dimacs(const char* filename) {
-    unsigned char sig[MD5_SIZE];
-    char str[MD5_STRING_SIZE];
-    md5::md5_t md5;
+    MD5 md5;
     StreamBuffer in(filename);
     std::string clause("");
     while (!in.eof()) {
@@ -45,13 +43,11 @@ std::string gbd_hash_from_dimacs(const char* filename) {
                 clause.append(" ");
             }
             clause.append("0");
-            md5.process(clause.c_str(), clause.length());
+            md5.consume(clause.c_str(), clause.length());
             clause.assign(" ");
         }
     }
-    md5.finish(sig);
-    md5::sig_to_string(sig, str, sizeof(str));
-    return std::string(str);
+    return md5.produce();
 }
 
 #endif  // SRC_UTIL_GBDHASH_H_
