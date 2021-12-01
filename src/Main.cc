@@ -82,41 +82,52 @@ int main(int argc, char** argv) {
     std::string toolname = argparse.get("tool");
     int repeat = argparse.get<int>("repeat");
     ResourceLimits limits(argparse.get<int>("timeout"), argparse.get<int>("memout"));
+    limits.set_rlimits();
     int verbose = argparse.get<int>("verbose");
 
     std::cerr << "c Running: " << toolname << " " << filename << std::endl;
 
-    if (toolname == "gbdhash") {
-        std::cout << gbd_hash_from_dimacs(filename.c_str()) << std::endl;
-    } else if (toolname == "normalize") {
-        std::cerr << "Normalizing " << filename << std::endl;
-        normalize(filename.c_str());
-    } else if (toolname == "cnf2kis") {
-        std::cerr << "Generating Independent Set Problem " << filename << std::endl;
-        IndependentSetFromCNF gen(filename.c_str());
-        gen.generate_independent_set_problem();
-    } else if (toolname == "extract") {
-        CNFFormula formula;
-        formula.readDimacsFromFile(filename.c_str());
+    try {
+        if (toolname == "gbdhash") {
+            std::cout << gbd_hash_from_dimacs(filename.c_str()) << std::endl;
+        } else if (toolname == "normalize") {
+            std::cerr << "Normalizing " << filename << std::endl;
+            normalize(filename.c_str());
+        } else if (toolname == "cnf2kis") {
+            std::cerr << "Generating Independent Set Problem " << filename << std::endl;
+            IndependentSetFromCNF gen(filename.c_str());
+            gen.generate_independent_set_problem();
+        } else if (toolname == "extract") {
+            CNFFormula formula;
+            formula.readDimacsFromFile(filename.c_str());
 
-        CNFStats stats(formula, limits);
-        stats.analyze();
-        std::vector<float> record = stats.BaseFeatures();
-        std::vector<std::string> names = CNFStats::BaseFeatureNames();
-        for (unsigned i = 0; i < record.size(); i++) {
-            std::cout << names[i] << "=" << record[i] << std::endl;
+            CNFStats stats(formula, limits);
+            stats.analyze();
+            std::vector<float> record = stats.BaseFeatures();
+            std::vector<std::string> names = CNFStats::BaseFeatureNames();
+            for (unsigned i = 0; i < record.size(); i++) {
+                std::cout << names[i] << "=" << record[i] << std::endl;
+            }
+        } else if (toolname == "gates") {
+            CNFFormula formula;
+            formula.readDimacsFromFile(filename.c_str());
+            std::cout << "Finished Reading " << std::endl;
+            GateStats stats(formula, limits);
+            stats.analyze(repeat, verbose);
+            std::vector<float> record = stats.GateFeatures();
+            std::vector<std::string> names = GateStats::GateFeatureNames();
+            for (unsigned i = 0; i < record.size(); i++) {
+                std::cout << names[i] << "=" << record[i] << std::endl;
+            }
         }
-    } else if (toolname == "gates") {
-        CNFFormula formula;
-        formula.readDimacsFromFile(filename.c_str());
-        std::cout << "Finished Reading " << std::endl;
-        GateStats stats(formula, limits);
-        stats.analyze(repeat, verbose);
-        std::vector<float> record = stats.GateFeatures();
-        std::vector<std::string> names = GateStats::GateFeatureNames();
-        for (unsigned i = 0; i < record.size(); i++) {
-            std::cout << names[i] << "=" << record[i] << std::endl;
-        }
+    }
+    catch (std::bad_alloc& e) {
+        std::cerr << "Memory Limit Exceeded" << std::endl;
+        return 1;
+    }
+    catch (TimeLimitExceeded& e) {
+        std::cerr << "Time Limit Exceeded" << std::endl;
+        return 1;
     }
 
     return 0;

@@ -30,33 +30,34 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/util/ResourceLimits.h"
 
 class CNFFormula {
-    std::shared_ptr<For> formula;
+    For formula;
     unsigned variables;
 
  public:
-    CNFFormula() : formula(new For()), variables(0) { }
+    CNFFormula() : formula(), variables(0) { }
 
     explicit CNFFormula(const char* filename) : CNFFormula() {
         readDimacsFromFile(filename);
     }
 
-    // copy constructor using shared-ptr to same formula
-    CNFFormula(const CNFFormula& other) : formula(other.formula), variables(other.variables) { }
-
-    ~CNFFormula() { }
+    ~CNFFormula() {
+        for (Cl* clause : formula) {
+            delete clause;
+        }
+    }
 
     typedef For::const_iterator const_iterator;
 
     inline const_iterator begin() const {
-        return formula->begin();
+        return formula.begin();
     }
 
     inline const_iterator end() const {
-        return formula->end();
+        return formula.end();
     }
 
     inline const Cl* operator[] (int i) const {
-        return (*formula)[i];
+        return formula[i];
     }
 
     inline size_t nVars() const {
@@ -64,7 +65,7 @@ class CNFFormula {
     }
 
     inline size_t nClauses() const {
-        return formula->size();
+        return formula.size();
     }
 
     inline int newVar() {
@@ -72,7 +73,7 @@ class CNFFormula {
     }
 
     inline void clear() {
-        formula->clear();
+        formula.clear();
     }
 
     // create gapless representation of variables
@@ -80,7 +81,7 @@ class CNFFormula {
         std::vector<unsigned> name;
         name.resize(variables+1, 0);
         unsigned int max = 0;
-        for (Cl* clause : *formula) {
+        for (Cl* clause : formula) {
             for (Lit& lit : *clause) {
                 if (name[lit.var()] == 0) name[lit.var()] = max++;
                 lit = Lit(name[lit.var()], lit.sign());
@@ -142,7 +143,7 @@ class CNFFormula {
             clause->shrink_to_fit();
             variables = std::max(variables, (unsigned int)clause->back().var());
         }
-        formula->push_back(clause);
+        formula.push_back(clause);
     }
 };
 

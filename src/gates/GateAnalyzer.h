@@ -110,7 +110,7 @@ class GateAnalyzer {
         std::unordered_set<Lit> frontier;
         while (!candidates.empty()) {  // breadth_ first search is important here
             // std::cout << "Number of Candidates: " << candidates.size() << std::endl;
-            limits_.within_limits_or_throw();
+            // limits_.within_limits_or_throw();
             for (Lit candidate : candidates) {
                 if (checkAddGate(candidate)) {
                     Gate& gate = gate_formula.getGate(candidate);

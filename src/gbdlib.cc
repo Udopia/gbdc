@@ -22,156 +22,111 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/util/GBDHash.h"
 #include "src/util/CNFFormula.h"
 #include "src/util/ResourceLimits.h"
+#include "src/util/py_util.h"
 
 #include "src/features/CNFStats.h"
 #include "src/features/GateStats.h"
 #include "src/transform/IndependentSet.h"
 
 static PyObject* version(PyObject* self) {
-    return Py_BuildValue("i", 1);
+    return pytype(1);
 }
 
 static PyObject* gbdhash(PyObject* self, PyObject* arg) {
     const char* filename;
-
-    if (!PyArg_ParseTuple(arg, "s", &filename)) {
-        return nullptr;
-    }
-
+    PyArg_ParseTuple(arg, "s", &filename);
     std::string result = gbd_hash_from_dimacs(filename);
-
-    return Py_BuildValue("s", result.c_str());
+    return pytype(result.c_str());
 }
 
 static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
     const char* filename;
     unsigned rlim = 0, mlim = 0;
+    PyArg_ParseTuple(arg, "s|II", &filename, &rlim, &mlim);
 
-    if (!PyArg_ParseTuple(arg, "s|II", &filename, &rlim, &mlim)) {
-        return nullptr;
-    }
+    PyObject *dict = pydict();
+    pydict(dict, "base_features_runtime", "memout");
 
-    PyObject *dict = PyDict_New();
-    if (!dict) return nullptr;
-
-    CNFFormula formula;
-    formula.readDimacsFromFile(filename);
     ResourceLimits limits(rlim, mlim);
-
-    CNFStats stats(formula, limits);
+    limits.set_rlimits();
     try {
-        limits.within_limits_or_throw();
+        CNFFormula formula { filename };
+        CNFStats stats(formula, limits);
         stats.analyze();
-    } catch (ResourceLimitsExceeded& e) {
-        PyObject *key = Py_BuildValue("s", "base_features_runtime");
-        PyObject *val = Py_BuildValue("s", limits.within_memory_limit() ?  "timeout" : "memout");
-        PyDict_SetItem(dict, key, val);
+
+        std::vector<float> record = stats.BaseFeatures();
+        std::vector<std::string> names = CNFStats::BaseFeatureNames();
+
+        for (unsigned int i = 0; i < record.size(); i++) {
+            pydict(dict, names[i].c_str(), record[i]);
+        }
+
+        return dict;
+    } catch (TimeLimitExceeded& e) {
+        pydict(dict, "base_features_runtime", "timeout");
         return dict;
     } catch (std::bad_alloc& e) {
         return dict;
     }
-
-    std::vector<float> record = stats.BaseFeatures();
-    std::vector<std::string> names = CNFStats::BaseFeatureNames();
-
-    for (unsigned int i = 0; i < record.size(); i++) {
-        PyObject *key = Py_BuildValue("s", names[i].c_str());
-        PyObject *num = PyFloat_FromDouble(static_cast<double>(record[i]));
-        if (!num) {
-            Py_DECREF(dict);
-            return nullptr;
-        }
-        PyDict_SetItem(dict, key, num);
-    }
-    return dict;
 }
 
 static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
     const char* filename;
     unsigned rlim = 0, mlim = 0;
+    PyArg_ParseTuple(arg, "s|II", &filename, &rlim, &mlim);
 
-    if (!PyArg_ParseTuple(arg, "s|II", &filename, &rlim, &mlim)) {
-        return nullptr;
-    }
+    PyObject *dict = pydict();
+    pydict(dict, "gate_features_runtime", "memout");
 
-    PyObject *dict = PyDict_New();
-    if (!dict) return nullptr;
-
-    CNFFormula formula;
-    formula.readDimacsFromFile(filename);
     ResourceLimits limits(rlim, mlim);
+    limits.set_rlimits();
 
-    GateStats stats(formula, limits);
     try {
-        limits.within_limits_or_throw();
+        CNFFormula formula { filename };
+        GateStats stats(formula, limits);
         stats.analyze(1, 0);
+
+        std::vector<float> record = stats.GateFeatures();
+        std::vector<std::string> names = GateStats::GateFeatureNames();
+
+        for (unsigned int i = 0; i < record.size(); i++) {
+            pydict(dict, names[i].c_str(), record[i]);
+        }
+        return dict;
     } catch (ResourceLimitsExceeded& e) {
-        PyObject *key = Py_BuildValue("s", "gate_features_runtime");
-        PyObject *val = Py_BuildValue("s", limits.within_memory_limit() ?  "timeout" : "memout");
-        PyDict_SetItem(dict, key, val);
+        pydict(dict, "gate_features_runtime", "timeout");
         return dict;
     } catch (std::bad_alloc& e) {
         return dict;
     }
-
-    std::vector<float> record = stats.GateFeatures();
-    std::vector<std::string> names = GateStats::GateFeatureNames();
-
-    for (unsigned int i = 0; i < record.size(); i++) {
-        PyObject *key = Py_BuildValue("s", names[i].c_str());
-        PyObject *num = PyFloat_FromDouble(static_cast<double>(record[i]));
-        if (!num) {
-            Py_DECREF(dict);
-            return nullptr;
-        }
-        PyDict_SetItem(dict, key, num);
-    }
-    return dict;
 }
 
 static PyObject* cnf2kis(PyObject* self, PyObject* arg) {
     const char* filename;
     const char* output;
     unsigned maxEdges, maxNodes;
+    PyArg_ParseTuple(arg, "ssII", &filename, &output, &maxEdges, &maxNodes);
 
-    if (!PyArg_ParseTuple(arg, "ssII", &filename, &output, &maxEdges, &maxNodes)) {
-        return nullptr;
-    }
-
-    PyObject *dict = PyDict_New();
-    if (!dict) return nullptr;
+    PyObject *dict = pydict();
 
     IndependentSetFromCNF gen(filename);
     unsigned nNodes = gen.numNodes();
     unsigned nEdges = gen.numEdges();
     unsigned minK = gen.minK();
 
-    PyObject *key = Py_BuildValue("s", "nodes");
-    PyObject *val = Py_BuildValue("I", nNodes);
-    PyDict_SetItem(dict, key, val);
+    pydict(dict, "nodes", nNodes);
+    pydict(dict, "edges", nEdges);
+    pydict(dict, "k", minK);
 
-    key = Py_BuildValue("s", "edges");
-    val = Py_BuildValue("I", nEdges);
-    PyDict_SetItem(dict, key, val);
-
-    key = Py_BuildValue("s", "k");
-    val = Py_BuildValue("I", minK);
-    PyDict_SetItem(dict, key, val);
-
-    if (maxEdges > 0 && nEdges > maxEdges || maxNodes > 0 && nNodes > maxNodes) {
+    if ((maxEdges > 0 && nEdges > maxEdges) || (maxNodes > 0 && nNodes > maxNodes)) {
         return dict;
     }
 
     gen.generate_independent_set_problem(output);
     std::string hash = gbd_hash_from_dimacs(output);
 
-    key = Py_BuildValue("s", "hash");
-    val = Py_BuildValue("s", hash.c_str());
-    PyDict_SetItem(dict, key, val);
-
-    key = Py_BuildValue("s", "local");
-    val = Py_BuildValue("s", output);
-    PyDict_SetItem(dict, key, val);
+    pydict(dict, "hash", hash.c_str());
+    pydict(dict, "local", output);
 
     return dict;
 }

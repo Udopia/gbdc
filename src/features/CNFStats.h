@@ -151,7 +151,7 @@ class CNFStats {
         pos_neg_per_clause.clear();
         std::vector<float>().swap(pos_neg_per_clause);
 
-        limits_.within_limits_or_throw();
+        // limits_.within_limits_or_throw();
 
         std::cout << "Pos/Neg per Variable" << std::endl;
         std::vector<float> pos_neg_per_variable;  // one entry per variable
@@ -165,7 +165,7 @@ class CNFStats {
         pos_neg_per_variable.clear();
         std::vector<float>().swap(pos_neg_per_variable);
 
-        limits_.within_limits_or_throw();
+        // limits_.within_limits_or_throw();
 
         // ## Clause Graph Features ##
         std::cout << "Clause Graph Features" << std::endl;
@@ -183,10 +183,10 @@ class CNFStats {
     }
 
     void analyze() {
-        limits_.within_limits_or_throw();
+        // limits_.within_limits_or_throw();
         std::cout << "Analyzing Occurrences" << std::endl;
         analyze_occurrences();
-        limits_.within_limits_or_throw();
+        // limits_.within_limits_or_throw();
         std::cout << "Analyzing Degrees" << std::endl;
         analyze_degrees();
         std::cout << "Done" << std::endl;

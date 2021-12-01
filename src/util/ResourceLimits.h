@@ -33,6 +33,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
     #include <sys/time.h>
     #include <unistd.h>
     #include <sys/resource.h>
+    #include <csignal>
 
     #ifdef __APPLE__
         #include <mach/mach.h>
@@ -48,10 +49,27 @@ struct ResourceLimitsExceeded : public std::exception {
     }
 };
 
+struct TimeLimitExceeded : public std::exception {
+    const char* what() const throw() {
+        return "Exceeded Time Limit";
+    }
+};
+
+struct ResourceLimitsNotSupported : public std::exception {
+    const char* what() const throw() {
+        return "rlimit is not supported by windows";
+    }
+};
+
+
+static void timeout(int signal) {
+    throw TimeLimitExceeded();
+}
+
 
 class ResourceLimits {
-    unsigned rlim_;
-    unsigned mlim_;
+    unsigned rlim_;  // seconds
+    unsigned mlim_;  // mega bytes
 
     unsigned time_;
 
@@ -87,6 +105,45 @@ class ResourceLimits {
 
     void within_limits_or_throw() const {
         if (!within_limits()) throw ResourceLimitsExceeded();
+    }
+
+    void set_rlimits() const {
+        #ifdef _WIN32
+        throw ResourceLimitsNotSupported();
+        #else
+        struct rlimit limit;
+
+        if (mlim_ > 0) {
+            getrlimit(RLIMIT_AS, &limit);
+            uint64_t mlim = static_cast<uint64_t>(mlim_) << 20;  // mega bytes to bytes
+            if (mlim <= limit.rlim_max) {
+                limit.rlim_cur = mlim;
+            } else {
+                limit.rlim_cur = limit.rlim_max;
+            }
+
+            if (setrlimit(RLIMIT_AS, &limit) != 0) {
+                std::cerr << "Warning: Memory limit could not be set" << std::endl;
+            }
+        }
+
+        if (rlim_ > 0) {
+            getrlimit(RLIMIT_CPU, &limit);
+            uint64_t rlim = static_cast<uint64_t>(rlim_);  // seconds
+            if (rlim <= limit.rlim_max) {
+                limit.rlim_cur = rlim;
+            } else {
+                limit.rlim_cur = limit.rlim_max;
+            }
+
+            if (setrlimit(RLIMIT_CPU, &limit) != 0) {
+                std::cerr << "Warning: Runtime limit could not be set" << std::endl;
+            }
+
+            signal(SIGXCPU, timeout);
+        }
+
+        #endif
     }
 
  private:
