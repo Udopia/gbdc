@@ -100,8 +100,7 @@ int main(int argc, char** argv) {
         } else if (toolname == "extract") {
             CNFFormula formula;
             formula.readDimacsFromFile(filename.c_str());
-
-            CNFStats stats(formula, limits);
+            CNFStats stats(formula);
             stats.analyze();
             std::vector<float> record = stats.BaseFeatures();
             std::vector<std::string> names = CNFStats::BaseFeatureNames();
@@ -111,8 +110,7 @@ int main(int argc, char** argv) {
         } else if (toolname == "gates") {
             CNFFormula formula;
             formula.readDimacsFromFile(filename.c_str());
-            std::cout << "Finished Reading " << std::endl;
-            GateStats stats(formula, limits);
+            GateStats stats(formula);
             stats.analyze(repeat, verbose);
             std::vector<float> record = stats.GateFeatures();
             std::vector<std::string> names = GateStats::GateFeatureNames();

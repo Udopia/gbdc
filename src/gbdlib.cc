@@ -39,6 +39,21 @@ static PyObject* gbdhash(PyObject* self, PyObject* arg) {
     return pytype(result.c_str());
 }
 
+
+static void extract_base_features_guarded(PyObject *dict, const char* filename) {
+    CNFFormula formula;
+    formula.readDimacsFromFile(filename);
+    CNFStats stats(formula);
+    stats.analyze();
+
+    std::vector<float> record = stats.BaseFeatures();
+    std::vector<std::string> names = CNFStats::BaseFeatureNames();
+
+    for (unsigned int i = 0; i < record.size(); i++) {
+        pydict(dict, names[i].c_str(), record[i]);
+    }
+}
+
 static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
     const char* filename;
     unsigned rlim = 0, mlim = 0;
@@ -50,17 +65,8 @@ static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
     ResourceLimits limits(rlim, mlim);
     limits.set_rlimits();
     try {
-        CNFFormula formula { filename };
-        CNFStats stats(formula, limits);
-        stats.analyze();
-
-        std::vector<float> record = stats.BaseFeatures();
-        std::vector<std::string> names = CNFStats::BaseFeatureNames();
-
-        for (unsigned int i = 0; i < record.size(); i++) {
-            pydict(dict, names[i].c_str(), record[i]);
-        }
-
+        extract_base_features_guarded(dict, filename);
+        pydict(dict, "base_features_runtime", limits.get_runtime());
         return dict;
     } catch (TimeLimitExceeded& e) {
         pydict(dict, "base_features_runtime", "timeout");
@@ -70,36 +76,57 @@ static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
     }
 }
 
+
+class MemoryGuard {
+    char* mem;
+ public:
+    MemoryGuard() { mem = new char[1 << 24]; }
+    ~MemoryGuard() { delete mem; }
+    char* get() { return mem; }
+};
+
+
+static void extract_gate_features_guarded(PyObject *dict, const char* filename) {
+    MemoryGuard mem;
+    __asm__ __volatile__ ("" : "+g" (mem));
+
+    CNFFormula formula;
+    formula.readDimacsFromFile(filename);
+    GateStats stats(formula);
+    stats.analyze(1, 0);
+
+    std::vector<float> record = stats.GateFeatures();
+    std::vector<std::string> names = GateStats::GateFeatureNames();
+
+    for (unsigned int i = 0; i < record.size(); i++) {
+        pydict(dict, names[i].c_str(), record[i]);
+    }
+}
+
 static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
     const char* filename;
     unsigned rlim = 0, mlim = 0;
     PyArg_ParseTuple(arg, "s|II", &filename, &rlim, &mlim);
 
-    PyObject *dict = pydict();
+    PyObject* dict = pydict();
     pydict(dict, "gate_features_runtime", "memout");
+
+    __asm__ __volatile__ ("" : "+g" (dict));
 
     ResourceLimits limits(rlim, mlim);
     limits.set_rlimits();
-
     try {
-        CNFFormula formula { filename };
-        GateStats stats(formula, limits);
-        stats.analyze(1, 0);
-
-        std::vector<float> record = stats.GateFeatures();
-        std::vector<std::string> names = GateStats::GateFeatureNames();
-
-        for (unsigned int i = 0; i < record.size(); i++) {
-            pydict(dict, names[i].c_str(), record[i]);
-        }
+        extract_gate_features_guarded(dict, filename);
+        pydict(dict, "gate_features_runtime", limits.get_runtime());
         return dict;
-    } catch (ResourceLimitsExceeded& e) {
+    } catch (TimeLimitExceeded& e) {
         pydict(dict, "gate_features_runtime", "timeout");
         return dict;
     } catch (std::bad_alloc& e) {
         return dict;
     }
 }
+
 
 static PyObject* cnf2kis(PyObject* self, PyObject* arg) {
     const char* filename;

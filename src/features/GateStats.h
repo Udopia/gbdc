@@ -28,7 +28,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <string>
 
 #include "src/util/SolverTypes.h"
-#include "src/util/ResourceLimits.h"
 
 #include "src/gates/GateFormula.h"
 #include "src/gates/GateAnalyzer.h"
@@ -37,25 +36,24 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 class GateStats {
     const CNFFormula& formula_;
-    const ResourceLimits& limits_;
     std::vector<float> record;
 
  public:
     unsigned n_vars, n_gates, n_roots;
     unsigned n_none, n_generic, n_mono, n_and, n_or, n_triv, n_equiv, n_full;
 
-    explicit GateStats(const CNFFormula& formula, const ResourceLimits& limits) :
-     formula_(formula), limits_(limits), record(), n_vars(formula.nVars()), n_gates(), n_roots(),
+    explicit GateStats(const CNFFormula& formula) :
+     formula_(formula), record(), n_vars(formula.nVars()), n_gates(), n_roots(),
      n_none(0), n_generic(0), n_mono(0), n_and(0), n_or(0), n_triv(0), n_equiv(0), n_full(0) { }
 
     void analyze(unsigned repeat, unsigned verbose) {
         std::vector<unsigned> levels, levels_none, levels_generic, levels_mono, levels_and, levels_or, levels_triv, levels_equiv, levels_full;
-        GateAnalyzer<> analyzer(formula_, limits_, true, true, repeat, verbose);
+        GateAnalyzer<> analyzer(formula_, true, true, repeat, verbose);
         analyzer.analyze();
         GateFormula gates = analyzer.getGateFormula();
         n_gates = gates.nGates();
         n_roots = gates.nRoots();
-        levels.resize(n_vars, 0);
+        levels.resize(n_vars + 1, 0);
         // BFS for level determination
         unsigned level = 0;
         std::vector<Lit> current = gates.getRoots();
@@ -131,7 +129,6 @@ class GateStats {
         push_distribution(&record, levels_triv);
         push_distribution(&record, levels_equiv);
         push_distribution(&record, levels_full);
-        record.push_back(static_cast<float>(limits_.get_runtime()));
     }
 
     // Gate Structural Features
@@ -150,7 +147,7 @@ class GateStats {
             "levels_or_mean", "levels_or_variance", "levels_or_min", "levels_or_max", "levels_or_entropy",
             "levels_triv_mean", "levels_triv_variance", "levels_triv_min", "levels_triv_max", "levels_triv_entropy",
             "levels_equiv_mean", "levels_equiv_variance", "levels_equiv_min", "levels_equiv_max", "levels_equiv_entropy",
-            "levels_full_mean", "levels_full_variance", "levels_full_min", "levels_full_max", "levels_full_entropy", "gate_features_runtime"
+            "levels_full_mean", "levels_full_variance", "levels_full_min", "levels_full_max", "levels_full_entropy"
         };
     }
 };

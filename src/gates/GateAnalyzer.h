@@ -31,7 +31,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "lib/ipasir.h"
 
 #include "src/util/CNFFormula.h"
-#include "src/util/ResourceLimits.h"
 
 #include "src/gates/GateFormula.h"
 #include "src/gates/BlockList.h"
@@ -46,7 +45,6 @@ class GateAnalyzer {
     void* S;  // solver
 
     const CNFFormula& formula_;
-    const ResourceLimits& limits_;
 
     GateFormula gate_formula;
 
@@ -59,8 +57,8 @@ class GateAnalyzer {
     unsigned verbose_ = 0;
 
  public:
-    GateAnalyzer(const CNFFormula& formula, const ResourceLimits& limits, bool patterns_, bool semantic_, unsigned max, unsigned verbose = 0) :
-     formula_(formula), limits_(limits), gate_formula(formula.nVars(), verbose), index(formula),
+    GateAnalyzer(const CNFFormula& formula, bool patterns_, bool semantic_, unsigned max, unsigned verbose = 0) :
+     formula_(formula), gate_formula(formula.nVars(), verbose), index(formula),
      patterns(patterns_), semantic(semantic_), max_(max), verbose_(verbose) {
         if (semantic) S = ipasir_init();
     }
@@ -110,7 +108,6 @@ class GateAnalyzer {
         std::unordered_set<Lit> frontier;
         while (!candidates.empty()) {  // breadth_ first search is important here
             // std::cout << "Number of Candidates: " << candidates.size() << std::endl;
-            // limits_.within_limits_or_throw();
             for (Lit candidate : candidates) {
                 if (checkAddGate(candidate)) {
                     Gate& gate = gate_formula.getGate(candidate);

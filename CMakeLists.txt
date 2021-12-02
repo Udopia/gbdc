@@ -35,7 +35,7 @@ find_package(LibArchive REQUIRED)
 include_directories(${LibArchive_INCLUDE_DIRS})
 set(LIBS ${LIBS} md5 ${LibArchive_LIBRARIES})
 
-include_directories(cnftools PUBLIC "${PROJECT_SOURCE_DIR}/src")
+include_directories(cnftools PUBLIC "${PROJECT_SOURCE_DIR}")
 
 add_subdirectory("lib/md5")
 add_subdirectory("src")

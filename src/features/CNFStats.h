@@ -30,7 +30,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/util/SolverTypes.h"
 #include "src/util/CNFFormula.h"
-#include "src/util/ResourceLimits.h"
 
 #include "src/features/Util.h"
 
@@ -38,14 +37,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 // CF. 2004, Nudelmann et al., Understanding Random SAT - Beyond the Clause-to-Variable Ratio
 class CNFStats {
     const CNFFormula& formula_;
-    const ResourceLimits& limits_;
     std::vector<float> record;
 
  public:
     unsigned n_vars, n_clauses;
 
-    explicit CNFStats(const CNFFormula& formula, const ResourceLimits& limits) :
-     formula_(formula), limits_(limits), record(), n_vars(formula.nVars()), n_clauses(formula.nClauses()) {
+    explicit CNFStats(const CNFFormula& formula) :
+     formula_(formula), record(), n_vars(formula.nVars()), n_clauses(formula.nClauses()) {
     }
 
     void analyze_occurrences() {
@@ -151,9 +149,7 @@ class CNFStats {
         pos_neg_per_clause.clear();
         std::vector<float>().swap(pos_neg_per_clause);
 
-        // limits_.within_limits_or_throw();
-
-        std::cout << "Pos/Neg per Variable" << std::endl;
+        // std::cout << "Pos/Neg per Variable" << std::endl;
         std::vector<float> pos_neg_per_variable;  // one entry per variable
         for (unsigned v = 0; v < n_vars; v++) {
             // divide min by max (not pos by neg as in satzilla)
@@ -165,10 +161,8 @@ class CNFStats {
         pos_neg_per_variable.clear();
         std::vector<float>().swap(pos_neg_per_variable);
 
-        // limits_.within_limits_or_throw();
-
         // ## Clause Graph Features ##
-        std::cout << "Clause Graph Features" << std::endl;
+        // std::cout << "Clause Graph Features" << std::endl;
         std::vector<unsigned> clause_degree;  // one entry per clause (number of neighbour clauses)
         clause_degree.resize(n_clauses, 0);
         unsigned cid = 0;
@@ -183,19 +177,12 @@ class CNFStats {
     }
 
     void analyze() {
-        // limits_.within_limits_or_throw();
-        std::cout << "Analyzing Occurrences" << std::endl;
         analyze_occurrences();
-        // limits_.within_limits_or_throw();
-        std::cout << "Analyzing Degrees" << std::endl;
         analyze_degrees();
-        std::cout << "Done" << std::endl;
 
         // DEL Clustering Coefficient Statistics (FW: community structure features)
 
         // ## Missing: LP-Based Features, DPLL Search Space, Local Search Probes
-
-        record.push_back(static_cast<float>(limits_.get_runtime()));
     }
 
     std::vector<float> BaseFeatures() {
@@ -213,7 +200,7 @@ class CNFStats {
             "balance_vars_mean", "balance_vars_variance", "balance_vars_min", "balance_vars_max", "balance_vars_entropy",
             "vcg_vdegrees_mean", "vcg_vdegrees_variance", "vcg_vdegrees_min", "vcg_vdegrees_max", "vcg_vdegrees_entropy",
             "vcg_cdegrees_mean", "vcg_cdegrees_variance", "vcg_cdegrees_min", "vcg_cdegrees_max", "vcg_cdegrees_entropy",
-            "cg_degrees_mean", "cg_degrees_variance", "cg_degrees_min", "cg_degrees_max", "cg_degrees_entropy", "base_features_runtime"
+            "cg_degrees_mean", "cg_degrees_variance", "cg_degrees_min", "cg_degrees_max", "cg_degrees_entropy"
         };
     }
 };
