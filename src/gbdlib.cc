@@ -71,25 +71,13 @@ static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
     } catch (TimeLimitExceeded& e) {
         pydict(dict, "base_features_runtime", "timeout");
         return dict;
-    } catch (std::bad_alloc& e) {
+    } catch (MemoryLimitExceeded& e) {
         return dict;
     }
 }
 
 
-class MemoryGuard {
-    char* mem;
- public:
-    MemoryGuard() { mem = new char[1 << 24]; }
-    ~MemoryGuard() { delete mem; }
-    char* get() { return mem; }
-};
-
-
 static void extract_gate_features_guarded(PyObject *dict, const char* filename) {
-    MemoryGuard mem;
-    __asm__ __volatile__ ("" : "+g" (mem));
-
     CNFFormula formula;
     formula.readDimacsFromFile(filename);
     GateStats stats(formula);
@@ -111,8 +99,6 @@ static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
     PyObject* dict = pydict();
     pydict(dict, "gate_features_runtime", "memout");
 
-    __asm__ __volatile__ ("" : "+g" (dict));
-
     ResourceLimits limits(rlim, mlim);
     limits.set_rlimits();
     try {
@@ -122,7 +108,7 @@ static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
     } catch (TimeLimitExceeded& e) {
         pydict(dict, "gate_features_runtime", "timeout");
         return dict;
-    } catch (std::bad_alloc& e) {
+    } catch (MemoryLimitExceeded& e) {
         return dict;
     }
 }

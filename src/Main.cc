@@ -123,6 +123,10 @@ int main(int argc, char** argv) {
         std::cerr << "Memory Limit Exceeded" << std::endl;
         return 1;
     }
+    catch (MemoryLimitExceeded& e) {
+        std::cerr << "Memory Limit Exceeded" << std::endl;
+        return 1;
+    }
     catch (TimeLimitExceeded& e) {
         std::cerr << "Time Limit Exceeded" << std::endl;
         return 1;

@@ -55,6 +55,12 @@ struct TimeLimitExceeded : public std::exception {
     }
 };
 
+struct MemoryLimitExceeded : public std::exception {
+    const char* what() const throw() {
+        return "Exceeded Memory Limit";
+    }
+};
+
 struct ResourceLimitsNotSupported : public std::exception {
     const char* what() const throw() {
         return "rlimit is not supported by windows";
@@ -65,6 +71,15 @@ struct ResourceLimitsNotSupported : public std::exception {
 static void timeout(int signal) {
     throw TimeLimitExceeded();
 }
+
+
+#ifndef _WIN32
+struct rlimit as_limit;
+static void memout() {
+    setrlimit(RLIMIT_AS, &as_limit);
+    throw MemoryLimitExceeded();
+}
+#endif
 
 
 class ResourceLimits {
@@ -108,9 +123,9 @@ class ResourceLimits {
     }
 
     void set_rlimits() const {
-        #ifdef _WIN32
+    #ifdef _WIN32
         throw ResourceLimitsNotSupported();
-        #else
+    #else
         struct rlimit limit;
 
         if (mlim_ > 0) {
@@ -125,6 +140,10 @@ class ResourceLimits {
             if (setrlimit(RLIMIT_AS, &limit) != 0) {
                 std::cerr << "Warning: Memory limit could not be set" << std::endl;
             }
+
+            as_limit = limit;
+            as_limit.rlim_cur = limit.rlim_max;
+            std::set_new_handler(memout);
         }
 
         if (rlim_ > 0) {
