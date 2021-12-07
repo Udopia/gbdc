@@ -53,6 +53,7 @@ class IndependentSetFromCNF {
         for (unsigned i = 1; i <= F.nVars(); i++) {  // count edges between nodes for opposite literals
             nEdges += literal2nodes[Lit(Var(i), false)].size() * literal2nodes[Lit(Var(i), true)].size();
         }
+        nEdges *= 2;  // account for reflexivity
         k = F.nClauses();
     }
 
