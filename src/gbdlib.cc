@@ -128,7 +128,7 @@ static PyObject* cnf2kis(PyObject* self, PyObject* arg) {
     pydict(dict, "edges", 0);
     pydict(dict, "k", 0);
 
-    ResourceLimits limits(rlim, mlim);
+    ResourceLimits limits(rlim, mlim, flim);
     limits.set_rlimits();
     try {
         IndependentSetFromCNF gen(filename);
