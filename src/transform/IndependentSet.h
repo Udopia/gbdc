@@ -25,6 +25,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <fstream>
 #include <memory>
 
+#include "src/util/ResourceLimits.h"
 #include "src/util/CNFFormula.h"
 
 class IndependentSetFromCNF {
@@ -90,6 +91,9 @@ class IndependentSetFromCNF {
                     *of << var2 << " " << var1 << " 0" << std::endl;
                 }
             }
+            if (of->bad()) {
+                throw FileSizeLimitExceeded();
+            }
             nodeId += clause->size();
         }
 
@@ -100,6 +104,9 @@ class IndependentSetFromCNF {
                     *of << node1 << " " << node2 << " 0" << std::endl;
                     *of << node2 << " " << node1 << " 0" << std::endl;
                 }
+            }
+            if (of->bad()) {
+                throw FileSizeLimitExceeded();
             }
         }
     }

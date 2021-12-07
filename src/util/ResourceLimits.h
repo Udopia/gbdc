@@ -61,6 +61,12 @@ struct MemoryLimitExceeded : public std::exception {
     }
 };
 
+struct FileSizeLimitExceeded : public std::exception {
+    const char* what() const throw() {
+        return "Exceeded File Size Limit";
+    }
+};
+
 struct ResourceLimitsNotSupported : public std::exception {
     const char* what() const throw() {
         return "rlimit is not supported by windows";
@@ -72,7 +78,6 @@ static void timeout(int signal) {
     throw TimeLimitExceeded();
 }
 
-
 #ifndef _WIN32
 struct rlimit as_limit;
 static void memout() {
@@ -81,20 +86,23 @@ static void memout() {
 }
 #endif
 
+static void fileout(int signal) {
+    throw FileSizeLimitExceeded();
+}
+
 
 class ResourceLimits {
-    unsigned rlim_;  // seconds
-    unsigned mlim_;  // mega bytes
+    unsigned rlim_;  // runtime limit (seconds)
+    unsigned mlim_;  // memory limit (mega bytes)
+    unsigned flim_;  // file size limit (mega bytes)
 
     unsigned time_;
 
  public:
-    ResourceLimits(unsigned rlim, unsigned mlim)
-     : rlim_(rlim), mlim_(mlim) {
+    explicit ResourceLimits(unsigned rlim = 0, unsigned mlim = 0, unsigned flim = 0)
+     : rlim_(rlim), mlim_(mlim), flim_(flim) {
         time_ = get_cpu_time();
     }
-
-    ResourceLimits() : ResourceLimits(0, 0) { }
 
     unsigned get_runtime() const {
         return get_cpu_time() - time_;
@@ -141,6 +149,16 @@ class ResourceLimits {
                 std::cerr << "Warning: Memory limit could not be set" << std::endl;
             }
 
+            /**
+             * Thanks to Sascha Witt for pointing me to std::set_new_handler().
+             * 
+             * The following code removes memory limits before exiting. 
+             * This is mandatory when subroutines with limits are called from Python, 
+             * because Python's multiprocessing libraries can not handle memory limits. 
+             * Python's ProcessPool implementations either stall or crash, depending on the used library. 
+             * If memory limits are removed before exiting (as it is done below in the set new_handler), 
+             * OOMs can be handled gracefully (in most cases). 
+             */
             as_limit = limit;
             as_limit.rlim_cur = limit.rlim_max;
             std::set_new_handler(memout);
@@ -160,6 +178,22 @@ class ResourceLimits {
             }
 
             signal(SIGXCPU, timeout);
+        }
+
+        if (flim_ > 0) {
+            getrlimit(RLIMIT_FSIZE, &limit);
+            uint64_t flim = static_cast<uint64_t>(flim_) << 20;  // mega bytes to bytes
+            if (flim <= limit.rlim_max) {
+                limit.rlim_cur = flim;
+            } else {
+                limit.rlim_cur = limit.rlim_max;
+            }
+
+            if (setrlimit(RLIMIT_FSIZE, &limit) != 0) {
+                std::cerr << "Warning: File size limit could not be set" << std::endl;
+            }
+
+            signal(SIGXFSZ, fileout);
         }
 
         #endif

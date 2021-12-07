@@ -17,6 +17,8 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
+#include <cstdio>
+
 #include "Python.h"
 
 #include "src/util/GBDHash.h"
@@ -118,30 +120,48 @@ static PyObject* cnf2kis(PyObject* self, PyObject* arg) {
     const char* filename;
     const char* output;
     unsigned maxEdges, maxNodes;
-    PyArg_ParseTuple(arg, "ssII", &filename, &output, &maxEdges, &maxNodes);
+    unsigned rlim = 0, mlim = 0, flim = 0;
+    PyArg_ParseTuple(arg, "ssII|III", &filename, &output, &maxEdges, &maxNodes, &rlim, &mlim, &flim);
 
     PyObject *dict = pydict();
+    pydict(dict, "nodes", 0);
+    pydict(dict, "edges", 0);
+    pydict(dict, "k", 0);
 
-    IndependentSetFromCNF gen(filename);
-    unsigned nNodes = gen.numNodes();
-    unsigned nEdges = gen.numEdges();
-    unsigned minK = gen.minK();
+    ResourceLimits limits(rlim, mlim);
+    limits.set_rlimits();
+    try {
+        IndependentSetFromCNF gen(filename);
+        unsigned nNodes = gen.numNodes();
+        unsigned nEdges = gen.numEdges();
+        unsigned minK = gen.minK();
 
-    pydict(dict, "nodes", nNodes);
-    pydict(dict, "edges", nEdges);
-    pydict(dict, "k", minK);
+        pydict(dict, "nodes", nNodes);
+        pydict(dict, "edges", nEdges);
+        pydict(dict, "k", minK);
 
-    if ((maxEdges > 0 && nEdges > maxEdges) || (maxNodes > 0 && nNodes > maxNodes)) {
+        if ((maxEdges > 0 && nEdges > maxEdges) || (maxNodes > 0 && nNodes > maxNodes)) {
+            return dict;
+        }
+
+        gen.generate_independent_set_problem(output);
+        std::string hash = gbd_hash_from_dimacs(output);
+
+        pydict(dict, "hash", hash.c_str());
+        pydict(dict, "local", output);
+
+        return dict;
+    } catch (TimeLimitExceeded& e) {
+        std::remove(output);
+        return dict;
+    } catch (MemoryLimitExceeded& e) {
+        std::remove(output);
+        return dict;
+    } catch (FileSizeLimitExceeded& e) {
+        std::remove(output);
+        std::cout << e.what() << std::endl;
         return dict;
     }
-
-    gen.generate_independent_set_problem(output);
-    std::string hash = gbd_hash_from_dimacs(output);
-
-    pydict(dict, "hash", hash.c_str());
-    pydict(dict, "local", output);
-
-    return dict;
 }
 
 static PyMethodDef myMethods[] = {

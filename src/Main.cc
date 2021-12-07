@@ -19,6 +19,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <iostream>
 #include <array>
+#include <cstdio>
 
 #include "lib/argparse/argparse.hpp"
 #include "lib/ipasir.h"
@@ -47,7 +48,8 @@ int main(int argc, char** argv) {
             return std::string{ "gbdhash" };
         });
 
-    argparse.add_argument("file").help("Give Path");
+    argparse.add_argument("file").help("Path to Input File");
+    argparse.add_argument("-o", "--output").help("Path to Output File (used by cnf2kis if set, default is stdout)").default_value(std::string("-"));
 
     argparse.add_argument("-t", "--timeout")
         .help("Timeout in seconds (default: 0, disabled)")
@@ -56,6 +58,11 @@ int main(int argc, char** argv) {
 
     argparse.add_argument("-m", "--memout")
         .help("Memout in megabytes (default: 0, disabled)")
+        .default_value(0)
+        .scan<'i', int>();
+
+    argparse.add_argument("-f", "--fileout")
+        .help("Maximum generated file size in megabytes (default: 0, disabled)")
         .default_value(0)
         .scan<'i', int>();
 
@@ -80,10 +87,12 @@ int main(int argc, char** argv) {
 
     std::string filename = argparse.get("file");
     std::string toolname = argparse.get("tool");
-    int repeat = argparse.get<int>("repeat");
-    ResourceLimits limits(argparse.get<int>("timeout"), argparse.get<int>("memout"));
-    limits.set_rlimits();
+    std::string output = argparse.get("output");
     int verbose = argparse.get<int>("verbose");
+    int repeat = argparse.get<int>("repeat");
+
+    ResourceLimits limits(argparse.get<int>("timeout"), argparse.get<int>("memout"), argparse.get<int>("fileout"));
+    limits.set_rlimits();
 
     std::cerr << "c Running: " << toolname << " " << filename << std::endl;
 
@@ -96,7 +105,7 @@ int main(int argc, char** argv) {
         } else if (toolname == "cnf2kis") {
             std::cerr << "Generating Independent Set Problem " << filename << std::endl;
             IndependentSetFromCNF gen(filename.c_str());
-            gen.generate_independent_set_problem();
+            gen.generate_independent_set_problem(output == "-" ? nullptr : output.c_str());
         } else if (toolname == "extract") {
             CNFFormula formula;
             formula.readDimacsFromFile(filename.c_str());
@@ -129,6 +138,11 @@ int main(int argc, char** argv) {
     }
     catch (TimeLimitExceeded& e) {
         std::cerr << "Time Limit Exceeded" << std::endl;
+        return 1;
+    }
+    catch (FileSizeLimitExceeded& e) {
+        std::remove(output.c_str());
+        std::cerr << "File Size Limit Exceeded" << std::endl;
         return 1;
     }
 
