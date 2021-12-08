@@ -141,6 +141,7 @@ static PyObject* cnf2kis(PyObject* self, PyObject* arg) {
         pydict(dict, "k", minK);
 
         if ((maxEdges > 0 && nEdges > maxEdges) || (maxNodes > 0 && nNodes > maxNodes)) {
+            pydict(dict, "hash", "fileout");
             return dict;
         }
 
