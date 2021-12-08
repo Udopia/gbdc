@@ -145,21 +145,23 @@ static PyObject* cnf2kis(PyObject* self, PyObject* arg) {
         }
 
         gen.generate_independent_set_problem(output);
-        std::string hash = gbd_hash_from_dimacs(output);
-
-        pydict(dict, "hash", hash.c_str());
         pydict(dict, "local", output);
+
+        std::string hash = gbd_hash_from_dimacs(output);
+        pydict(dict, "hash", hash.c_str());
 
         return dict;
     } catch (TimeLimitExceeded& e) {
         std::remove(output);
+        pydict(dict, "hash", "timeout");
         return dict;
     } catch (MemoryLimitExceeded& e) {
         std::remove(output);
+        pydict(dict, "hash", "memout");
         return dict;
     } catch (FileSizeLimitExceeded& e) {
         std::remove(output);
-        std::cout << e.what() << std::endl;
+        pydict(dict, "hash", "fileout");
         return dict;
     }
 }
