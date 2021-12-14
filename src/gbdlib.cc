@@ -22,6 +22,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Python.h"
 
 #include "src/util/GBDHash.h"
+#include "src/util/ISOHash.h"
 #include "src/util/CNFFormula.h"
 #include "src/util/ResourceLimits.h"
 #include "src/util/py_util.h"
@@ -38,6 +39,13 @@ static PyObject* gbdhash(PyObject* self, PyObject* arg) {
     const char* filename;
     PyArg_ParseTuple(arg, "s", &filename);
     std::string result = gbd_hash_from_dimacs(filename);
+    return pytype(result.c_str());
+}
+
+static PyObject* isohash(PyObject* self, PyObject* arg) {
+    const char* filename;
+    PyArg_ParseTuple(arg, "s", &filename);
+    std::string result = iso_hash_from_dimacs(filename);
     return pytype(result.c_str());
 }
 
@@ -171,7 +179,8 @@ static PyMethodDef myMethods[] = {
     {"extract_gate_features", extract_gate_features, METH_VARARGS, "Extract Gate Features."},
     {"extract_base_features", extract_base_features, METH_VARARGS, "Extract Base Features."},
     {"cnf2kis", cnf2kis, METH_VARARGS, "Create k-ISP Instance from given CNF Instance."},
-    {"gbdhash", gbdhash, METH_VARARGS, "Calculates GBD-Hash of given DIMACS CNF file."},
+    {"gbdhash", gbdhash, METH_VARARGS, "Calculates GBD-Hash (md5 of normalized file) of given DIMACS CNF file."},
+    {"isohash", isohash, METH_VARARGS, "Calculates ISO-Hash (md5 of sorted degree sequence) of given DIMACS CNF file."},
     {"version", (PyCFunction)version, METH_NOARGS, "Returns Version"},
     {nullptr, nullptr, 0, nullptr}
 };

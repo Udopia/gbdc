@@ -25,6 +25,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "lib/ipasir.h"
 
 #include "src/util/GBDHash.h"
+#include "src/util/ISOHash.h"
 #include "src/util/CNFFormula.h"
 #include "src/util/SolverTypes.h"
 
@@ -99,6 +100,8 @@ int main(int argc, char** argv) {
     try {
         if (toolname == "gbdhash") {
             std::cout << gbd_hash_from_dimacs(filename.c_str()) << std::endl;
+        } else if (toolname == "isohash") {
+            std::cout << iso_hash_from_dimacs(filename.c_str()) << std::endl;
         } else if (toolname == "normalize") {
             std::cerr << "Normalizing " << filename << std::endl;
             normalize(filename.c_str());
