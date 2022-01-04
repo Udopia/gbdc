@@ -7,7 +7,7 @@ CNF Tools provide the command-line program `cnftools` and the python module `gdb
 
 ## Tools
 
-Input to all tools is a SAT instances given as a DIMACS CNF file which can be given in a variety of compressed formats (supported by libarchive). The following tools are provided:
+Input to all tools is a SAT instance as a DIMACS CNF file which can be given in a variety of compressed formats (supported by libarchive). The following tools are provided:
 
 * GBD Hash:
 > Calculates the identifier for the given instance which is used in [GBD Tools](https://pypi.org/project/gbd-tools/) for data organization. GBD Tools themselves use the provided python module `gdbc` if installed (with priority over its own fallback implementation in Python).
