@@ -29,15 +29,15 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 template <typename T>
 float Mean(std::vector<T> distribution) {
-    float sum = static_cast<float>(std::accumulate(distribution.begin(), distribution.end(), 0));
-    return sum / distribution.size();
+    double sum = std::accumulate(distribution.begin(), distribution.end(), 0.0);
+    return static_cast<float>(sum / distribution.size());
 }
 
 template <typename T>
 float Variance(std::vector<T> distribution, float mean) {
-    float sum = static_cast<float>(std::accumulate(distribution.begin(), distribution.end(), 0.0,
-        [mean] (float a, unsigned b) { return a + pow(static_cast<float>(b - mean), 2); } ));
-    return sum / distribution.size();
+    double sum = std::accumulate(distribution.begin(), distribution.end(), 0.0,
+        [mean] (float a, unsigned b) { return a + pow(static_cast<float>(b - mean), 2); } );
+    return static_cast<float>(sum / distribution.size());
 }
 
 float Entropy(std::vector<unsigned> distribution) {
