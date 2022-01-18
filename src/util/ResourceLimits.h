@@ -152,12 +152,8 @@ class ResourceLimits {
             /**
              * Thanks to Sascha Witt for pointing me to std::set_new_handler().
              * 
-             * The following code removes memory limits before exiting. 
-             * This is mandatory when subroutines with limits are called from Python, 
-             * because Python's multiprocessing libraries can not handle memory limits. 
-             * Python's ProcessPool implementations either stall or crash, depending on the used library. 
-             * If memory limits are removed before exiting (as it is done below in the set new_handler), 
-             * OOMs can be handled gracefully (in most cases). 
+             * For graceful out-of-memory handling, the new-handler 'memout()' expands memory limits before exiting. 
+             * Otherwise, python process pool implementations either stall or crash, depending on the used library. 
              */
             as_limit = limit;
             as_limit.rlim_cur = limit.rlim_max;

@@ -35,6 +35,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/features/GateStats.h"
 #include "src/features/CNFStats.h"
 
+#include "src/util/StreamCompressor.h"
 
 int main(int argc, char** argv) {
     argparse::ArgumentParser argparse("CNF Tools");
@@ -42,7 +43,7 @@ int main(int argc, char** argv) {
     argparse.add_argument("tool").help("Select Tool: solve, gbdhash, normalize, cnf2kis, extract, gates")
         .default_value("gbdhash")
         .action([](const std::string& value) {
-            static const std::vector<std::string> choices = { "solve", "gbdhash", "normalize", "cnf2kis", "extract", "gates" };
+            static const std::vector<std::string> choices = { "solve", "gbdhash", "normalize", "cnf2kis", "extract", "gates", "test" };
             if (std::find(choices.begin(), choices.end(), value) != choices.end()) {
                 return value;
             }
@@ -129,6 +130,11 @@ int main(int argc, char** argv) {
             for (unsigned i = 0; i < record.size(); i++) {
                 std::cout << names[i] << "=" << record[i] << std::endl;
             }
+        } else if (toolname == "test") {
+            std::cout << "Testing something ... " << std::endl;
+            StreamCompressor cmpr(filename.c_str(), 100);
+            for (int i = 0; i < 10; i++)
+                cmpr.write("0123456789", 10);
         }
     }
     catch (std::bad_alloc& e) {

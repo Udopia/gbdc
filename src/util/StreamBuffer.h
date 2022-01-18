@@ -64,6 +64,9 @@ class StreamBuffer {
             } else {
                 while (!isspace(buffer[end-1])) {  // align buffer with word-end
                     end--;
+                    if (end < 1) {
+                        throw ParserException(std::string("Error reading file: maximum token length exceeded"));
+                    }
                 }
             }
         }
