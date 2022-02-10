@@ -33,6 +33,7 @@ std::string iso_hash_from_dimacs(const char* filename) {
     StreamBuffer in(filename);
     struct Node { unsigned in; unsigned out; };
     std::vector<Node> degrees;
+    // count in- and out-degress per node in VIG
     while (!in.eof()) {
         in.skipWhitespace();
         if (in.eof()) {
@@ -53,7 +54,13 @@ std::string iso_hash_from_dimacs(const char* filename) {
             }
         }
     }
+    // get invariant w.r.t. polarity flips
+    for (Node& degree : degrees) {
+        if (degree.out < degree.in) std::swap(degree.out, degree.in);
+    }
+    // sort lexicographically by degree
     std::sort(degrees.begin(), degrees.end(), [](const Node& one, const Node& two) { return one.in != two.in ? one.in < two.in : one.out < two.out; } );
+    // hash
     MD5 md5;
     char buffer[64];
     for (Node node : degrees) {

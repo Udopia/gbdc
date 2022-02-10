@@ -36,7 +36,7 @@ float Mean(std::vector<T> distribution) {
 template <typename T>
 float Variance(std::vector<T> distribution, float mean) {
     double sum = std::accumulate(distribution.begin(), distribution.end(), 0.0,
-        [mean] (float a, unsigned b) { return a + pow(static_cast<float>(b - mean), 2); } );
+        [mean] (double a, unsigned b) { return a + pow(b - mean, 2); } );
     return static_cast<float>(sum / distribution.size());
 }
 

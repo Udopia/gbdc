@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
     argparse.add_argument("tool").help("Select Tool: solve, gbdhash, normalize, cnf2kis, extract, gates")
         .default_value("gbdhash")
         .action([](const std::string& value) {
-            static const std::vector<std::string> choices = { "solve", "gbdhash", "normalize", "cnf2kis", "extract", "gates", "test" };
+            static const std::vector<std::string> choices = { "solve", "gbdhash", "isohash", "normalize", "cnf2kis", "extract", "gates", "test" };
             if (std::find(choices.begin(), choices.end(), value) != choices.end()) {
                 return value;
             }
