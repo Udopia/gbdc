@@ -90,6 +90,8 @@ void sanitize(const char* filename) {
         std::cout << "c header-fix p cnf " << rv << " " << rc << std::endl;
     }
 
+    free(mask);
+
 }
 
 #endif  // SRC_TRANSFORM_SANITIZE_H_
