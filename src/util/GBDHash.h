@@ -43,6 +43,7 @@ std::string gbd_hash_from_dimacs(const char* filename) {
                 clause.append(" ");
             }
             clause.append("0");
+            //std::cout << "Hashing " << clause << std::endl;
             md5.consume(clause.c_str(), clause.length());
             clause.assign(" ");
         }

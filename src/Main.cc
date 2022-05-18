@@ -31,6 +31,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/transform/IndependentSet.h"
 #include "src/transform/Normalize.h"
+#include "src/transform/Sanitize.h"
 
 #include "src/features/GateStats.h"
 #include "src/features/CNFStats.h"
@@ -40,10 +41,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 int main(int argc, char** argv) {
     argparse::ArgumentParser argparse("CNF Tools");
 
-    argparse.add_argument("tool").help("Select Tool: solve, gbdhash, normalize, cnf2kis, extract, gates")
+    argparse.add_argument("tool").help("Select Tool: solve, gbdhash, normalize, sanitize, cnf2kis, extract, gates")
         .default_value("gbdhash")
         .action([](const std::string& value) {
-            static const std::vector<std::string> choices = { "solve", "gbdhash", "isohash", "normalize", "cnf2kis", "extract", "gates", "test" };
+            static const std::vector<std::string> choices = { "solve", "gbdhash", "isohash", "normalize", "sanitize", "cnf2kis", "extract", "gates", "test" };
             if (std::find(choices.begin(), choices.end(), value) != choices.end()) {
                 return value;
             }
@@ -106,6 +107,8 @@ int main(int argc, char** argv) {
         } else if (toolname == "normalize") {
             std::cerr << "Normalizing " << filename << std::endl;
             normalize(filename.c_str());
+        } else if (toolname == "sanitize") {
+            sanitize(filename.c_str());
         } else if (toolname == "cnf2kis") {
             std::cerr << "Generating Independent Set Problem " << filename << std::endl;
             IndependentSetFromCNF gen(filename.c_str());

@@ -25,6 +25,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <iostream>
 #include <limits>
+#include <cstring>
 #include <algorithm>
 #include <string>
 
@@ -60,6 +61,7 @@ class StreamBuffer {
             }
             end += archive_read_data(file, buffer + end, buffer_size - end);
             if (end < buffer_size) {
+                std::memset(buffer + end, 0, buffer_size - end);
                 end_of_file = true;
             } else {
                 while (!isspace(buffer[end-1])) {  // align buffer with word-end

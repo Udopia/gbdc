@@ -30,6 +30,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/features/CNFStats.h"
 #include "src/features/GateStats.h"
 #include "src/transform/IndependentSet.h"
+#include "src/transform/Sanitize.h"
 
 static PyObject* version(PyObject* self) {
     return pytype(1);
@@ -50,7 +51,7 @@ static PyObject* isohash(PyObject* self, PyObject* arg) {
 }
 
 
-static void extract_base_features_guarded(PyObject *dict, const char* filename) {
+static PyObject* extract_base_features_guarded(PyObject *dict, const char* filename) {
     CNFFormula formula;
     formula.readDimacsFromFile(filename);
     CNFStats stats(formula);
@@ -62,6 +63,8 @@ static void extract_base_features_guarded(PyObject *dict, const char* filename) 
     for (unsigned int i = 0; i < record.size(); i++) {
         pydict(dict, names[i].c_str(), record[i]);
     }
+
+    Py_RETURN_NONE;
 }
 
 static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
@@ -87,7 +90,7 @@ static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
 }
 
 
-static void extract_gate_features_guarded(PyObject *dict, const char* filename) {
+static PyObject* extract_gate_features_guarded(PyObject *dict, const char* filename) {
     CNFFormula formula;
     formula.readDimacsFromFile(filename);
     GateStats stats(formula);
@@ -99,6 +102,8 @@ static void extract_gate_features_guarded(PyObject *dict, const char* filename) 
     for (unsigned int i = 0; i < record.size(); i++) {
         pydict(dict, names[i].c_str(), record[i]);
     }
+
+    Py_RETURN_NONE;
 }
 
 static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
@@ -175,9 +180,27 @@ static PyObject* cnf2kis(PyObject* self, PyObject* arg) {
     }
 }
 
+static PyObject* print_sanitized(PyObject* self, PyObject* arg) {
+    const char* filename;
+    unsigned rlim = 0, mlim = 0;
+    PyArg_ParseTuple(arg, "s|II", &filename, &rlim, &mlim);
+
+    ResourceLimits limits(rlim, mlim);
+    limits.set_rlimits();
+    try {
+        sanitize(filename);
+        Py_RETURN_TRUE;
+    } catch (TimeLimitExceeded& e) {
+        Py_RETURN_FALSE;
+    } catch (MemoryLimitExceeded& e) {
+        Py_RETURN_FALSE;
+    }
+}
+
 static PyMethodDef myMethods[] = {
     {"extract_gate_features", extract_gate_features, METH_VARARGS, "Extract Gate Features."},
     {"extract_base_features", extract_base_features, METH_VARARGS, "Extract Base Features."},
+    {"sanitize", print_sanitized, METH_VARARGS, "Print sanitized, i.e., no duplicate literals in clauses and no tautologic clauses, CNF to stdout."},
     {"cnf2kis", cnf2kis, METH_VARARGS, "Create k-ISP Instance from given CNF Instance."},
     {"gbdhash", gbdhash, METH_VARARGS, "Calculates GBD-Hash (md5 of normalized file) of given DIMACS CNF file."},
     {"isohash", isohash, METH_VARARGS, "Calculates ISO-Hash (md5 of sorted degree sequence) of given DIMACS CNF file."},
