@@ -90,7 +90,7 @@ void sanitize(const char* filename) {
         std::cout << "c header-fix p cnf " << rv << " " << rc << std::endl;
     }
 
-    free(mask);
+    free(mask-nv);
 
 }
 
