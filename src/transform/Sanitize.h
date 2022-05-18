@@ -32,7 +32,7 @@ void sanitize(const char* filename) {
     StreamBuffer cnf(filename);
 
     cnf.skipWhitespace();
-    while (*cnf == 'c') {
+    while (!cnf.eof() && *cnf == 'c') {
         cnf.skipLine();
     }
 
@@ -58,6 +58,7 @@ void sanitize(const char* filename) {
     std::vector<int> clause;
     while (!cnf.eof()) {
         cnf.skipWhitespace();
+
         if (!cnf.eof() && *cnf != 'c' && *cnf != 'p') {
             bool tautology = false;
             stamp++;
@@ -83,6 +84,8 @@ void sanitize(const char* filename) {
                 std::cout << "0" << std::endl;
             }
             clause.clear();
+        } else {
+            cnf.skipLine();
         }
     }
 
