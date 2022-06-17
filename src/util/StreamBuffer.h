@@ -81,7 +81,7 @@ class StreamBuffer {
         archive_read_support_format_raw(file);
         int r = archive_read_open_filename(file, filename, buffer_size);
         if (r != ARCHIVE_OK) {
-            throw ParserException(std::string("Error opening file: ") + std::string(filename));
+            throw ParserException(std::string(archive_error_string(file)) + std::string(" Error opening file: ") + std::string(filename));
         }
         struct archive_entry *entry;
         r = archive_read_next_header(file, &entry);
