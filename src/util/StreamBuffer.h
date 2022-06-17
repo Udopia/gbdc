@@ -50,6 +50,8 @@ class StreamBuffer {
     unsigned int end;  // 1+last valid position
     bool end_of_file;  // true when last chunk of file was read to buffer
 
+    const char* filename_;
+
     void check_refill_buffer() {
         if (pos >= end && !end_of_file) {
             pos = 0;
@@ -75,7 +77,7 @@ class StreamBuffer {
     }
 
  public:
-    explicit StreamBuffer(const char* filename) : buffer_size(16384), pos(0), end(0), end_of_file(false) {
+    explicit StreamBuffer(const char* filename) : buffer_size(16384), pos(0), end(0), end_of_file(false), filename_(filename) {
         file = archive_read_new();
         archive_read_support_filter_all(file);
         archive_read_support_format_raw(file);
@@ -115,7 +117,7 @@ class StreamBuffer {
     void skipString(const char* str) {
         for (; *str != '\0'; ++str, incPos(1)) {
             if (*str != buffer[pos] || eof()) {
-                throw ParserException(std::string("PARSE ERROR! Expected '") + std::string(str) +
+                throw ParserException(std::string(filename_) + std::string(": PARSE ERROR! Expected '") + std::string(str) +
                     std::string("' but found ") + std::string(1, buffer[pos]));
             }
         }
@@ -132,18 +134,18 @@ class StreamBuffer {
         long number = strtol(str, &end, 10);
 
         if (errno == ERANGE || std::abs(number) >= std::numeric_limits<uint32_t>::max() / 2) {
-            throw ParserException(std::string("PARSE ERROR! Variable out of supported range (32 bits): ") +
+            throw ParserException(std::string(filename_) + std::string(": PARSE ERROR! Variable out of supported range (32 bits): ") +
                 std::to_string(number));
         } else if (errno != 0) {
             // Had ERRNO=25 ('Not a typewriter') when acceptance tests are run from gTest
             // Had ERRNO=29 ('Illegal seek') when reading from stdin
-            throw ParserException(std::string("PARSE ERROR! In 'strtol()', errno ") + std::to_string(errno) +
+            throw ParserException(std::string(filename_) + std::string(": PARSE ERROR! In 'strtol()', errno ") + std::to_string(errno) +
                 std::string(" while reading ") + std::string(1, buffer[pos]));
         } else if (end > str) {
             incPos(static_cast<intptr_t>(end - str));
             return static_cast<int>(number);
         } else {
-            throw ParserException(std::string("PARSE ERROR! Unexpected character ") + std::string(1, buffer[pos]));
+            throw ParserException(std::string(filename_) + std::string(": PARSE ERROR! Unexpected character ") + std::string(1, buffer[pos]));
         }
     }
 
