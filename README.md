@@ -1,6 +1,6 @@
-# CNF Tools
+# GDBC (previously CNF Tools)
 
-CNF Tools provide the command-line program `cnftools` and the python module `gdbc`. All provided functionality is usually accessible from both the command-line but also from python via `gdbc`.
+GDBC provide the command-line program `cnftools` and the python module `gdbc`. All provided functionality is usually accessible from both the command-line but also from python via `gdbc`.
 
 ## Programming Language
 - C++
@@ -24,13 +24,13 @@ Input to all tools is a SAT instance as a DIMACS CNF file which can be given in 
 
 ## Dependencies
 
-* CNF Tools use `libarchive` to read instances from a large variety of compressed formats. Debian-based systems (incl. Ubuntu or Mint) provide this library in the package `libarchive-dev`.
+* GDBC uses `libarchive` to read instances from a large variety of compressed formats. Debian-based systems (incl. Ubuntu or Mint) provide this library in the package `libarchive-dev`.
 
-* The program `cnftools` uses [`argparse.h` by Pranav Srinivas Kumar](https://github.com/p-ranav/argparse) to parse Command-Line Arguments. This is under MIT licence and resides in CNF Tools `lib` folder. It requires C++17 (and gcc 8+) to build.
+* The program `cnftools` uses [`argparse.h` by Pranav Srinivas Kumar](https://github.com/p-ranav/argparse) to parse Command-Line Arguments. This is under MIT licence and resides in the `lib` folder. It requires C++17 (and gcc 8+) to build.
 
-* The tool `gbdhash` uses the [MD5 Hash implementation of Michael Lloyd](https://github.com/CommanderBubble/MD5). This is under MIT licence and resides in CNF Tools `lib` folder.
+* The tool `gbdhash` uses the [MD5 Hash implementation of Michael Lloyd](https://github.com/CommanderBubble/MD5). This is under MIT licence and resides in the `lib` folder.
 
-* Gate feature extraction uses a SAT Solver via the [IPASIR Interface](https://github.com/biotomas/ipasir). For this application, CNF Tools use the SAT Solver [CaDiCaL (by Armin Biere)](http://fmv.jku.at/cadical/) which underlies the MIT License.
+* Gate feature extraction uses a SAT Solver via the [IPASIR Interface](https://github.com/biotomas/ipasir). For this application, GDBC uses the SAT Solver [CaDiCaL (by Armin Biere)](http://fmv.jku.at/cadical/) which underlies the MIT License.
 
 
 ## Publications
