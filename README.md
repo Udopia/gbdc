@@ -1,6 +1,6 @@
-# GDBC (previously CNF Tools)
+# GBDC (previously CNF Tools)
 
-GDBC provide the command-line program `cnftools` and the python module `gdbc`. All provided functionality is usually accessible from both the command-line but also from python via `gdbc`.
+GBDC provides the command-line program `cnftools` and the python module `gbdc`. All provided functionality is usually accessible from both the command-line but also from python via `gbdc`.
 
 ## Programming Language
 - C++
@@ -10,7 +10,7 @@ GDBC provide the command-line program `cnftools` and the python module `gdbc`. A
 Input to all tools is a SAT instance as a DIMACS CNF file which can be given in a variety of compressed formats (supported by libarchive). The following tools are provided:
 
 * GBD Hash:
-> Calculates the identifier for the given instance which is used in [GBD Tools](https://pypi.org/project/gbd-tools/) for data organization. GBD Tools themselves use the provided python module `gdbc` if installed (with priority over its own fallback implementation in Python).
+> Calculates the identifier for the given instance which is used in [GBD Tools](https://pypi.org/project/gbd-tools/) for data organization. GBD Tools themselves use the provided python module `gbdc` if installed (with priority over its own fallback implementation in Python).
 * Feature Extractors:
     * Base Features: The features cover degree distributions of well-known graph representations of a given instance and many more (see code for details).
 
@@ -24,13 +24,13 @@ Input to all tools is a SAT instance as a DIMACS CNF file which can be given in 
 
 ## Dependencies
 
-* GDBC uses `libarchive` to read instances from a large variety of compressed formats. Debian-based systems (incl. Ubuntu or Mint) provide this library in the package `libarchive-dev`.
+* GBDC uses `libarchive` to read instances from a large variety of compressed formats. Debian-based systems (incl. Ubuntu or Mint) provide this library in the package `libarchive-dev`.
 
 * The program `cnftools` uses [`argparse.h` by Pranav Srinivas Kumar](https://github.com/p-ranav/argparse) to parse Command-Line Arguments. This is under MIT licence and resides in the `lib` folder. It requires C++17 (and gcc 8+) to build.
 
 * The tool `gbdhash` uses the [MD5 Hash implementation of Michael Lloyd](https://github.com/CommanderBubble/MD5). This is under MIT licence and resides in the `lib` folder.
 
-* Gate feature extraction uses a SAT Solver via the [IPASIR Interface](https://github.com/biotomas/ipasir). For this application, GDBC uses the SAT Solver [CaDiCaL (by Armin Biere)](http://fmv.jku.at/cadical/) which underlies the MIT License.
+* Gate feature extraction uses a SAT Solver via the [IPASIR Interface](https://github.com/biotomas/ipasir). For this application, GBDC uses the SAT Solver [CaDiCaL (by Armin Biere)](http://fmv.jku.at/cadical/) which underlies the MIT License.
 
 
 ## Publications
@@ -41,7 +41,7 @@ Input to all tools is a SAT instance as a DIMACS CNF file which can be given in 
 
     * [*Recognition and Exploitation of Gate Structure in SAT Solving* (2020, Iser)](https://d-nb.info/1209199122/34)
 
-* The Python module `gdbc` is used in our project [GBD Benchmark Database](https://github.com/Udopia/gbd)
+* The Python module `gbdc` is used in our project [GBD Benchmark Database](https://github.com/Udopia/gbd)
 
     * [*Collaborative Management of Benchmark Instances and their Attributes* (2020, Iser et al.)](https://arxiv.org/pdf/2009.02995.pdf)
 
