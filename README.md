@@ -9,15 +9,15 @@ GBDC provides the command-line program `cnftools` and the python module `gbdc`. 
 
 Input to all tools is a SAT instance as a DIMACS CNF file which can be given in a variety of compressed formats (supported by libarchive). The following tools are provided:
 
-* GBD Hash:
-> Calculates the identifier for the given instance which is used in [GBD Tools](https://pypi.org/project/gbd-tools/) for data organization. GBD Tools themselves use the provided python module `gbdc` if installed (with priority over its own fallback implementation in Python).
+* GBD Hash: Calculates the identifier for the given instance which is used in [GBD Tools](https://pypi.org/project/gbd-tools/) for data organization. GBD Tools themselves use the provided python module `gbdc` if installed (with priority over its own fallback implementation in Python).
+
 * Feature Extractors:
     * Base Features: The features cover degree distributions of well-known graph representations of a given instance and many more (see code for details).
 
     * Gate Features: The features cover gate distribuations over levels of the (potentially recoverable) hierarchical gate strucuture of an instance (see code for details).
 
 * Problem Transformers:
-    * ~~Sanitizer for DIMACS CNF (correct header, remove comments and extra whitespace, remove redundant literals in clause, delete tautological clauses)~~ (Tool not ready atm)
+    * Sanitizer for DIMACS CNF (correct header, remove comments and extra whitespace, remove redundant literals in clause, delete tautological clauses)
 
     * Transformation to Independent Set Problem
 
