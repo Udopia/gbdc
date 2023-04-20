@@ -39,7 +39,7 @@ std::string gbd_hash_from_dimacs(const char* filename) {
         if (*in == 'p' || *in == 'c') {
             in.skipLine();
         } else {
-            for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
+            for (long long plit = in.readLongLong(); plit != 0; plit = in.readLongLong()) {
                 clause.append(std::to_string(plit));
                 clause.append(" ");
             }
