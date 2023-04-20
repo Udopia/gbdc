@@ -43,7 +43,7 @@ std::string iso_hash_from_dimacs(const char* filename) {
             in.skipLine();
         } else {
             for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
-                if (2 * abs(plit) > degrees.size()) {
+                if (2 * (unsigned)abs(plit) > degrees.size()) {
                     degrees.resize(2 * abs(plit) + 1);
                 }
                 if (plit < 0) {

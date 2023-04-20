@@ -33,6 +33,8 @@ cnftools
 build/
 .vscode/
 uninstall.info
+dist/
+gbdc.egg-info/
 
 # autotools output
 configure

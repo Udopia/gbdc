@@ -149,6 +149,30 @@ class StreamBuffer {
         }
     }
 
+    long long readLongLong() {
+        skipWhitespace();
+        if (eof()) return 0;
+
+        char* str = buffer + pos;
+        char* end = NULL;
+
+        errno = 0;
+        long long number = strtoll(str, &end, 10);
+
+        if (errno == ERANGE) {
+            throw ParserException(std::string(filename_) + std::string(": PARSE ERROR! Variable out of supported range (long long): ") +
+                std::to_string(number));
+        } else if (errno != 0) {
+            throw ParserException(std::string(filename_) + std::string(": PARSE ERROR! In 'strtoll()', errno ") + std::to_string(errno) +
+                std::string(" while reading ") + std::string(1, buffer[pos]));
+        } else if (end > str) {
+            incPos(static_cast<intptr_t>(end - str));
+            return number;
+        } else {
+            throw ParserException(std::string(filename_) + std::string(": PARSE ERROR! Unexpected character ") + std::string(1, buffer[pos]));
+        }
+    }
+
     char operator *() const {
         return eof() ? EOF : buffer[pos];
     }

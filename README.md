@@ -46,19 +46,19 @@ Input to all tools is a SAT instance as a DIMACS CNF file which can be given in 
     * [*Collaborative Management of Benchmark Instances and their Attributes* (2020, Iser et al.)](https://arxiv.org/pdf/2009.02995.pdf)
 
 
-## Build and Install
+## Build and/or Install
 
-### 1. Build `cnftools`:
+### 1. Build `gbdc` Command-line Tool:
 
     mkdir build
     cd build
     cmake -DCMAKE_BUILD_TYPE=Release ..
     make
 
-### 2. Install `gbdc`
+### 2. Install `gbdc` Python module:
 
     python3 setup.py build
-    python3 setup.py install --record uninstall.info
+    python3 setup.py install --user --record uninstall.info
 
 
 

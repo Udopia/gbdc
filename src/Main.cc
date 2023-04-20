@@ -41,10 +41,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 int main(int argc, char** argv) {
     argparse::ArgumentParser argparse("CNF Tools");
 
-    argparse.add_argument("tool").help("Select Tool: solve, gbdhash, normalize, sanitize, cnf2kis, extract, gates")
+    argparse.add_argument("tool").help("Select Tool: solve, gbdhash, isohash, opbhash, normalize, sanitize, cnf2kis, extract, gates")
         .default_value("gbdhash")
         .action([](const std::string& value) {
-            static const std::vector<std::string> choices = { "solve", "gbdhash", "isohash", "normalize", "sanitize", "cnf2kis", "extract", "gates", "test" };
+            static const std::vector<std::string> choices = { "solve", "gbdhash", "isohash", "opbhash", "normalize", "sanitize", "cnf2kis", "extract", "gates", "test" };
             if (std::find(choices.begin(), choices.end(), value) != choices.end()) {
                 return value;
             }
@@ -104,6 +104,8 @@ int main(int argc, char** argv) {
             std::cout << gbd_hash_from_dimacs(filename.c_str()) << std::endl;
         } else if (toolname == "isohash") {
             std::cout << iso_hash_from_dimacs(filename.c_str()) << std::endl;
+        } else if (toolname == "opbhash") {
+            std::cout << opb_hash(filename.c_str()) << std::endl;
         } else if (toolname == "normalize") {
             std::cerr << "Normalizing " << filename << std::endl;
             normalize(filename.c_str());

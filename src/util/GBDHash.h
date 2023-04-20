@@ -21,6 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define SRC_UTIL_GBDHASH_H_
 
 #include <string>
+#include <sstream>
 
 #include "lib/md5/md5.h"
 
@@ -50,5 +51,55 @@ std::string gbd_hash_from_dimacs(const char* filename) {
     }
     return md5.produce();
 }
+
+
+std::string opb_hash(const char* filename) {
+    MD5 md5;
+    StreamBuffer in(filename);
+    std::stringstream norm;
+    while (!in.eof()) {
+        in.skipWhitespace();
+        if (in.eof()) {
+            break;
+        }
+        if (*in == '*') {
+            in.skipLine();
+        } 
+        else if (*in == 'm') {
+            in.skipString("min:");
+            norm << "min:";
+            for (; *in != ';'; in.skipWhitespace()) {
+                long long weight = in.readLongLong();
+                in.skipWhitespace();
+                in.skipString("x");
+                long long variable = in.readLongLong();
+                norm << " " << weight << " x" << variable;
+            }            
+            norm << ";";
+        }
+        else {
+            for (; *in != '>' && *in != '<' && *in != '='; in.skipWhitespace()) {
+                long long weight = in.readLongLong();
+                in.skipWhitespace();
+                in.skipString("x");
+                long long variable = in.readLongLong();
+                norm << weight << " x" << variable << " ";
+            }
+            while (*in == '>' || *in == '<' || *in == '=') {
+                norm << *in;
+                ++in;
+            }
+            long long rhs = in.readLongLong();
+            norm << " " << rhs << ";";
+        }
+        std::string str = norm.str();
+        md5.consume(str.c_str(), str.length());
+        norm.str(std::string());
+        norm.clear();
+        in.skipLine();
+    }
+    return md5.produce();
+}
+
 
 #endif  // SRC_UTIL_GBDHASH_H_

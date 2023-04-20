@@ -50,6 +50,13 @@ static PyObject* isohash(PyObject* self, PyObject* arg) {
     return pytype(result.c_str());
 }
 
+static PyObject* opbhash(PyObject* self, PyObject* arg) {
+    const char* filename;
+    PyArg_ParseTuple(arg, "s", &filename);
+    std::string result = opb_hash(filename);
+    return pytype(result.c_str());
+}
+
 
 static PyObject* extract_base_features_guarded(PyObject *dict, const char* filename) {
     CNFFormula formula;
@@ -204,6 +211,7 @@ static PyMethodDef myMethods[] = {
     {"cnf2kis", cnf2kis, METH_VARARGS, "Create k-ISP Instance from given CNF Instance."},
     {"gbdhash", gbdhash, METH_VARARGS, "Calculates GBD-Hash (md5 of normalized file) of given DIMACS CNF file."},
     {"isohash", isohash, METH_VARARGS, "Calculates ISO-Hash (md5 of sorted degree sequence) of given DIMACS CNF file."},
+    {"opbhash", opbhash, METH_VARARGS, "Calculates OPB-Hash (md5 of normalized file) of given OPB file."},
     {"version", (PyCFunction)version, METH_NOARGS, "Returns Version"},
     {nullptr, nullptr, 0, nullptr}
 };
