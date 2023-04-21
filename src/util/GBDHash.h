@@ -69,27 +69,27 @@ std::string opb_hash(const char* filename) {
             in.skipString("min:");
             norm << "min:";
             for (; *in != ';'; in.skipWhitespace()) {
-                long long weight = in.readLongLong();
+                std::string weight = in.readNumber();
                 in.skipWhitespace();
                 in.skipString("x");
-                long long variable = in.readLongLong();
+                std::string variable = in.readNumber();
                 norm << " " << weight << " x" << variable;
             }            
             norm << ";";
         }
         else {
             for (; *in != '>' && *in != '<' && *in != '='; in.skipWhitespace()) {
-                long long weight = in.readLongLong();
+                std::string weight = in.readNumber();
                 in.skipWhitespace();
                 in.skipString("x");
-                long long variable = in.readLongLong();
+                std::string variable = in.readNumber();
                 norm << weight << " x" << variable << " ";
             }
             while (*in == '>' || *in == '<' || *in == '=') {
                 norm << *in;
                 ++in;
             }
-            long long rhs = in.readLongLong();
+            std::string rhs = in.readNumber();
             norm << " " << rhs << ";";
         }
         std::string str = norm.str();

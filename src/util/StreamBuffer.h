@@ -173,6 +173,25 @@ class StreamBuffer {
         }
     }
 
+    std::string readNumber() {
+        skipWhitespace();
+        if (eof()) return std::string("0");
+        if (buffer[pos] == '+') {
+            incPos(1);
+        }
+        std::stringstream result;
+        if (buffer[pos] == '-') {
+            result << buffer[pos];
+            incPos(1);
+        }
+        if (eof() || !isdigit(buffer[pos])) return std::string("0");
+        while (!eof() && isdigit(buffer[pos])) {
+            result << buffer[pos];
+            incPos(1);
+        }
+        return result.str();
+    }
+
     char operator *() const {
         return eof() ? EOF : buffer[pos];
     }
