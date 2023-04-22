@@ -39,8 +39,8 @@ std::string gbd_hash_from_dimacs(const char* filename) {
         if (*in == 'p' || *in == 'c') {
             in.skipLine();
         } else {
-            for (long long plit = in.readLongLong(); plit != 0; plit = in.readLongLong()) {
-                clause.append(std::to_string(plit));
+            for (std::string plit = in.readNumber(); plit != "0"; plit = in.readNumber()) {
+                clause.append(plit);
                 clause.append(" ");
             }
             clause.append("0");
@@ -64,6 +64,7 @@ std::string opb_hash(const char* filename) {
         }
         if (*in == '*') {
             in.skipLine();
+            continue;
         } 
         else if (*in == 'm') {
             in.skipString("min:");
@@ -93,6 +94,7 @@ std::string opb_hash(const char* filename) {
             norm << " " << rhs << ";";
         }
         std::string str = norm.str();
+        //std::cout << "Hashing " << str << std::endl;
         md5.consume(str.c_str(), str.length());
         norm.str(std::string());
         norm.clear();
