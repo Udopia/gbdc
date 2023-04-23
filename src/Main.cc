@@ -20,6 +20,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <iostream>
 #include <array>
 #include <cstdio>
+#include <filesystem>
 
 #include "lib/argparse/argparse.hpp"
 #include "lib/ipasir.h"
@@ -41,10 +42,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 int main(int argc, char** argv) {
     argparse::ArgumentParser argparse("CNF Tools");
 
-    argparse.add_argument("tool").help("Select Tool: solve, gbdhash, isohash, opbhash, normalize, sanitize, cnf2kis, extract, gates")
+    argparse.add_argument("tool").help("Select Tool: solve, id|identify (gbdhash, opbhash), isohash, normalize, sanitize, cnf2kis, extract, gates")
         .default_value("gbdhash")
         .action([](const std::string& value) {
-            static const std::vector<std::string> choices = { "solve", "gbdhash", "isohash", "opbhash", "normalize", "sanitize", "cnf2kis", "extract", "gates", "test" };
+            static const std::vector<std::string> choices = { "solve", "id", "identify", "gbdhash", "opbhash", "isohash", "normalize", "sanitize", "cnf2kis", "extract", "gates", "test" };
             if (std::find(choices.begin(), choices.end(), value) != choices.end()) {
                 return value;
             }
@@ -100,7 +101,20 @@ int main(int argc, char** argv) {
     std::cerr << "c Running: " << toolname << " " << filename << std::endl;
 
     try {
-        if (toolname == "gbdhash") {
+        if (toolname == "id" || toolname == "identify") {
+            std::string ext = std::filesystem::path(filename).extension();
+            if (ext == ".xz" || ext == ".lzma" || ext == ".bz2" || ext == ".gz") {
+                ext = std::filesystem::path(filename).stem().extension();
+            }
+            if (ext == ".cnf" || ext == ".wecnf") {
+                std::cerr << "Detected CNF, using CNF hash" << std::endl;
+                std::cout << gbd_hash_from_dimacs(filename.c_str()) << std::endl;
+            }
+            else if (ext == ".opb") {
+                std::cerr << "Detected OPB, using OPB hash" << std::endl;
+                std::cout << opb_hash(filename.c_str()) << std::endl;
+            }
+        } else if (toolname == "gbdhash") {
             std::cout << gbd_hash_from_dimacs(filename.c_str()) << std::endl;
         } else if (toolname == "isohash") {
             std::cout << iso_hash_from_dimacs(filename.c_str()) << std::endl;
