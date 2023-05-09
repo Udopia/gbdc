@@ -25,45 +25,140 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/util/StreamBuffer.h"
 
-void normalize(const char* filename) {
+
+void determine_counts(const char* filename, int& nvars, int& nclauses) {
     StreamBuffer in(filename);
-    int nv = 0, nc = 0, rv = 0, rc = 0;
+    nvars = 0; 
+    nclauses = 0;
     while (!in.eof()) {
         in.skipWhitespace();
         if (in.eof()) {
             break;
-        } else if (*in == 'c') {
-            if (nv > 0 && nc > 0) {
-                in.skipLine();  // skip comments after header
-            } else {
-                while (!in.eof() && (!isspace(*in) || isblank(*in))) {
-                    std::cout << *in;
-                    ++in;
-                }
-                in.skipWhitespace();
-                std::cout << std::endl;
-            }
-        } else if (*in == 'p') {
-            ++in;
-            in.skipWhitespace();
-            in.skipString("cnf\0");
-            nv = in.readInteger();
-            nc = in.readInteger();
+        } else if (*in == 'c' || *in == 'p') {
             in.skipLine();
-            std::cout << "p cnf " << nv << " " << nc << std::endl;
+        } else {
+            for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
+                nvars = std::max(abs(plit), nvars);
+            }
+            nclauses++;
+        }
+    }
+}
+
+/**
+ * @brief Normalizes a CNF formula by removing comments and 
+ * generating a header based on the real number of clauses
+ * and the maximum variable index.
+ * 
+ * @param filename 
+ */
+void normalize(const char* filename) {
+    StreamBuffer in(filename);
+    int vars, clauses;
+    determine_counts(filename, vars, clauses);
+    std::cout << "p cnf " << vars << " " << clauses << std::endl;
+    while (!in.eof()) {
+        in.skipWhitespace();
+        if (in.eof()) {
+            break;
+        } else if (*in == 'c' || *in == 'p') {
+            in.skipLine();
         } else {
             for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
                 std::cout << plit << " ";
-                rv = std::max(abs(plit), rv);
             }
             std::cout << "0" << std::endl;
-            rc++;
         }
     }
-    if (rc != nc || rv > nv) {
-        std::cerr << "c Warning (" << filename << "), header is: p cnf " << nv << " " << nc
-            << ", but correct would be: p cnf " << rv << " " << rc << std::endl;
+}
+
+/**
+ * @brief Sanitizes a CNF formula by removing comments and generating a normalized header.
+ * Removes duplicate literals from clauses and removes tautological clauses while preserving
+ * the order of clauses and literals.
+ * 
+ * @param filename
+ */
+void sanitize(const char* filename) {
+    StreamBuffer in(filename);
+
+    int vars, clauses;
+    determine_counts(filename, vars, clauses);
+    std::cout << "p cnf " << vars << " " << clauses << std::endl;
+
+    // set mask[lit] to clause number if lit is present in clause
+    int* mask = (int*)calloc(2*vars + 2, sizeof(int));
+    mask += vars + 1;
+
+    std::vector<int> clause;
+    unsigned stamp = 0;
+    while (!in.eof()) {
+        in.skipWhitespace();
+        if (in.eof()) {
+            break;
+        } else if (*in == 'c' || *in == 'p') {
+            in.skipLine();
+        } else {
+            ++stamp;
+            bool tautological = false;
+            for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
+                if (mask[-plit] == stamp) {
+                    tautological = true;
+                    break;
+                }
+                else if (mask[plit] != stamp) {
+                    mask[plit] = stamp;
+                    clause.push_back(plit);
+                }
+            }
+            if (!tautological) {
+                for (int plit : clause) {
+                    std::cout << plit << " ";
+                }
+                std::cout << "0" << std::endl;
+            }
+            clause.clear();
+        }
     }
 }
+
+
+/**
+ * @brief Checks if a CNF formula is already sanitized.
+ * 
+ * @param filename 
+ * @return true if neither duplicate literals nor tautological clauses are present
+ * @return false otherwise
+ */
+bool check_sanitized(const char* filename) {
+    StreamBuffer in(filename);
+
+    int vars, clauses;
+    determine_counts(filename, vars, clauses);
+    
+    // set mask[lit] to clause number if lit is present in clause
+    int* mask = (int*)calloc(2*vars + 2, sizeof(int));
+    mask += vars + 1;
+
+    unsigned stamp = 0;
+    while (!in.eof()) {
+        in.skipWhitespace();
+        if (in.eof()) {
+            break;
+        } else if (*in == 'c' || *in == 'p') {
+            in.skipLine();
+        } else {
+            ++stamp;
+            for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
+                if (mask[plit] == stamp || mask[-plit] == stamp) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+
 
 #endif  // SRC_TRANSFORM_NORMALIZE_H_
