@@ -30,7 +30,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/features/CNFStats.h"
 #include "src/features/GateStats.h"
 #include "src/transform/IndependentSet.h"
-#include "src/transform/Sanitize.h"
+#include "src/transform/Normalize.h"
 
 static PyObject* version(PyObject* self) {
     return pytype(1);
