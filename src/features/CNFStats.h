@@ -49,6 +49,7 @@ class CNFStats {
     void analyze_occurrences() {
         // Size
         std::array<unsigned, 10> clause_sizes;  // one entry per clause-size
+        clause_sizes.fill(0);
 
         // Horn
         unsigned horn = 0, inv_horn = 0;  // number of (inv.) horn clauses
