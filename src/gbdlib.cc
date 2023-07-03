@@ -28,6 +28,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/util/py_util.h"
 
 #include "src/features/CNFStats.h"
+#include "src/features/CNFStatsRed.h"
 #include "src/features/GateStats.h"
 #include "src/transform/IndependentSet.h"
 #include "src/transform/Normalize.h"
@@ -55,6 +56,42 @@ static PyObject* opbhash(PyObject* self, PyObject* arg) {
     PyArg_ParseTuple(arg, "s", &filename);
     std::string result = opb_hash(filename);
     return pytype(result.c_str());
+}
+
+
+static PyObject* extract_red_base_features_guarded(PyObject *dict, const char* filename) {
+    CNFFormula formula;
+    formula.readDimacsFromFile(filename);
+    CNFStatsRed stats(formula);
+    stats.analyze();
+
+    std::vector<float> record = stats.BaseFeatures();
+    std::vector<std::string> names = CNFStatsRed::BaseFeatureNames();
+
+    for (unsigned int i = 0; i < record.size(); i++) {
+        pydict(dict, names[i].c_str(), record[i]);
+    }
+
+    Py_RETURN_NONE;
+}
+
+static PyObject* extract_red_base_features(PyObject* self, PyObject* arg) {
+    const char* filename;
+    unsigned rlim = 0, mlim = 0;
+    PyArg_ParseTuple(arg, "s|II", &filename, &rlim, &mlim);
+
+    PyObject *dict = pydict();
+
+    ResourceLimits limits(rlim, mlim);
+    limits.set_rlimits();
+    try {
+        extract_red_base_features_guarded(dict, filename);
+        return dict;
+    } catch (TimeLimitExceeded& e) {
+        return dict;
+    } catch (MemoryLimitExceeded& e) {
+        return dict;
+    }
 }
 
 
@@ -207,6 +244,7 @@ static PyObject* print_sanitized(PyObject* self, PyObject* arg) {
 static PyMethodDef myMethods[] = {
     {"extract_gate_features", extract_gate_features, METH_VARARGS, "Extract Gate Features."},
     {"extract_base_features", extract_base_features, METH_VARARGS, "Extract Base Features."},
+    {"extract_red_base_features", extract_red_base_features, METH_VARARGS, "Extract Reduced Base Features."},
     {"sanitize", print_sanitized, METH_VARARGS, "Print sanitized, i.e., no duplicate literals in clauses and no tautologic clauses, CNF to stdout."},
     {"cnf2kis", cnf2kis, METH_VARARGS, "Create k-ISP Instance from given CNF Instance."},
     {"gbdhash", gbdhash, METH_VARARGS, "Calculates GBD-Hash (md5 of normalized file) of given DIMACS CNF file."},
