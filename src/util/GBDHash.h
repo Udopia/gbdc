@@ -52,6 +52,35 @@ std::string gbd_hash_from_dimacs(const char* filename) {
     return md5.produce();
 }
 
+std::string pqbf_hash(const char* filename) {
+    MD5 md5;
+    StreamBuffer in(filename);
+    std::string clause("");
+    while (!in.eof()) {
+        in.skipWhitespace();
+        if (in.eof()) {
+            break;
+        }
+        if (*in == 'p' || *in == 'c') {
+            in.skipLine();
+        } else {
+            if (*in == 'e' || *in == 'a') {
+                clause.append(*in == 'e' ? "e " : "a ");
+                ++in;
+                in.skipWhitespace();
+            }
+            for (std::string plit = in.readNumber(); plit != "0"; plit = in.readNumber()) {
+                clause.append(plit);
+                clause.append(" ");
+            }
+            clause.append("0");
+            //std::cout << "Hashing " << clause << std::endl;
+            md5.consume(clause.c_str(), clause.length());
+            clause.assign(" ");
+        }
+    }
+    return md5.produce();
+}
 
 std::string opb_hash(const char* filename) {
     MD5 md5;
