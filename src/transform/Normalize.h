@@ -30,14 +30,13 @@ void determine_counts(const char* filename, int& nvars, int& nclauses) {
     StreamBuffer in(filename);
     nvars = 0; 
     nclauses = 0;
-    while (!in.eof()) {
-        in.skipWhitespace();
-        if (in.eof()) {
-            break;
-        } else if (*in == 'c' || *in == 'p') {
-            in.skipLine();
+    while (in.skipWhitespace()) {
+        if (*in == 'c' || *in == 'p') {
+            if (!in.skipLine()) break;
         } else {
-            for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
+            int plit;
+            while (in.readInteger(&plit)) {
+                if (plit == 0) break;
                 nvars = std::max(abs(plit), nvars);
             }
             nclauses++;
@@ -57,14 +56,13 @@ void normalize(const char* filename) {
     int vars, clauses;
     determine_counts(filename, vars, clauses);
     std::cout << "p cnf " << vars << " " << clauses << std::endl;
-    while (!in.eof()) {
-        in.skipWhitespace();
-        if (in.eof()) {
-            break;
-        } else if (*in == 'c' || *in == 'p') {
-            in.skipLine();
+    while (in.skipWhitespace()) {
+        if (*in == 'c' || *in == 'p') {
+            if (!in.skipLine()) break;
         } else {
-            for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
+            int plit;
+            while (in.readInteger(&plit)) {
+                if (plit == 0) break;
                 std::cout << plit << " ";
             }
             std::cout << "0" << std::endl;
@@ -92,16 +90,15 @@ void sanitize(const char* filename) {
 
     std::vector<int> clause;
     unsigned stamp = 0;
-    while (!in.eof()) {
-        in.skipWhitespace();
-        if (in.eof()) {
-            break;
-        } else if (*in == 'c' || *in == 'p') {
-            in.skipLine();
+    while (in.skipWhitespace()) {
+        if (*in == 'c' || *in == 'p') {
+            if (!in.skipLine()) break;
         } else {
             ++stamp;
             bool tautological = false;
-            for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
+            int plit;
+            while (in.readInteger(&plit)) {
+                if (plit == 0) break;
                 if (mask[-plit] == stamp) {
                     tautological = true;
                     break;
@@ -141,15 +138,14 @@ bool check_sanitized(const char* filename) {
     mask += vars + 1;
 
     unsigned stamp = 0;
-    while (!in.eof()) {
-        in.skipWhitespace();
-        if (in.eof()) {
-            break;
-        } else if (*in == 'c' || *in == 'p') {
-            in.skipLine();
+    while (in.skipWhitespace()) {
+        if (*in == 'c' || *in == 'p') {
+            if (!in.skipLine()) break;
         } else {
             ++stamp;
-            for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
+            int plit;
+            while (in.readInteger(&plit)) {
+                if (plit == 0) break;
                 if (mask[plit] == stamp || mask[-plit] == stamp) {
                     return false;
                 }

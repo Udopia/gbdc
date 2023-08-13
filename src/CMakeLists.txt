@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
-add_subdirectory(gates)
+add_subdirectory(extract/gates)
 add_subdirectory(util)
-add_subdirectory(features)
+add_subdirectory(extract)
 add_subdirectory(transform)
+add_subdirectory(test)

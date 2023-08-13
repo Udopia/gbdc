@@ -93,15 +93,13 @@ class CNFFormula {
     void readDimacsFromFile(const char* filename) {
         StreamBuffer in(filename);
         Cl clause;
-        while (!in.eof()) {
-            in.skipWhitespace();
-            if (in.eof()) {
-                break;
-            }
+        while (in.skipWhitespace()) {
             if (*in == 'p' || *in == 'c') {
-                in.skipLine();
+                if (!in.skipLine()) break;
             } else {
-                for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
+                int plit;
+                while (in.readInteger(&plit)) {
+                    if (plit == 0) break;
                     clause.push_back(Lit(abs(plit), plit < 0));
                 }
                 readClause(clause.begin(), clause.end());

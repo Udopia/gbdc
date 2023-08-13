@@ -188,16 +188,11 @@ class MD5 {
     ~MD5() { }
 
     void consume(const char* str, unsigned length) {
-        if (hasher.is_finished()) {
-            throw "Attempt to use md5 hasher after finished.";
-        }
+        // std::cout << std::string(str, length) << std::endl;
         hasher.process(str, length);
     }
 
     std::string produce() {
-        if (hasher.is_finished()) {
-            throw "Attempt to use md5 hasher after finished.";
-        }
         unsigned char sig[MD5_SIZE];
         char str[MD5_STRING_SIZE];
         hasher.finish(sig);

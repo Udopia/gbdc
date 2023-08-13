@@ -34,8 +34,17 @@ static PyObject* pytype(const char* val) {
     return Py_BuildValue("s", val);
 }
 
-static PyObject* pytype(float val) {
-    return PyFloat_FromDouble(static_cast<double>(val));
+static PyObject* pytype(double val) {
+    return PyFloat_FromDouble(val);
+}
+
+static PyObject* pylist() {
+    return PyList_New(0);
+}
+
+template<typename T>
+static void pylist(PyObject* list, T val) {
+    PyList_Append(list, pytype(val));
 }
 
 static PyObject* pydict() {

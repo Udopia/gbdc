@@ -17,8 +17,8 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef SRC_UTIL_STREAMBUFFER_H_
-#define SRC_UTIL_STREAMBUFFER_H_
+#ifndef STREAMBUFFER_H_
+#define STREAMBUFFER_H_
 
 #include <archive.h>
 #include <archive_entry.h>
@@ -28,6 +28,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <cstring>
 #include <algorithm>
 #include <string>
+
+#include "SolverTypes.h"
 
 class ParserException : public std::exception {
  public:
@@ -52,7 +54,7 @@ class StreamBuffer {
 
     const char* filename_;
 
-    void check_refill_buffer() {
+    bool refill_buffer() {
         if (pos >= end && !end_of_file) {
             pos = 0;
             if (end > 0 && end < buffer_size) {
@@ -73,7 +75,9 @@ class StreamBuffer {
                     }
                 }
             }
+            return true;
         }
+        return false;
     }
 
  public:
@@ -91,7 +95,7 @@ class StreamBuffer {
             throw ParserException(std::string("Error reading header: ") + std::string(filename));
         }
         buffer = new char[buffer_size];
-        check_refill_buffer();
+        refill_buffer();
     }
 
     ~StreamBuffer() {
@@ -99,115 +103,167 @@ class StreamBuffer {
         delete[] buffer;
     }
 
-    /** Skip until the end of the next newline (+subsequent whitespace) */
-    void skipLine() {
-        while (!eof() && (!isspace(buffer[pos]) || isblank(buffer[pos]))) {
-            incPos(1);
-        }
-        skipWhitespace();
-    }
-
-    void skipWhitespace() {
-        while (!eof() && isspace(buffer[pos])) {
-            incPos(1);
-        }
-    }
-
-    /** Skip given sequence of character (+throw exceptions if input deviates) */
-    void skipString(const char* str) {
-        for (; *str != '\0'; ++str, incPos(1)) {
-            if (*str != buffer[pos] || eof()) {
-                throw ParserException(std::string(filename_) + std::string(": PARSE ERROR! Expected '") + std::string(str) +
-                    std::string("' but found ") + std::string(1, buffer[pos]));
-            }
-        }
-    }
-
-    int readInteger() {
-        skipWhitespace();
-        if (eof()) return 0;
-
-        char* str = buffer + pos;
-        char* end = NULL;
-
-        errno = 0;
-        long number = strtol(str, &end, 10);
-
-        if (errno == ERANGE || std::abs(number) >= std::numeric_limits<uint32_t>::max() / 2) {
-            throw ParserException(std::string(filename_) + std::string(": PARSE ERROR! Variable out of supported range (32 bits): ") +
-                std::to_string(number));
-        } else if (errno != 0) {
-            // Had ERRNO=25 ('Not a typewriter') when acceptance tests are run from gTest
-            // Had ERRNO=29 ('Illegal seek') when reading from stdin
-            throw ParserException(std::string(filename_) + std::string(": PARSE ERROR! In 'strtol()', errno ") + std::to_string(errno) +
-                std::string(" while reading ") + std::string(1, buffer[pos]));
-        } else if (end > str) {
-            incPos(static_cast<intptr_t>(end - str));
-            return static_cast<int>(number);
-        } else {
-            throw ParserException(std::string(filename_) + std::string(": PARSE ERROR! Unexpected character ") + std::string(1, buffer[pos]));
-        }
-    }
-
-    long long readLongLong() {
-        skipWhitespace();
-        if (eof()) return 0;
-
-        char* str = buffer + pos;
-        char* end = NULL;
-
-        errno = 0;
-        long long number = strtoll(str, &end, 10);
-
-        if (errno == ERANGE) {
-            throw ParserException(std::string(filename_) + std::string(": PARSE ERROR! Variable out of supported range (long long): ") +
-                std::to_string(number));
-        } else if (errno != 0) {
-            throw ParserException(std::string(filename_) + std::string(": PARSE ERROR! In 'strtoll()', errno ") + std::to_string(errno) +
-                std::string(" while reading ") + std::string(1, buffer[pos]));
-        } else if (end > str) {
-            incPos(static_cast<intptr_t>(end - str));
-            return number;
-        } else {
-            throw ParserException(std::string(filename_) + std::string(": PARSE ERROR! Unexpected character ") + std::string(1, buffer[pos]));
-        }
-    }
-
-    std::string readNumber() {
-        skipWhitespace();
-        if (eof()) return std::string("0");
-        if (buffer[pos] == '+') {
-            incPos(1);
-        }
-        std::stringstream result;
-        if (buffer[pos] == '-') {
-            result << buffer[pos];
-            incPos(1);
-        }
-        if (eof() || !isdigit(buffer[pos])) return std::string("0");
-        while (!eof() && isdigit(buffer[pos])) {
-            result << buffer[pos];
-            incPos(1);
-        }
-        return result.str();
-    }
-
     char operator *() const {
         return eof() ? EOF : buffer[pos];
     }
 
-    void operator ++() {
-        incPos(1);
-    }
-
-    void incPos(unsigned int inc) {
-        pos += inc;
-        check_refill_buffer();
-    }
-
+    /**
+     * @brief check if eof reached
+     * @return true if eof reached, false otherwise
+     */
     bool eof() const {
         return (pos >= end) && end_of_file;
     }
+
+    /**
+     * @brief skip one character, return false if eof reached
+     * @pre !eof()
+     * @return true if pos valid, false otherwise (eof reached)
+     */
+    bool skip() {
+        // if (eof()) return false;
+        if (++pos < end) {
+            return true;
+        } else {
+            return refill_buffer();
+        }
+    }
+
+    /**
+     * @brief skip entire line and subsequent whitespace, return false if eof reached
+     * @pre !eof()
+     * @return true if pos is valid, false otherwise (eof reached)
+     */
+    bool skipLine() {
+        // if (eof()) return false;
+        while (buffer[pos] != '\n' && buffer[pos] != '\r') {
+            if (!skip()) return false;
+        }
+        return skipWhitespace();
+    }
+
+    /**
+     * @brief skip whitespace, return false if eof reached
+     * @pre !eof()
+     * @return true if pos is valid, false otherwise (eof reached)
+     */
+    bool skipWhitespace() {
+        // if (eof()) return false;
+        while (isspace(buffer[pos])) {
+            if (!skip()) return false;
+        }
+        return true;
+    }
+
+    /**
+     * @brief skip given string
+     * @param str the string to match
+     * @throw if str could not be entirely matched
+     * @return true if pos is valid, false otherwise (eof reached)
+     */
+    bool skipString(const char* str) {
+        if (eof()) return false;
+        while (*str == buffer[pos]) {
+            ++str;
+            if (*str == '\0') {
+                return skip();
+            }
+            if (!skip()) {
+                throw ParserException(std::string(filename_) + ": expected '" + str + "'");
+            }
+        }
+        throw ParserException(std::string(filename_) + ": expected '" + str + "'");
+    }
+
+    /**
+     * @brief read next integer, skip leading whitespace
+     * @param *out the read integer, output parameter
+     * @throw ParserException if no integer could be read
+     * @return true if integer was read before reaching eof, false otherwise
+     */
+    bool readInteger(int* out) {
+        if (!skipWhitespace()) return false;
+
+        char* str = buffer + pos;
+        char* end = nullptr;
+
+        errno = 0;
+        long number = strtol(str, &end, 10);
+
+        if (errno == 0) {
+            if (end > str) {
+                if (std::abs(number) <= std::numeric_limits<int32_t>::max()) {
+                    pos += static_cast<intptr_t>(end - str);
+                    *out = static_cast<int>(number);
+                    return true;
+                } else {
+                    throw ParserException(std::string(filename_) + ": number out of int32 range");
+                }
+            } else {
+                throw ParserException(std::string(filename_) + ": unexpected character: " + buffer[pos]);
+            }
+        } else {
+            throw ParserException(std::string(filename_) + ": strtol() errno: " + std::to_string(errno));
+        }
+    }
+
+    /**
+     * @brief read next number, skip leading whitespace
+     * @param *out  the read number, output parameter
+     * @throw ParserException if no number could be read
+     * @return true if number was read before reaching eof, false otherwise
+     */
+    bool readNumber(std::string* out) {
+        std::string result;
+
+        if (!skipWhitespace()) return false;
+
+        if (buffer[pos] == '-') {
+            result.append(1, buffer[pos]);
+            if (!skip()) return false;
+        } else if (buffer[pos] == '+') {
+            if (!skip()) return false;
+        }
+
+        if (!isdigit(buffer[pos])) {
+            if (!skipWhitespace()) return false;
+            if (!isdigit(buffer[pos])) {
+                throw ParserException(std::string(filename_) + ": unexpected character: " + buffer[pos]);
+            }
+        }
+
+        while (isdigit(buffer[pos])) {
+            result.append(1, buffer[pos]);
+            if (!skip()) break;
+        }
+        
+        *out = result;
+        return true;
+    }
+
+    /**
+     * @brief read next clause
+     * @param out the read clause, output parameter
+     * @return true if clause was read before reaching eof, false otherwise
+     */
+    bool readClause(Cl& out) {
+        Cl clause;
+
+        if (eof() || !skipWhitespace()) return false;
+
+        while (buffer[pos] == 'p' || buffer[pos] == 'c') {
+            if (!skipLine()) return false;
+        }
+
+        int plit;
+        while (readInteger(&plit)) {
+            if (plit == 0) break;
+            clause.push_back(Lit(abs(plit), plit < 0));
+        }
+        
+        out = clause;
+        return true;
+    }
 };
 
-#endif  // SRC_UTIL_STREAMBUFFER_H_
+#endif  // STREAMBUFFER_H_

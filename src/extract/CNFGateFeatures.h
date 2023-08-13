@@ -16,8 +16,9 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
-#ifndef SRC_FEATURES_GATESTATS_H_
-#define SRC_FEATURES_GATESTATS_H_
+
+#ifndef GATESTATS_H_
+#define GATESTATS_H_
 
 #include <math.h>
 
@@ -29,28 +30,51 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/util/SolverTypes.h"
 
-#include "src/gates/GateFormula.h"
-#include "src/gates/GateAnalyzer.h"
+#include "src/extract/IExtractor.h"
 
-#include "src/features/Util.h"
+#include "src/extract/gates/GateFormula.h"
+#include "src/extract/gates/GateAnalyzer.h"
 
-class GateStats {
-    const CNFFormula& formula_;
-    std::vector<float> record;
+#include "src/extract/Util.h"
 
- public:
-    unsigned n_vars, n_gates, n_roots;
-    unsigned n_none, n_generic, n_mono, n_and, n_or, n_triv, n_equiv, n_full;
 
-    explicit GateStats(const CNFFormula& formula) :
-     formula_(formula), record(), n_vars(formula.nVars()), n_gates(), n_roots(),
-     n_none(0), n_generic(0), n_mono(0), n_and(0), n_or(0), n_triv(0), n_equiv(0), n_full(0) { }
+class CNFGateFeatures : public IExtractor {
+    const char* filename_;
+    std::vector<double> features;
+    std::vector<std::string> names;
 
-    void analyze(unsigned repeat, unsigned verbose) {
-        std::vector<unsigned> levels, levels_none, levels_generic, levels_mono, levels_and, levels_or, levels_triv, levels_equiv, levels_full;
-        GateAnalyzer<> analyzer(formula_, true, true, repeat, verbose);
+    unsigned n_vars = 0, n_gates = 0, n_roots = 0;
+    unsigned n_none = 0, n_generic = 0, n_mono = 0;
+    unsigned n_and = 0, n_or = 0, n_triv = 0, n_equiv = 0, n_full = 0;
+
+    std::vector<unsigned> levels, levels_none, levels_generic, levels_mono;
+    std::vector<unsigned> levels_and, levels_or, levels_triv;
+    std::vector<unsigned> levels_equiv, levels_full;
+
+  public:
+    CNFGateFeatures(const char* filename) : filename_(filename), features(), names() { 
+        names.insert(names.end(), { "n_vars", "n_gates", "n_roots" });
+        names.insert(names.end(), { "n_none", "n_generic", "n_mono" });
+        names.insert(names.end(), { "n_and", "n_or", "n_triv", "n_equiv", "n_full" });
+        names.insert(names.end(), { "levels_mean", "levels_variance", "levels_min", "levels_max", "levels_entropy" });
+        names.insert(names.end(), { "levels_none_mean", "levels_none_variance", "levels_none_min", "levels_none_max", "levels_none_entropy" });
+        names.insert(names.end(), { "levels_generic_mean", "levels_generic_variance", "levels_generic_min", "levels_generic_max", "levels_generic_entropy" });
+        names.insert(names.end(), { "levels_mono_mean", "levels_mono_variance", "levels_mono_min", "levels_mono_max", "levels_mono_entropy" });
+        names.insert(names.end(), { "levels_and_mean", "levels_and_variance", "levels_and_min", "levels_and_max", "levels_and_entropy" });
+        names.insert(names.end(), { "levels_or_mean", "levels_or_variance", "levels_or_min", "levels_or_max", "levels_or_entropy" });
+        names.insert(names.end(), { "levels_triv_mean", "levels_triv_variance", "levels_triv_min", "levels_triv_max", "levels_triv_entropy" });
+        names.insert(names.end(), { "levels_equiv_mean", "levels_equiv_variance", "levels_equiv_min", "levels_equiv_max", "levels_equiv_entropy" });
+        names.insert(names.end(), { "levels_full_mean", "levels_full_variance", "levels_full_min", "levels_full_max", "levels_full_entropy" });
+    }
+    
+    virtual ~CNFGateFeatures() { }
+
+    virtual void extract() {
+        CNFFormula formula(filename_);
+        GateAnalyzer analyzer(formula, true, true, formula.nVars() / 3, false);
         analyzer.analyze();
         GateFormula gates = analyzer.getGateFormula();
+        n_vars = formula.nVars();
         n_gates = gates.nGates();
         n_roots = gates.nRoots();
         levels.resize(n_vars + 1, 0);
@@ -108,48 +132,31 @@ class GateStats {
                     break;
             }
         }
-        record.push_back(n_vars);
-        record.push_back(n_gates);
-        record.push_back(n_roots);
-        // gate or variable types
-        record.push_back(n_none);
-        record.push_back(n_generic);
-        record.push_back(n_mono);
-        record.push_back(n_and);
-        record.push_back(n_or);
-        record.push_back(n_triv);
-        record.push_back(n_equiv);
-        record.push_back(n_full);
-        push_distribution(&record, levels);
-        push_distribution(&record, levels_none);
-        push_distribution(&record, levels_generic);
-        push_distribution(&record, levels_mono);
-        push_distribution(&record, levels_and);
-        push_distribution(&record, levels_or);
-        push_distribution(&record, levels_triv);
-        push_distribution(&record, levels_equiv);
-        push_distribution(&record, levels_full);
+        load_feature_records();
     }
 
-    // Gate Structural Features
-    std::vector<float> GateFeatures() {
-        return record;
+    void load_feature_records() {
+        features.insert(features.end(), { (double)n_vars, (double)n_gates, (double)n_roots});
+        features.insert(features.end(), { (double)n_none, (double)n_generic, (double)n_mono});
+        features.insert(features.end(), { (double)n_and, (double)n_or, (double)n_triv, (double)n_equiv, (double)n_full});
+        push_distribution(features, levels);
+        push_distribution(features, levels_none);
+        push_distribution(features, levels_generic);
+        push_distribution(features, levels_mono);
+        push_distribution(features, levels_and);
+        push_distribution(features, levels_or);
+        push_distribution(features, levels_triv);
+        push_distribution(features, levels_equiv);
+        push_distribution(features, levels_full);
     }
 
-    static std::vector<std::string> GateFeatureNames() {
-        return std::vector<std::string> { "n_vars", "n_gates", "n_roots",
-            "n_none", "n_generic", "n_mono", "n_and", "n_or", "n_triv", "n_equiv", "n_full",
-            "levels_mean", "levels_variance", "levels_min", "levels_max", "levels_entropy",
-            "levels_none_mean", "levels_none_variance", "levels_none_min", "levels_none_max", "levels_none_entropy",
-            "levels_generic_mean", "levels_generic_variance", "levels_generic_min", "levels_generic_max", "levels_generic_entropy",
-            "levels_mono_mean", "levels_mono_variance", "levels_mono_min", "levels_mono_max", "levels_mono_entropy",
-            "levels_and_mean", "levels_and_variance", "levels_and_min", "levels_and_max", "levels_and_entropy",
-            "levels_or_mean", "levels_or_variance", "levels_or_min", "levels_or_max", "levels_or_entropy",
-            "levels_triv_mean", "levels_triv_variance", "levels_triv_min", "levels_triv_max", "levels_triv_entropy",
-            "levels_equiv_mean", "levels_equiv_variance", "levels_equiv_min", "levels_equiv_max", "levels_equiv_entropy",
-            "levels_full_mean", "levels_full_variance", "levels_full_min", "levels_full_max", "levels_full_entropy"
-        };
+    virtual std::vector<double> getFeatures() const {
+        return features;
+    }
+
+    virtual std::vector<std::string> getNames() const {
+        return names;
     }
 };
 
-#endif  // SRC_FEATURES_GATESTATS_H_
+#endif // GATESTATS_H_

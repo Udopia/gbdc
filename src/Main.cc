@@ -25,16 +25,17 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "lib/argparse/argparse.hpp"
 #include "lib/ipasir.h"
 
-#include "src/util/GBDHash.h"
-#include "src/util/ISOHash.h"
+#include "src/identify/GBDHash.h"
+#include "src/identify/ISOHash.h"
+
 #include "src/util/CNFFormula.h"
 #include "src/util/SolverTypes.h"
 
 #include "src/transform/IndependentSet.h"
 #include "src/transform/Normalize.h"
 
-#include "src/features/GateStats.h"
-#include "src/features/CNFStats.h"
+#include "src/extract/CNFGateFeatures.h"
+#include "src/extract/CNFBaseFeatures.h"
 
 #include "src/util/StreamCompressor.h"
 
@@ -42,13 +43,13 @@ int main(int argc, char** argv) {
     argparse::ArgumentParser argparse("CNF Tools");
 
     argparse.add_argument("tool").help("Select Tool: solve, id|identify (gbdhash, opbhash, pqbfhash), isohash, normalize, sanitize, checksani, cnf2kis, extract, gates")
-        .default_value("gbdhash")
+        .default_value("identify")
         .action([](const std::string& value) {
             static const std::vector<std::string> choices = { "solve", "id", "identify", "gbdhash", "opbhash", "pqbfhash", "isohash", "normalize", "sanitize", "checksani", "cnf2kis", "extract", "gates", "test" };
             if (std::find(choices.begin(), choices.end(), value) != choices.end()) {
                 return value;
             }
-            return std::string{ "gbdhash" };
+            return std::string{ "identify" };
         });
 
     argparse.add_argument("file").help("Path to Input File");
@@ -107,24 +108,24 @@ int main(int argc, char** argv) {
             }
             if (ext == ".cnf" || ext == ".wecnf") {
                 std::cerr << "Detected CNF, using CNF hash" << std::endl;
-                std::cout << gbd_hash_from_dimacs(filename.c_str()) << std::endl;
+                std::cout << CNF::gbdhash(filename.c_str()) << std::endl;
             }
             else if (ext == ".opb") {
                 std::cerr << "Detected OPB, using OPB hash" << std::endl;
-                std::cout << opb_hash(filename.c_str()) << std::endl;
+                std::cout << OPB::gbdhash(filename.c_str()) << std::endl;
             }
             else if (ext == ".qcnf" || ext == ".qdimacs") {
                 std::cerr << "Detected QBF, using QBF hash" << std::endl;
-                std::cout << pqbf_hash(filename.c_str()) << std::endl;
+                std::cout << PQBF::gbdhash(filename.c_str()) << std::endl;
             }
         } else if (toolname == "gbdhash") {
-            std::cout << gbd_hash_from_dimacs(filename.c_str()) << std::endl;
+            std::cout << CNF::gbdhash(filename.c_str()) << std::endl;
         } else if (toolname == "isohash") {
-            std::cout << iso_hash_from_dimacs(filename.c_str()) << std::endl;
+            std::cout << CNF::isohash(filename.c_str()) << std::endl;
         } else if (toolname == "opbhash") {
-            std::cout << opb_hash(filename.c_str()) << std::endl;
+            std::cout << OPB::gbdhash(filename.c_str()) << std::endl;
         } else if (toolname == "pqbfhash") {
-            std::cout << pqbf_hash(filename.c_str()) << std::endl;
+            std::cout << PQBF::gbdhash(filename.c_str()) << std::endl;
         } else if (toolname == "normalize") {
             std::cerr << "Normalizing " << filename << std::endl;
             normalize(filename.c_str());
@@ -139,22 +140,18 @@ int main(int argc, char** argv) {
             IndependentSetFromCNF gen(filename.c_str());
             gen.generate_independent_set_problem(output == "-" ? nullptr : output.c_str());
         } else if (toolname == "extract") {
-            CNFFormula formula;
-            formula.readDimacsFromFile(filename.c_str());
-            CNFStats stats(formula);
-            stats.analyze();
-            std::vector<float> record = stats.BaseFeatures();
-            std::vector<std::string> names = CNFStats::BaseFeatureNames();
+            CNFBaseFeatures stats(filename.c_str());
+            stats.extract();
+            std::vector<double> record = stats.getFeatures();
+            std::vector<std::string> names = stats.getNames();
             for (unsigned i = 0; i < record.size(); i++) {
                 std::cout << names[i] << "=" << record[i] << std::endl;
             }
         } else if (toolname == "gates") {
-            CNFFormula formula;
-            formula.readDimacsFromFile(filename.c_str());
-            GateStats stats(formula);
-            stats.analyze(repeat, verbose);
-            std::vector<float> record = stats.GateFeatures();
-            std::vector<std::string> names = GateStats::GateFeatureNames();
+            CNFGateFeatures stats(filename.c_str());
+            stats.extract();
+            std::vector<double> record = stats.getFeatures();
+            std::vector<std::string> names = stats.getNames();
             for (unsigned i = 0; i < record.size(); i++) {
                 std::cout << names[i] << "=" << record[i] << std::endl;
             }

@@ -32,15 +32,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/util/CNFFormula.h"
 
-#include "src/gates/GateFormula.h"
-#include "src/gates/BlockList.h"
-#include "src/gates/OccurrenceList.h"
+#include "src/extract/gates/GateFormula.h"
+#include "src/extract/gates/BlockList.h"
+#include "src/extract/gates/OccurrenceList.h"
 
 
-// T = BlockList has better root-selection heuristic but is slower in general
-// BlockList can not be used atm as I changed the interface in favor of more hard wired code,
-// i.e., specifically the "swap from index" in gate_formula.addGate
-template<class T = OccurrenceList>
 class GateAnalyzer {
     void* S;  // solver
 
@@ -48,7 +44,11 @@ class GateAnalyzer {
 
     GateFormula gate_formula;
 
-    T index;  // occurence-list
+    // BlockList has better root-selection heuristic but is slower in general
+    // BlockList can not be used atm as I changed the interface in favor of more hard wired code,
+    // i.e., specifically the "swap from index" in gate_formula.addGate
+    // So use OccurrenceList for now
+    OccurrenceList index;  // occurence-list
 
     // analyzer configuration:
     bool patterns = false;

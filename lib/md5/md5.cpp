@@ -118,7 +118,7 @@ namespace md5 {
                 stored_size = 0;
             }
         } else {
-            // throw error when trying to process after completion?
+            throw "Attempt to use md5 hasher after finished.";
         }
     }
 

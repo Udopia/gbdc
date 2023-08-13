@@ -21,15 +21,16 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "Python.h"
 
-#include "src/util/GBDHash.h"
-#include "src/util/ISOHash.h"
+#include "src/identify/GBDHash.h"
+#include "src/identify/ISOHash.h"
+
 #include "src/util/CNFFormula.h"
 #include "src/util/ResourceLimits.h"
 #include "src/util/py_util.h"
 
-#include "src/features/CNFStats.h"
-#include "src/features/CNFStatsRed.h"
-#include "src/features/GateStats.h"
+#include "src/extract/CNFBaseFeatures.h"
+#include "src/extract/CNFGateFeatures.h"
+
 #include "src/transform/IndependentSet.h"
 #include "src/transform/Normalize.h"
 
@@ -40,83 +41,31 @@ static PyObject* version(PyObject* self) {
 static PyObject* gbdhash(PyObject* self, PyObject* arg) {
     const char* filename;
     PyArg_ParseTuple(arg, "s", &filename);
-    std::string result = gbd_hash_from_dimacs(filename);
+    std::string result = CNF::gbdhash(filename);
     return pytype(result.c_str());
 }
 
 static PyObject* isohash(PyObject* self, PyObject* arg) {
     const char* filename;
     PyArg_ParseTuple(arg, "s", &filename);
-    std::string result = iso_hash_from_dimacs(filename);
+    std::string result = CNF::isohash(filename);
     return pytype(result.c_str());
 }
 
 static PyObject* opbhash(PyObject* self, PyObject* arg) {
     const char* filename;
     PyArg_ParseTuple(arg, "s", &filename);
-    std::string result = opb_hash(filename);
+    std::string result = OPB::gbdhash(filename);
     return pytype(result.c_str());
 }
 
 static PyObject* pqbfhash(PyObject* self, PyObject* arg) {
     const char* filename;
     PyArg_ParseTuple(arg, "s", &filename);
-    std::string result = pqbf_hash(filename);
+    std::string result = PQBF::gbdhash(filename);
     return pytype(result.c_str());
 }
 
-
-static PyObject* extract_red_base_features_guarded(PyObject *dict, const char* filename) {
-    CNFFormula formula;
-    formula.readDimacsFromFile(filename);
-    CNFStatsRed stats(formula);
-    stats.analyze();
-
-    std::vector<float> record = stats.BaseFeatures();
-    std::vector<std::string> names = CNFStatsRed::BaseFeatureNames();
-
-    for (unsigned int i = 0; i < record.size(); i++) {
-        pydict(dict, names[i].c_str(), record[i]);
-    }
-
-    Py_RETURN_NONE;
-}
-
-static PyObject* extract_red_base_features(PyObject* self, PyObject* arg) {
-    const char* filename;
-    unsigned rlim = 0, mlim = 0;
-    PyArg_ParseTuple(arg, "s|II", &filename, &rlim, &mlim);
-
-    PyObject *dict = pydict();
-
-    ResourceLimits limits(rlim, mlim);
-    limits.set_rlimits();
-    try {
-        extract_red_base_features_guarded(dict, filename);
-        return dict;
-    } catch (TimeLimitExceeded& e) {
-        return dict;
-    } catch (MemoryLimitExceeded& e) {
-        return dict;
-    }
-}
-
-
-static PyObject* extract_base_features_guarded(PyObject *dict, const char* filename) {
-    CNFFormula formula;
-    formula.readDimacsFromFile(filename);
-    CNFStats stats(formula);
-    stats.analyze();
-
-    std::vector<float> record = stats.BaseFeatures();
-    std::vector<std::string> names = CNFStats::BaseFeatureNames();
-
-    for (unsigned int i = 0; i < record.size(); i++) {
-        pydict(dict, names[i].c_str(), record[i]);
-    }
-
-    Py_RETURN_NONE;
-}
 
 static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
     const char* filename;
@@ -129,7 +78,13 @@ static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
     ResourceLimits limits(rlim, mlim);
     limits.set_rlimits();
     try {
-        extract_base_features_guarded(dict, filename);
+        CNFBaseFeatures stats(filename);
+        stats.extract();
+        std::vector<double> record = stats.getFeatures();
+        std::vector<std::string> names = stats.getNames();
+        for (unsigned int i = 0; i < record.size(); i++) {
+            pydict(dict, names[i].c_str(), record[i]);
+        }
         pydict(dict, "base_features_runtime", limits.get_runtime());
         return dict;
     } catch (TimeLimitExceeded& e) {
@@ -140,35 +95,24 @@ static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
     }
 }
 
-
-static PyObject* extract_gate_features_guarded(PyObject *dict, const char* filename) {
-    CNFFormula formula;
-    formula.readDimacsFromFile(filename);
-    GateStats stats(formula);
-    stats.analyze(1, 0);
-
-    std::vector<float> record = stats.GateFeatures();
-    std::vector<std::string> names = GateStats::GateFeatureNames();
-
-    for (unsigned int i = 0; i < record.size(); i++) {
-        pydict(dict, names[i].c_str(), record[i]);
-    }
-
-    Py_RETURN_NONE;
-}
-
 static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
     const char* filename;
     unsigned rlim = 0, mlim = 0;
     PyArg_ParseTuple(arg, "s|II", &filename, &rlim, &mlim);
 
-    PyObject* dict = pydict();
+    PyObject *dict = pydict();
     pydict(dict, "gate_features_runtime", "memout");
 
     ResourceLimits limits(rlim, mlim);
     limits.set_rlimits();
     try {
-        extract_gate_features_guarded(dict, filename);
+        CNFGateFeatures stats(filename);
+        stats.extract();
+        std::vector<double> record = stats.getFeatures();
+        std::vector<std::string> names = stats.getNames();
+        for (unsigned int i = 0; i < record.size(); i++) {
+            pydict(dict, names[i].c_str(), record[i]);
+        }
         pydict(dict, "gate_features_runtime", limits.get_runtime());
         return dict;
     } catch (TimeLimitExceeded& e) {
@@ -177,6 +121,28 @@ static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
     } catch (MemoryLimitExceeded& e) {
         return dict;
     }
+}
+
+static PyObject* base_feature_names(PyObject* self) {
+    PyObject *list = PyList_New(0);
+    PyList_Append(list, pytype("base_features_runtime"));
+    CNFBaseFeatures stats("");
+    std::vector<std::string> names = stats.getNames();
+    for (unsigned int i = 0; i < names.size(); i++) {
+        PyList_Append(list, pytype(names[i].c_str()));
+    }
+    return list;
+}
+
+static PyObject* gate_feature_names(PyObject* self) {
+    PyObject *list = PyList_New(0);
+    PyList_Append(list, pytype("gate_features_runtime"));
+    CNFGateFeatures stats("");
+    std::vector<std::string> names = stats.getNames();
+    for (unsigned int i = 0; i < names.size(); i++) {
+        PyList_Append(list, pytype(names[i].c_str()));
+    }
+    return list;
 }
 
 
@@ -212,7 +178,7 @@ static PyObject* cnf2kis(PyObject* self, PyObject* arg) {
         gen.generate_independent_set_problem(output);
         pydict(dict, "local", output);
 
-        std::string hash = gbd_hash_from_dimacs(output);
+        std::string hash = CNF::gbdhash(output);
         pydict(dict, "hash", hash.c_str());
 
         return dict;
@@ -251,7 +217,8 @@ static PyObject* print_sanitized(PyObject* self, PyObject* arg) {
 static PyMethodDef myMethods[] = {
     {"extract_gate_features", extract_gate_features, METH_VARARGS, "Extract Gate Features."},
     {"extract_base_features", extract_base_features, METH_VARARGS, "Extract Base Features."},
-    {"extract_red_base_features", extract_red_base_features, METH_VARARGS, "Extract Reduced Base Features."},
+    {"base_feature_names", (PyCFunction)base_feature_names, METH_NOARGS, "Get Base Feature Names."},
+    {"gate_feature_names", (PyCFunction)gate_feature_names, METH_NOARGS, "Get Gate Feature Names."},
     {"sanitize", print_sanitized, METH_VARARGS, "Print sanitized, i.e., no duplicate literals in clauses and no tautologic clauses, CNF to stdout."},
     {"cnf2kis", cnf2kis, METH_VARARGS, "Create k-ISP Instance from given CNF Instance."},
     {"gbdhash", gbdhash, METH_VARARGS, "Calculates GBD-Hash (md5 of normalized file) of given DIMACS CNF file."},
