@@ -41,6 +41,6 @@ add_subdirectory("lib/md5")
 
 add_executable(gbdc src/Main.cc)
 add_dependencies(gbdc solver)
-target_link_libraries(gbdc PUBLIC ${LIBS} solver $<TARGET_OBJECTS:gates> $<TARGET_OBJECTS:util> $<TARGET_OBJECTS:transform> $<TARGET_OBJECTS:features>)
+target_link_libraries(gbdc PUBLIC ${LIBS} solver $<TARGET_OBJECTS:gates> $<TARGET_OBJECTS:util> $<TARGET_OBJECTS:transform> $<TARGET_OBJECTS:extract>)
 
 target_include_directories(gbdc PUBLIC "${PROJECT_SOURCE_DIR}")

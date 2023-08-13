@@ -42,8 +42,7 @@ static PyObject* pylist() {
     return PyList_New(0);
 }
 
-template<typename T>
-static void pylist(PyObject* list, T val) {
+static void pylist(PyObject* list, double val) {
     PyList_Append(list, pytype(val));
 }
 
@@ -51,8 +50,19 @@ static PyObject* pydict() {
     return PyDict_New();
 }
 
-template<typename T>
-static void pydict(PyObject* dict, const char* key, T val) {
+static void pydict(PyObject* dict, const char* key, double val) {
+    PyDict_SetItem(dict, pytype(key), pytype(val));
+}
+
+static void pydict(PyObject* dict, const char* key, const char* val) {
+    PyDict_SetItem(dict, pytype(key), pytype(val));
+}
+
+static void pydict(PyObject* dict, const char* key, int val) {
+    PyDict_SetItem(dict, pytype(key), pytype(val));
+}
+
+static void pydict(PyObject* dict, const char* key, unsigned val) {
     PyDict_SetItem(dict, pytype(key), pytype(val));
 }
 

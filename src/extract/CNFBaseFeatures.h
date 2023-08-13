@@ -43,7 +43,7 @@ class CNFBaseFeatures1 : public IExtractor {
     CNFBaseFeatures1(const char* filename) : filename_(filename), features(), names() { 
         clause_sizes.fill(0);
         names.insert(names.end(), { "clauses", "variables" });
-        names.insert(names.end(), { "cls1", "cls2", "cls3", "cls4", "cls5", "cls6", "cls7", "cls8", "cls9", "cls10", "cls10p" });
+        names.insert(names.end(), { "cls1", "cls2", "cls3", "cls4", "cls5", "cls6", "cls7", "cls8", "cls9", "cls10p" });
         names.insert(names.end(), { "horn", "invhorn", "positive", "negative" });
         names.insert(names.end(), { "hornvars_mean", "hornvars_variance", "hornvars_min", "hornvars_max", "hornvars_entropy" });
         names.insert(names.end(), { "invhornvars_mean", "invhornvars_variance", "invhornvars_min", "invhornvars_max", "invhornvars_entropy" });
@@ -118,7 +118,7 @@ class CNFBaseFeatures1 : public IExtractor {
     void load_feature_record() {
         features.insert(features.end(), { (double)n_clauses, (double)n_vars });
         for (unsigned i = 1; i < 11; ++i) {
-            features.push_back(clause_sizes[i]);
+            features.push_back((double)clause_sizes[i]);
         }
         features.insert(features.end(), { (double)horn, (double)inv_horn, (double)positive, (double)negative });
         push_distribution(features, variable_horn);
@@ -221,7 +221,7 @@ class CNFBaseFeatures : public IExtractor {
         CNFBaseFeatures1 baseFeatures1(filename_);
         std::vector<std::string> names1 = baseFeatures1.getNames();
         names.insert(names.end(), names1.begin(), names1.end());
-        CNFBaseFeatures1 baseFeatures2(filename_);
+        CNFBaseFeatures2 baseFeatures2(filename_);
         std::vector<std::string> names2 = baseFeatures2.getNames();
         names.insert(names.end(), names2.begin(), names2.end());
     }

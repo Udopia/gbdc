@@ -1,4 +1,4 @@
-add_library(features OBJECT 
+add_library(extract OBJECT 
     CNFBaseFeatures.h
     CNFGateFeatures.h
 )

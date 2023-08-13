@@ -72,8 +72,8 @@ static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
     unsigned rlim = 0, mlim = 0;
     PyArg_ParseTuple(arg, "s|II", &filename, &rlim, &mlim);
 
-    PyObject *dict = pydict();
-    pydict(dict, "base_features_runtime", "memout");
+    PyObject *emergency = pydict();
+    pydict(emergency, "base_features_runtime", "memout");
 
     ResourceLimits limits(rlim, mlim);
     limits.set_rlimits();
@@ -82,26 +82,28 @@ static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
         stats.extract();
         std::vector<double> record = stats.getFeatures();
         std::vector<std::string> names = stats.getNames();
+        PyObject *dict = pydict();
+        pydict(dict, "base_features_runtime", limits.get_runtime());
         for (unsigned int i = 0; i < record.size(); i++) {
             pydict(dict, names[i].c_str(), record[i]);
         }
-        pydict(dict, "base_features_runtime", limits.get_runtime());
         return dict;
     } catch (TimeLimitExceeded& e) {
-        pydict(dict, "base_features_runtime", "timeout");
-        return dict;
+        pydict(emergency, "base_features_runtime", "timeout");
+        return emergency;
     } catch (MemoryLimitExceeded& e) {
-        return dict;
+        return emergency;
     }
 }
+
 
 static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
     const char* filename;
     unsigned rlim = 0, mlim = 0;
     PyArg_ParseTuple(arg, "s|II", &filename, &rlim, &mlim);
 
-    PyObject *dict = pydict();
-    pydict(dict, "gate_features_runtime", "memout");
+    PyObject *emergency = pydict();
+    pydict(emergency, "gate_features_runtime", "memout");
 
     ResourceLimits limits(rlim, mlim);
     limits.set_rlimits();
@@ -110,16 +112,17 @@ static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
         stats.extract();
         std::vector<double> record = stats.getFeatures();
         std::vector<std::string> names = stats.getNames();
+        PyObject *dict = pydict();
         for (unsigned int i = 0; i < record.size(); i++) {
             pydict(dict, names[i].c_str(), record[i]);
         }
         pydict(dict, "gate_features_runtime", limits.get_runtime());
         return dict;
     } catch (TimeLimitExceeded& e) {
-        pydict(dict, "gate_features_runtime", "timeout");
-        return dict;
+        pydict(emergency, "gate_features_runtime", "timeout");
+        return emergency;
     } catch (MemoryLimitExceeded& e) {
-        return dict;
+        return emergency;
     }
 }
 
