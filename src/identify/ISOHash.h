@@ -48,10 +48,10 @@ namespace CNF {
             } else {
                 int plit;
                 while (in.readInteger(&plit)) {
-                    if (2* abs(plit) >= degrees.size()) degrees.resize(2* abs(plit) + 1);
+                    if (abs(plit) >= degrees.size()) degrees.resize(abs(plit));
                     if (plit == 0) break;
-                    else if (plit < 0) ++degrees[abs(plit)].neg;
-                    else ++degrees[abs(plit)].pos;
+                    else if (plit < 0) ++degrees[abs(plit) - 1].neg;
+                    else ++degrees[abs(plit) - 1].pos;
                 }
             }
         }
