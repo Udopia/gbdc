@@ -67,6 +67,7 @@ namespace CNF {
         MD5 md5;
         char buffer[64];
         for (Node node : degrees) {
+            if (node.neg == 0 && node.pos == 0) continue;  // get invariant against variable gaps
             int n = snprintf(buffer, sizeof(buffer), "%u %u ", node.neg, node.pos);
             md5.consume(buffer, n);
         }
