@@ -118,6 +118,10 @@ int main(int argc, char** argv) {
                 std::cerr << "Detected QBF, using QBF hash" << std::endl;
                 std::cout << PQBF::gbdhash(filename.c_str()) << std::endl;
             }
+            else if (ext == ".wcnf") {
+                std::cerr << "Detected WCNF, using WCNF hash" << std::endl;
+                std::cout << WCNF::gbdhash(filename.c_str()) << std::endl;
+            }
         } else if (toolname == "gbdhash") {
             std::cout << CNF::gbdhash(filename.c_str()) << std::endl;
         } else if (toolname == "isohash") {

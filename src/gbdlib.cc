@@ -66,6 +66,13 @@ static PyObject* pqbfhash(PyObject* self, PyObject* arg) {
     return pytype(result.c_str());
 }
 
+static PyObject* wcnfhash(PyObject* self, PyObject* arg) {
+    const char* filename;
+    PyArg_ParseTuple(arg, "s", &filename);
+    std::string result = WCNF::gbdhash(filename);
+    return pytype(result.c_str());
+}
+
 
 static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
     const char* filename;
@@ -228,6 +235,7 @@ static PyMethodDef myMethods[] = {
     {"isohash", isohash, METH_VARARGS, "Calculates ISO-Hash (md5 of sorted degree sequence) of given DIMACS CNF file."},
     {"opbhash", opbhash, METH_VARARGS, "Calculates OPB-Hash (md5 of normalized file) of given OPB file."},
     {"pqbfhash", pqbfhash, METH_VARARGS, "Calculates PQBF-Hash (md5 of normalized file) of given PQBF file."},
+    {"wcnfhash", wcnfhash, METH_VARARGS, "Calculates WCNF-Hash (md5 of normalized file) of given WCNF file."},
     {"version", (PyCFunction)version, METH_NOARGS, "Returns Version"},
     {nullptr, nullptr, 0, nullptr}
 };

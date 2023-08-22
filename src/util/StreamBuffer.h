@@ -176,6 +176,34 @@ class StreamBuffer {
     }
 
     /**
+     * @brief skip next number, skip leading whitespace
+     * @throw ParserException if no number could be read
+     * @return true if number was read before reaching eof, false otherwise
+     */
+    bool skipNumber() {
+        if (!skipWhitespace()) return false;
+
+        if (buffer[pos] == '-') {
+            if (!skip()) return false;
+        } else if (buffer[pos] == '+') {
+            if (!skip()) return false;
+        }
+
+        if (!isdigit(buffer[pos])) {
+            if (!skipWhitespace()) return false;
+            if (!isdigit(buffer[pos])) {
+                throw ParserException(std::string(filename_) + ": unexpected character: " + buffer[pos]);
+            }
+        }
+
+        while (isdigit(buffer[pos])) {
+            if (!skip()) break;
+        }
+        
+        return true;
+    }
+
+    /**
      * @brief read next integer, skip leading whitespace
      * @param *out the read integer, output parameter
      * @throw ParserException if no integer could be read
