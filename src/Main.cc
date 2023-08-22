@@ -125,7 +125,17 @@ int main(int argc, char** argv) {
         } else if (toolname == "gbdhash") {
             std::cout << CNF::gbdhash(filename.c_str()) << std::endl;
         } else if (toolname == "isohash") {
-            std::cout << CNF::isohash(filename.c_str()) << std::endl;
+            std::string ext = std::filesystem::path(filename).extension();
+            if (ext == ".xz" || ext == ".lzma" || ext == ".bz2" || ext == ".gz") {
+                ext = std::filesystem::path(filename).stem().extension();
+            }
+            if (ext == ".cnf") {
+                std::cerr << "Detected CNF, using CNF isohash" << std::endl;
+                std::cout << CNF::isohash(filename.c_str()) << std::endl;
+            } else if (ext == ".wcnf") {
+                std::cerr << "Detected WCNF, using WCNF isohash" << std::endl;
+                std::cout << WCNF::isohash(filename.c_str()) << std::endl;
+            }
         } else if (toolname == "opbhash") {
             std::cout << OPB::gbdhash(filename.c_str()) << std::endl;
         } else if (toolname == "pqbfhash") {

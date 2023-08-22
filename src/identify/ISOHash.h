@@ -75,4 +75,92 @@ namespace CNF {
     }
 } // namespace CNF
 
+namespace WCNF {
+    std::string isohash(const char* filename) {
+        StreamBuffer in(filename);
+        struct Node { unsigned neg; unsigned pos; };
+        std::vector<Node> hard_degrees;
+        std::vector<Node> soft_degrees;
+        int top = 0; // if top is 0, parsing new file format
+        while (in.skipWhitespace()) {
+            if (*in == 'c') {
+                if (!in.skipLine()) break;
+            } else if (*in == 'p') {
+                // old format: extract top
+                in.skip();
+                in.skipWhitespace();
+                in.skipString("wcnf");
+                // skip vars
+                in.skipNumber();
+                // skip clauses
+                in.skipNumber();
+                // extract top
+                in.readInteger(&top);
+                in.skipLine();
+            } else if (*in == 'h') {
+                assert(top == 0); // should not have top in new format
+                in.skip();
+                int plit;
+                while (in.readInteger(&plit)) {
+                    if (abs(plit) >= hard_degrees.size()) hard_degrees.resize(abs(plit));
+                    if (plit == 0) break;
+                    else if (plit < 0) ++hard_degrees[abs(plit) - 1].neg;
+                    else ++hard_degrees[abs(plit) - 1].pos;
+                }
+            } else {
+                int weight;
+                in.readInteger(&weight);
+                if (top != 0 && weight >= top) {
+                    // old format hard clause
+                    int plit;
+                    while (in.readInteger(&plit)) {
+                        if (abs(plit) >= hard_degrees.size()) hard_degrees.resize(abs(plit));
+                        if (plit == 0) break;
+                        else if (plit < 0) ++hard_degrees[abs(plit) - 1].neg;
+                        else ++hard_degrees[abs(plit) - 1].pos;
+                    }
+                } else {
+                    // soft clause
+                    int plit;
+                    while (in.readInteger(&plit)) {
+                        if (abs(plit) >= soft_degrees.size()) soft_degrees.resize(abs(plit));
+                        if (plit == 0) break;
+                        else if (plit < 0) ++soft_degrees[abs(plit) - 1].neg += weight;
+                        else ++soft_degrees[abs(plit) - 1].pos += weight;
+                    }
+                }
+            }
+        }
+        // add hard degrees to soft degrees
+        if (soft_degrees.size() < hard_degrees.size()) soft_degrees.resize(hard_degrees.size());
+        std::transform(hard_degrees.begin(), hard_degrees.end(), soft_degrees.begin(), soft_degrees.begin(), [](Node a, Node b) { return Node { .neg = a.neg + b.neg, .pos = a.pos + b.pos }; });
+        // get invariant w.r.t. polarity flips
+        for (Node& degree : hard_degrees) {
+            if (degree.pos < degree.neg) std::swap(degree.pos, degree.neg);
+        }
+        for (Node& degree : soft_degrees) {
+            if (degree.pos < degree.neg) std::swap(degree.pos, degree.neg);
+        }
+        // sort lexicographically by degree
+        auto lex_smaller = [](const Node& one, const Node& two) { return one.neg != two.neg ? one.neg < two.neg : one.pos < two.pos; };
+        std::sort(hard_degrees.begin(), hard_degrees.end(), lex_smaller);
+        std::sort(soft_degrees.begin(), soft_degrees.end(), lex_smaller);
+        // hash
+        MD5 md5;
+        char buffer[64];
+        for (Node node : hard_degrees) {
+            if (node.neg == 0 && node.pos == 0) continue;  // get invariant against variable gaps
+            int n = snprintf(buffer, sizeof(buffer), "%u %u ", node.neg, node.pos);
+            md5.consume(buffer, n);
+        }
+        md5.consume("softs ", 6);
+        for (Node node : soft_degrees) {
+            if (node.neg == 0 && node.pos == 0) continue;  // get invariant against variable gaps
+            int n = snprintf(buffer, sizeof(buffer), "%u %u ", node.neg, node.pos);
+            md5.consume(buffer, n);
+        }
+        return md5.produce();
+    }
+} // namespace CNF
+
 #endif  // ISOHASH_H_

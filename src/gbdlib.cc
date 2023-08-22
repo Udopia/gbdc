@@ -73,6 +73,13 @@ static PyObject* wcnfhash(PyObject* self, PyObject* arg) {
     return pytype(result.c_str());
 }
 
+static PyObject* wcnfisohash(PyObject* self, PyObject* arg) {
+    const char* filename;
+    PyArg_ParseTuple(arg, "s", &filename);
+    std::string result = WCNF::isohash(filename);
+    return pytype(result.c_str());
+}
+
 
 static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
     const char* filename;
@@ -236,6 +243,7 @@ static PyMethodDef myMethods[] = {
     {"opbhash", opbhash, METH_VARARGS, "Calculates OPB-Hash (md5 of normalized file) of given OPB file."},
     {"pqbfhash", pqbfhash, METH_VARARGS, "Calculates PQBF-Hash (md5 of normalized file) of given PQBF file."},
     {"wcnfhash", wcnfhash, METH_VARARGS, "Calculates WCNF-Hash (md5 of normalized file) of given WCNF file."},
+    {"wcnfisohash", wcnfisohash, METH_VARARGS, "Calculates WCNF ISO-Hash of given WCNF file."},
     {"version", (PyCFunction)version, METH_NOARGS, "Returns Version"},
     {nullptr, nullptr, 0, nullptr}
 };
