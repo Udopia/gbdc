@@ -11,7 +11,9 @@
 #include "src/util/StreamBuffer.h"
 #include "src/extract/Util.h"
 
-class CNFBaseFeatures1 : public IExtractor {
+namespace CNF {
+
+class BaseFeatures1 : public IExtractor {
     const char* filename_;
     std::vector<double> features;
     std::vector<std::string> names;
@@ -40,7 +42,7 @@ class CNFBaseFeatures1 : public IExtractor {
     std::vector<unsigned> literal_occurrences;
 
   public:
-    CNFBaseFeatures1(const char* filename) : filename_(filename), features(), names() { 
+    BaseFeatures1(const char* filename) : filename_(filename), features(), names() { 
         clause_sizes.fill(0);
         names.insert(names.end(), { "clauses", "variables" });
         names.insert(names.end(), { "cls1", "cls2", "cls3", "cls4", "cls5", "cls6", "cls7", "cls8", "cls9", "cls10p" });
@@ -51,7 +53,7 @@ class CNFBaseFeatures1 : public IExtractor {
         names.insert(names.end(), { "balancevars_mean", "balancevars_variance", "balancevars_min", "balancevars_max", "balancevars_entropy" });
     }
 
-    virtual ~CNFBaseFeatures1() { }
+    virtual ~BaseFeatures1() { }
 
     virtual void extract() {
         StreamBuffer in(filename_);
@@ -136,7 +138,7 @@ class CNFBaseFeatures1 : public IExtractor {
     }
 };
 
-class CNFBaseFeatures2 : public IExtractor {
+class BaseFeatures2 : public IExtractor {
     const char* filename_;
     std::vector<double> features;
     std::vector<std::string> names;
@@ -154,13 +156,13 @@ class CNFBaseFeatures2 : public IExtractor {
     std::vector<unsigned> clause_degree;
 
   public:
-    CNFBaseFeatures2(const char* filename) : filename_(filename), features(), names() { 
+    BaseFeatures2(const char* filename) : filename_(filename), features(), names() { 
         names.insert(names.end(), { "vcg_vdegree_mean", "vcg_vdegree_variance", "vcg_vdegree_min", "vcg_vdegree_max", "vcg_vdegree_entropy" });
         names.insert(names.end(), { "vcg_cdegree_mean", "vcg_cdegree_variance", "vcg_cdegree_min", "vcg_cdegree_max", "vcg_cdegree_entropy" });
         names.insert(names.end(), { "vg_degree_mean", "vg_degree_variance", "vg_degree_min", "vg_degree_max", "vg_degree_entropy" });
         names.insert(names.end(), { "cg_degree_mean", "cg_degree_variance", "cg_degree_min", "cg_degree_max", "cg_degree_entropy" });
     }
-    virtual ~CNFBaseFeatures2() { }
+    virtual ~BaseFeatures2() { }
 
     virtual void extract() {
         StreamBuffer in(filename_);
@@ -211,37 +213,37 @@ class CNFBaseFeatures2 : public IExtractor {
     }
 };
 
-class CNFBaseFeatures : public IExtractor {
+class BaseFeatures : public IExtractor {
     const char* filename_;
     std::vector<double> features;
     std::vector<std::string> names;
 
   public:
-    CNFBaseFeatures(const char* filename) : filename_(filename), features(), names() { 
-        CNFBaseFeatures1 baseFeatures1(filename_);
+    BaseFeatures(const char* filename) : filename_(filename), features(), names() { 
+        BaseFeatures1 baseFeatures1(filename_);
         std::vector<std::string> names1 = baseFeatures1.getNames();
         names.insert(names.end(), names1.begin(), names1.end());
-        CNFBaseFeatures2 baseFeatures2(filename_);
+        BaseFeatures2 baseFeatures2(filename_);
         std::vector<std::string> names2 = baseFeatures2.getNames();
         names.insert(names.end(), names2.begin(), names2.end());
     }
 
-    virtual ~CNFBaseFeatures() { }
+    virtual ~BaseFeatures() { }
 
     virtual void extract() {
-        extractCNFBaseFeatures1();
-        extractCNFBaseFeatures2();
+        extractBaseFeatures1();
+        extractBaseFeatures2();
     }
 
-    void extractCNFBaseFeatures1() {
-        CNFBaseFeatures1 baseFeatures1(filename_);
+    void extractBaseFeatures1() {
+        BaseFeatures1 baseFeatures1(filename_);
         baseFeatures1.extract();
         std::vector<double> feat = baseFeatures1.getFeatures();
         features.insert(features.end(), feat.begin(), feat.end());
     }
 
-    void extractCNFBaseFeatures2() {
-        CNFBaseFeatures2 baseFeatures2(filename_);
+    void extractBaseFeatures2() {
+        BaseFeatures2 baseFeatures2(filename_);
         baseFeatures2.extract();
         std::vector<double> feat = baseFeatures2.getFeatures();
         features.insert(features.end(), feat.begin(), feat.end());
@@ -256,6 +258,7 @@ class CNFBaseFeatures : public IExtractor {
     }
 };
 
+}; // namespace CNF
 
 
 #endif // BASE_FEATURES_H_

@@ -24,12 +24,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/identify/GBDHash.h"
 #include "src/identify/ISOHash.h"
 
-#include "src/util/CNFFormula.h"
 #include "src/util/ResourceLimits.h"
 #include "src/util/py_util.h"
 
 #include "src/extract/CNFBaseFeatures.h"
 #include "src/extract/CNFGateFeatures.h"
+#include "src/extract/WCNFBaseFeatures.h"
 
 #include "src/transform/IndependentSet.h"
 #include "src/transform/Normalize.h"
@@ -92,7 +92,7 @@ static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
     ResourceLimits limits(rlim, mlim);
     limits.set_rlimits();
     try {
-        CNFBaseFeatures stats(filename);
+        CNF::BaseFeatures stats(filename);
         stats.extract();
         std::vector<double> record = stats.getFeatures();
         std::vector<std::string> names = stats.getNames();
@@ -140,10 +140,40 @@ static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
     }
 }
 
+
+static PyObject* extract_wcnf_base_features(PyObject* self, PyObject* arg) {
+    const char* filename;
+    unsigned rlim = 0, mlim = 0;
+    PyArg_ParseTuple(arg, "s|II", &filename, &rlim, &mlim);
+
+    PyObject *emergency = pydict();
+    pydict(emergency, "base_features_runtime", "memout");
+
+    ResourceLimits limits(rlim, mlim);
+    limits.set_rlimits();
+    try {
+        WCNF::BaseFeatures stats(filename);
+        stats.extract();
+        std::vector<double> record = stats.getFeatures();
+        std::vector<std::string> names = stats.getNames();
+        PyObject *dict = pydict();
+        pydict(dict, "base_features_runtime", limits.get_runtime());
+        for (unsigned int i = 0; i < record.size(); i++) {
+            pydict(dict, names[i].c_str(), record[i]);
+        }
+        return dict;
+    } catch (TimeLimitExceeded& e) {
+        pydict(emergency, "base_features_runtime", "timeout");
+        return emergency;
+    } catch (MemoryLimitExceeded& e) {
+        return emergency;
+    }
+}
+
 static PyObject* base_feature_names(PyObject* self) {
     PyObject *list = PyList_New(0);
     PyList_Append(list, pytype("base_features_runtime"));
-    CNFBaseFeatures stats("");
+    CNF::BaseFeatures stats("");
     std::vector<std::string> names = stats.getNames();
     for (unsigned int i = 0; i < names.size(); i++) {
         PyList_Append(list, pytype(names[i].c_str()));
@@ -155,6 +185,17 @@ static PyObject* gate_feature_names(PyObject* self) {
     PyObject *list = PyList_New(0);
     PyList_Append(list, pytype("gate_features_runtime"));
     CNFGateFeatures stats("");
+    std::vector<std::string> names = stats.getNames();
+    for (unsigned int i = 0; i < names.size(); i++) {
+        PyList_Append(list, pytype(names[i].c_str()));
+    }
+    return list;
+}
+
+static PyObject* wcnf_base_feature_names(PyObject* self) {
+    PyObject *list = PyList_New(0);
+    PyList_Append(list, pytype("base_features_runtime"));
+    WCNF::BaseFeatures stats("");
     std::vector<std::string> names = stats.getNames();
     for (unsigned int i = 0; i < names.size(); i++) {
         PyList_Append(list, pytype(names[i].c_str()));
@@ -244,6 +285,8 @@ static PyMethodDef myMethods[] = {
     {"pqbfhash", pqbfhash, METH_VARARGS, "Calculates PQBF-Hash (md5 of normalized file) of given PQBF file."},
     {"wcnfhash", wcnfhash, METH_VARARGS, "Calculates WCNF-Hash (md5 of normalized file) of given WCNF file."},
     {"wcnfisohash", wcnfisohash, METH_VARARGS, "Calculates WCNF ISO-Hash of given WCNF file."},
+    {"extract_wcnf_base_features", extract_wcnf_base_features, METH_VARARGS, "Extract WCNF Base Features."},
+    {"wcnf_base_feature_names", (PyCFunction)wcnf_base_feature_names, METH_NOARGS, "Get WCNF Base Feature Names."},
     {"version", (PyCFunction)version, METH_NOARGS, "Returns Version"},
     {nullptr, nullptr, 0, nullptr}
 };
