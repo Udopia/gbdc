@@ -36,6 +36,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/extract/CNFGateFeatures.h"
 #include "src/extract/CNFBaseFeatures.h"
 #include "src/extract/WCNFBaseFeatures.h"
+#include "src/extract/OPBBaseFeatures.h"
 
 #include "src/util/StreamCompressor.h"
 
@@ -170,6 +171,15 @@ int main(int argc, char** argv) {
             } else if (ext == ".wcnf") {
                 std::cerr << "Detected WCNF, extracting WCNF base features" << std::endl;
                 WCNF::BaseFeatures stats(filename.c_str());
+                stats.extract();
+                std::vector<double> record = stats.getFeatures();
+                std::vector<std::string> names = stats.getNames();
+                for (unsigned i = 0; i < record.size(); i++) {
+                    std::cout << names[i] << "=" << record[i] << std::endl;
+                }
+            } else if (ext == ".opb") {
+                std::cerr << "Detected OPB, extracting OPB base features" << std::endl;
+                OPB::BaseFeatures stats(filename.c_str());
                 stats.extract();
                 std::vector<double> record = stats.getFeatures();
                 std::vector<std::string> names = stats.getNames();
