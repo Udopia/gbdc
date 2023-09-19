@@ -19,7 +19,7 @@ class BaseFeatures1 : public IExtractor {
     std::vector<std::string> names;
 
     unsigned n_vars = 0, n_hard_clauses = 0, n_soft_clauses = 0;
-    uint64_t weight_sum;
+    uint64_t weight_sum = 0;
 
     // count occurences of hard clauses of small size
     std::array<unsigned, 11> hard_clause_sizes;
@@ -75,6 +75,7 @@ class BaseFeatures1 : public IExtractor {
         while (in.skipWhitespace()) {
             if (*in == 'c') {
                 if (!in.skipLine()) break;
+                continue;
             } else if (*in == 'p') {
                 // old format: extract top
                 in.skip();
@@ -87,6 +88,7 @@ class BaseFeatures1 : public IExtractor {
                 // extract top
                 in.readInteger(&top);
                 in.skipLine();
+                continue;
             } else if (*in == 'h') {
                 assert(top == 0);
                 weight = 0;
@@ -101,6 +103,15 @@ class BaseFeatures1 : public IExtractor {
                 }
                 in.readClause(clause);
             }
+            
+            for (Lit lit : clause) {
+                if (lit.var() > n_vars) {
+                    n_vars = lit.var();
+                    variable_horn.resize(n_vars + 1);
+                    variable_inv_horn.resize(n_vars + 1);
+                    literal_occurrences.resize(2 * n_vars + 2);
+                }
+            }
 
             // record statistics
             if (!weight) {
@@ -114,13 +125,6 @@ class BaseFeatures1 : public IExtractor {
 
                 unsigned n_neg = 0;
                 for (Lit lit : clause) {
-                    // resize vectors if necessary
-                    if (lit.var() > n_vars) {
-                        n_vars = lit.var();
-                        variable_horn.resize(n_vars + 1);
-                        variable_inv_horn.resize(n_vars + 1);
-                        literal_occurrences.resize(2 * n_vars + 2);
-                    }
                     // count negative literals
                     if (lit.sign()) ++n_neg;
                     ++literal_occurrences[lit];
@@ -204,7 +208,7 @@ class BaseFeatures2 : public IExtractor {
     std::vector<double> features;
     std::vector<std::string> names;
 
-    unsigned n_vars = 0, n_clauses = 0;
+    unsigned n_vars = 0;
 
     // VCG Degree Distribution
     std::vector<unsigned> vcg_cdegree; // clause sizes
@@ -234,6 +238,7 @@ class BaseFeatures2 : public IExtractor {
         while (in.skipWhitespace()) {
             if (*in == 'c') {
                 if (!in.skipLine()) break;
+                continue;
             } else if (*in == 'p') {
                 // old format: extract top
                 in.skip();
@@ -246,6 +251,7 @@ class BaseFeatures2 : public IExtractor {
                 // extract top
                 in.readInteger(&top);
                 in.skipLine();
+                continue;
             } else if (*in == 'h') {
                 assert(top == 0);
                 in.skip();
@@ -253,8 +259,7 @@ class BaseFeatures2 : public IExtractor {
             } else {
                 in.readInteger(&weight);
                 in.readClause(clause);
-                // skip soft clauses
-                if (!top || weight < top) continue;
+                // don't skip soft clause here since we need the true variable count
             }
             
             vcg_cdegree.push_back(clause.size());
@@ -266,9 +271,12 @@ class BaseFeatures2 : public IExtractor {
                     vcg_vdegree.resize(n_vars + 1);
                     vg_degree.resize(n_vars + 1);
                 }
-                // count variable occurrences
-                ++vcg_vdegree[lit.var()];
-                vg_degree[lit.var()] += clause.size();
+
+                // count variable occurrences (only for hard clauses)
+                if (top && weight >= top) {
+                    ++vcg_vdegree[lit.var()];
+                    vg_degree[lit.var()] += clause.size();
+                }
             }
         }
 
@@ -277,6 +285,7 @@ class BaseFeatures2 : public IExtractor {
         while (in2.skipWhitespace()) {
             if (*in2 == 'c' || *in2 == 'p') {
                 if (!in2.skipLine()) break;
+                continue;
             } else if (*in2 == 'h') {
                 assert(top == 0);
                 in2.skip();
