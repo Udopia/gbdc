@@ -78,10 +78,10 @@ namespace CNF {
 namespace WCNF {
     std::string isohash(const char* filename) {
         StreamBuffer in(filename);
-        struct Node { unsigned neg; unsigned pos; };
+        struct Node { uint64_t neg; uint64_t pos; };
         std::vector<Node> hard_degrees;
         std::vector<Node> soft_degrees;
-        int top = 0; // if top is 0, parsing new file format
+        uint64_t top = 0; // if top is 0, parsing new file format
         while (in.skipWhitespace()) {
             if (*in == 'c') {
                 if (!in.skipLine()) break;
@@ -95,7 +95,7 @@ namespace WCNF {
                 // skip clauses
                 in.skipNumber();
                 // extract top
-                in.readInteger(&top);
+                in.readUInt64(&top);
                 in.skipLine();
             } else if (*in == 'h') {
                 assert(top == 0); // should not have top in new format
@@ -108,8 +108,8 @@ namespace WCNF {
                     else ++hard_degrees[abs(plit) - 1].pos;
                 }
             } else {
-                int weight;
-                in.readInteger(&weight);
+                uint64_t weight;
+                in.readUInt64(&weight);
                 if (top != 0 && weight >= top) {
                     // old format hard clause
                     int plit;
@@ -150,13 +150,13 @@ namespace WCNF {
         char buffer[64];
         for (Node node : hard_degrees) {
             if (node.neg == 0 && node.pos == 0) continue;  // get invariant against variable gaps
-            int n = snprintf(buffer, sizeof(buffer), "%u %u ", node.neg, node.pos);
+            int n = snprintf(buffer, sizeof(buffer), "%llu %llu ", node.neg, node.pos);
             md5.consume(buffer, n);
         }
         md5.consume("softs ", 6);
         for (Node node : soft_degrees) {
             if (node.neg == 0 && node.pos == 0) continue;  // get invariant against variable gaps
-            int n = snprintf(buffer, sizeof(buffer), "%u %u ", node.neg, node.pos);
+            int n = snprintf(buffer, sizeof(buffer), "%llu %llu ", node.neg, node.pos);
             md5.consume(buffer, n);
         }
         return md5.produce();

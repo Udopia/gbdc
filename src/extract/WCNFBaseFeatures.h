@@ -46,7 +46,7 @@ class BaseFeatures1 : public IExtractor {
     std::vector<unsigned> literal_occurrences;
     
     // Soft clause weights
-    std::vector<unsigned> weights;
+    std::vector<uint64_t> weights;
 
   public:
     BaseFeatures1(const char* filename) : filename_(filename), features(), names() { 
@@ -70,8 +70,8 @@ class BaseFeatures1 : public IExtractor {
         StreamBuffer in(filename_);
 
         Cl clause;
-        int top = 0; // if top is 0, parsing new file format
-        int weight = 0; // if weight is 0, parsing hard clause
+        uint64_t top = 0; // if top is 0, parsing new file format
+        uint64_t weight = 0; // if weight is 0, parsing hard clause
         while (in.skipWhitespace()) {
             if (*in == 'c') {
                 if (!in.skipLine()) break;
@@ -86,7 +86,7 @@ class BaseFeatures1 : public IExtractor {
                 // skip clauses
                 in.skipNumber();
                 // extract top
-                in.readInteger(&top);
+                in.readUInt64(&top);
                 in.skipLine();
                 continue;
             } else if (*in == 'h') {
@@ -96,7 +96,7 @@ class BaseFeatures1 : public IExtractor {
                 in.skip();
                 in.readClause(clause);
             } else {
-                in.readInteger(&weight);
+                in.readUInt64(&weight);
                 if (top > 0 && weight >= top) {
                     // old hard clause
                     weight = 0;
@@ -233,8 +233,8 @@ class BaseFeatures2 : public IExtractor {
         StreamBuffer in(filename_);
 
         Cl clause;
-        int top = 0; // if top is 0, parsing new file format
-        int weight;
+        uint64_t top = 0; // if top is 0, parsing new file format
+        uint64_t weight;
         while (in.skipWhitespace()) {
             if (*in == 'c') {
                 if (!in.skipLine()) break;
@@ -249,7 +249,7 @@ class BaseFeatures2 : public IExtractor {
                 // skip clauses
                 in.skipNumber();
                 // extract top
-                in.readInteger(&top);
+                in.readUInt64(&top);
                 in.skipLine();
                 continue;
             } else if (*in == 'h') {
@@ -257,7 +257,7 @@ class BaseFeatures2 : public IExtractor {
                 in.skip();
                 in.readClause(clause);
             } else {
-                in.readInteger(&weight);
+                in.readUInt64(&weight);
                 in.readClause(clause);
                 // don't skip soft clause here since we need the true variable count
             }
@@ -291,7 +291,7 @@ class BaseFeatures2 : public IExtractor {
                 in2.skip();
                 in2.readClause(clause);
             } else {
-                in2.readInteger(&weight);
+                in2.readUInt64(&weight);
                 in2.readClause(clause);
                 // skip soft clauses
                 if (!top || weight < top) continue;

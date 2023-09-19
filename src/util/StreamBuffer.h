@@ -236,6 +236,38 @@ class StreamBuffer {
     }
 
     /**
+     * @brief read next unsigned 64bit integer, skip leading whitespace
+     * @param *out the read integer, output parameter
+     * @throw ParserException if no integer could be read
+     * @return true if integer was read before reaching eof, false otherwise
+     */
+    bool readUInt64(uint64_t* out) {
+        if (!skipWhitespace()) return false;
+
+        char* str = buffer + pos;
+        char* end = nullptr;
+
+        errno = 0;
+        unsigned long long number = strtoull(str, &end, 10);
+
+        if (errno == 0) {
+            if (end > str) {
+                if (number <= std::numeric_limits<uint64_t>::max()) {
+                    pos += static_cast<intptr_t>(end - str);
+                    *out = static_cast<uint64_t>(number);
+                    return true;
+                } else {
+                    throw ParserException(std::string(filename_) + ": number out of uint64 range");
+                }
+            } else {
+                throw ParserException(std::string(filename_) + ": unexpected character: " + buffer[pos]);
+            }
+        } else {
+            throw ParserException(std::string(filename_) + ": strtoull() errno: " + std::to_string(errno));
+        }
+    }
+
+    /**
      * @brief read next number, skip leading whitespace
      * @param *out  the read number, output parameter
      * @throw ParserException if no number could be read
