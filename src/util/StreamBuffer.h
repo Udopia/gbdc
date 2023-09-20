@@ -54,7 +54,7 @@ class StreamBuffer {
 
     const char* filename_;
 
-    bool refill_buffer() {
+    bool refill_buffer(bool align = true) {
         if (pos >= end && !end_of_file) {
             pos = 0;
             if (end > 0 && end < buffer_size) {
@@ -68,16 +68,20 @@ class StreamBuffer {
                 std::memset(buffer + end, 0, buffer_size - end);
                 end_of_file = true;
             } else {
-                while (!isspace(buffer[end-1])) {  // align buffer with word-end
-                    end--;
-                    if (end < 1) {
-                        throw ParserException(std::string("Error reading file: maximum token length exceeded"));
-                    }
-                }
+                if (align) align_buffer();
             }
             return true;
         }
         return false;
+    }
+    
+    void align_buffer() {
+        while (!isspace(buffer[end-1])) {  // align buffer with word-end
+            end--;
+            if (end < 1) {
+                throw ParserException(std::string("Error reading file: maximum token length exceeded"));
+            }
+        }
     }
 
  public:
@@ -120,12 +124,12 @@ class StreamBuffer {
      * @pre !eof()
      * @return true if pos valid, false otherwise (eof reached)
      */
-    bool skip() {
+    bool skip(bool align = true) {
         // if (eof()) return false;
         if (++pos < end) {
             return true;
         } else {
-            return refill_buffer();
+            return refill_buffer(align);
         }
     }
 
@@ -137,8 +141,11 @@ class StreamBuffer {
     bool skipLine() {
         // if (eof()) return false;
         while (buffer[pos] != '\n' && buffer[pos] != '\r') {
-            if (!skip()) return false;
+            if (!skip(false)) return false;
         }
+        // manually align buffer after line is skipped to be able to skip lines
+        // with words longer than the stream buffer
+        align_buffer();
         return skipWhitespace();
     }
 
