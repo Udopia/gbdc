@@ -137,7 +137,7 @@ namespace WCNF {
     std::string gbdhash(const char* filename) {
         MD5 md5;
         StreamBuffer in(filename);
-        int top = 0; // if top is 0, parsing new file format
+        uint64_t top = 0; // if top is 0, parsing new file format
         bool notfirst = false;
         while (in.skipWhitespace()) {
             if (*in == 'c') {
@@ -152,7 +152,7 @@ namespace WCNF {
                 // skip clauses
                 in.skipNumber();
                 // extract top
-                in.readInteger(&top);
+                in.readUInt64(&top);
                 in.skipLine();
             } else if (*in == 'h') {
                 assert(top == 0);  // should not have top in new format
@@ -170,8 +170,8 @@ namespace WCNF {
                 if (notfirst) md5.consume(" ", 1);
                 if (top > 0) {
                     // parse old format clause
-                    int nbr;
-                    in.readInteger(&nbr);
+                    uint64_t nbr;
+                    in.readUInt64(&nbr);
                     if (nbr >= top) {
                         // hard clause
                         md5.consume("h ", 2);
