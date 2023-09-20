@@ -155,7 +155,8 @@ class StreamBuffer {
      * @return true if pos is valid, false otherwise (eof reached)
      */
     bool skipWhitespace() {
-        // if (eof()) return false;
+        // needed if last call to fill_buffer left pos == end == 0
+        if (eof()) return false;
         while (isspace(buffer[pos])) {
             if (!skip()) return false;
         }
