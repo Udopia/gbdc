@@ -256,6 +256,7 @@ class BaseFeatures2 : public IExtractor {
                 assert(top == 0);
                 in.skip();
                 in.readClause(clause);
+                weight = 0;
             } else {
                 in.readUInt64(&weight);
                 in.readClause(clause);
@@ -273,7 +274,7 @@ class BaseFeatures2 : public IExtractor {
                 }
 
                 // count variable occurrences (only for hard clauses)
-                if (top && weight >= top) {
+                if (!top && !weight || weight >= top) {
                     ++vcg_vdegree[lit.var()];
                     vg_degree[lit.var()] += clause.size();
                 }
