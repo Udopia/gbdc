@@ -28,7 +28,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/identify/GBDHash.h"
 #include "src/identify/ISOHash.h"
 
-#include "src/util/CNFFormula.h"
 #include "src/util/SolverTypes.h"
 
 #include "src/transform/IndependentSet.h"
@@ -36,6 +35,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/extract/CNFGateFeatures.h"
 #include "src/extract/CNFBaseFeatures.h"
+#include "src/extract/WCNFBaseFeatures.h"
 
 #include "src/util/StreamCompressor.h"
 
@@ -118,10 +118,24 @@ int main(int argc, char** argv) {
                 std::cerr << "Detected QBF, using QBF hash" << std::endl;
                 std::cout << PQBF::gbdhash(filename.c_str()) << std::endl;
             }
+            else if (ext == ".wcnf") {
+                std::cerr << "Detected WCNF, using WCNF hash" << std::endl;
+                std::cout << WCNF::gbdhash(filename.c_str()) << std::endl;
+            }
         } else if (toolname == "gbdhash") {
             std::cout << CNF::gbdhash(filename.c_str()) << std::endl;
         } else if (toolname == "isohash") {
-            std::cout << CNF::isohash(filename.c_str()) << std::endl;
+            std::string ext = std::filesystem::path(filename).extension();
+            if (ext == ".xz" || ext == ".lzma" || ext == ".bz2" || ext == ".gz") {
+                ext = std::filesystem::path(filename).stem().extension();
+            }
+            if (ext == ".cnf") {
+                std::cerr << "Detected CNF, using CNF isohash" << std::endl;
+                std::cout << CNF::isohash(filename.c_str()) << std::endl;
+            } else if (ext == ".wcnf") {
+                std::cerr << "Detected WCNF, using WCNF isohash" << std::endl;
+                std::cout << WCNF::isohash(filename.c_str()) << std::endl;
+            }
         } else if (toolname == "opbhash") {
             std::cout << OPB::gbdhash(filename.c_str()) << std::endl;
         } else if (toolname == "pqbfhash") {
@@ -140,12 +154,28 @@ int main(int argc, char** argv) {
             IndependentSetFromCNF gen(filename.c_str());
             gen.generate_independent_set_problem(output == "-" ? nullptr : output.c_str());
         } else if (toolname == "extract") {
-            CNFBaseFeatures stats(filename.c_str());
-            stats.extract();
-            std::vector<double> record = stats.getFeatures();
-            std::vector<std::string> names = stats.getNames();
-            for (unsigned i = 0; i < record.size(); i++) {
-                std::cout << names[i] << "=" << record[i] << std::endl;
+            std::string ext = std::filesystem::path(filename).extension();
+            if (ext == ".xz" || ext == ".lzma" || ext == ".bz2" || ext == ".gz") {
+                ext = std::filesystem::path(filename).stem().extension();
+            }
+            if (ext == ".cnf") {
+                std::cerr << "Detected CNF, extracting CNF base features" << std::endl;
+                CNF::BaseFeatures stats(filename.c_str());
+                stats.extract();
+                std::vector<double> record = stats.getFeatures();
+                std::vector<std::string> names = stats.getNames();
+                for (unsigned i = 0; i < record.size(); i++) {
+                    std::cout << names[i] << "=" << record[i] << std::endl;
+                }
+            } else if (ext == ".wcnf") {
+                std::cerr << "Detected WCNF, extracting WCNF base features" << std::endl;
+                WCNF::BaseFeatures stats(filename.c_str());
+                stats.extract();
+                std::vector<double> record = stats.getFeatures();
+                std::vector<std::string> names = stats.getNames();
+                for (unsigned i = 0; i < record.size(); i++) {
+                    std::cout << names[i] << "=" << record[i] << std::endl;
+                }
             }
         } else if (toolname == "gates") {
             CNFGateFeatures stats(filename.c_str());

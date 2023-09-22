@@ -133,4 +133,67 @@ namespace OPB {
     }
 } // namespace OPB
 
+namespace WCNF {
+    std::string gbdhash(const char* filename) {
+        MD5 md5;
+        StreamBuffer in(filename);
+        uint64_t top = 0; // if top is 0, parsing new file format
+        bool notfirst = false;
+        while (in.skipWhitespace()) {
+            if (*in == 'c') {
+                if (!in.skipLine()) break;
+            } else if (*in == 'p') {
+                // old format: extract top
+                in.skip();
+                in.skipWhitespace();
+                in.skipString("wcnf");
+                // skip vars
+                in.skipNumber();
+                // skip clauses
+                in.skipNumber();
+                // extract top
+                in.readUInt64(&top);
+                in.skipLine();
+            } else if (*in == 'h') {
+                assert(top == 0);  // should not have top in new format
+                in.skip();
+                if (notfirst) md5.consume(" ", 1);
+                md5.consume("h ", 2);
+                std::string plit;
+                while (in.readNumber(&plit)) {
+                    if (plit == "0") break;
+                    md5.consume(plit.c_str(), plit.length());
+                    md5.consume(" ", 1);
+                }
+                md5.consume("0", 1);
+            } else {
+                if (notfirst) md5.consume(" ", 1);
+                if (top > 0) {
+                    // parse old format clause
+                    uint64_t nbr;
+                    in.readUInt64(&nbr);
+                    if (nbr >= top) {
+                        // hard clause
+                        md5.consume("h ", 2);
+                    } else {
+                        // soft clause
+                        std::string weight = std::to_string(nbr);
+                        md5.consume(weight.c_str(), weight.length());
+                        md5.consume(" ", 1);
+                    }
+                }
+                std::string plit;
+                while (in.readNumber(&plit)) {
+                    if (plit == "0") break;
+                    md5.consume(plit.c_str(), plit.length());
+                    md5.consume(" ", 1);
+                }
+                md5.consume("0", 1);
+                notfirst = true;
+            }
+        }
+        return md5.produce();
+    }
+} // namespace WCNF
+
 #endif  // GBDHASH_H_

@@ -54,7 +54,7 @@ class StreamBuffer {
 
     const char* filename_;
 
-    bool refill_buffer() {
+    bool refill_buffer(bool align = true) {
         if (pos >= end && !end_of_file) {
             pos = 0;
             if (end > 0 && end < buffer_size) {
@@ -68,16 +68,20 @@ class StreamBuffer {
                 std::memset(buffer + end, 0, buffer_size - end);
                 end_of_file = true;
             } else {
-                while (!isspace(buffer[end-1])) {  // align buffer with word-end
-                    end--;
-                    if (end < 1) {
-                        throw ParserException(std::string("Error reading file: maximum token length exceeded"));
-                    }
-                }
+                if (align) align_buffer();
             }
             return true;
         }
         return false;
+    }
+    
+    void align_buffer() {
+        while (!isspace(buffer[end-1])) {  // align buffer with word-end
+            end--;
+            if (end < 1) {
+                throw ParserException(std::string("Error reading file: maximum token length exceeded"));
+            }
+        }
     }
 
  public:
@@ -120,12 +124,12 @@ class StreamBuffer {
      * @pre !eof()
      * @return true if pos valid, false otherwise (eof reached)
      */
-    bool skip() {
+    bool skip(bool align = true) {
         // if (eof()) return false;
         if (++pos < end) {
             return true;
         } else {
-            return refill_buffer();
+            return refill_buffer(align);
         }
     }
 
@@ -137,8 +141,11 @@ class StreamBuffer {
     bool skipLine() {
         // if (eof()) return false;
         while (buffer[pos] != '\n' && buffer[pos] != '\r') {
-            if (!skip()) return false;
+            if (!skip(false)) return false;
         }
+        // manually align buffer after line is skipped to be able to skip lines
+        // with words longer than the stream buffer
+        align_buffer();
         return skipWhitespace();
     }
 
@@ -148,7 +155,8 @@ class StreamBuffer {
      * @return true if pos is valid, false otherwise (eof reached)
      */
     bool skipWhitespace() {
-        // if (eof()) return false;
+        // needed if last call to fill_buffer left pos == end == 0
+        if (eof()) return false;
         while (isspace(buffer[pos])) {
             if (!skip()) return false;
         }
@@ -173,6 +181,34 @@ class StreamBuffer {
             }
         }
         throw ParserException(std::string(filename_) + ": expected '" + str + "'");
+    }
+
+    /**
+     * @brief skip next number, skip leading whitespace
+     * @throw ParserException if no number could be read
+     * @return true if number was read before reaching eof, false otherwise
+     */
+    bool skipNumber() {
+        if (!skipWhitespace()) return false;
+
+        if (buffer[pos] == '-') {
+            if (!skip()) return false;
+        } else if (buffer[pos] == '+') {
+            if (!skip()) return false;
+        }
+
+        if (!isdigit(buffer[pos])) {
+            if (!skipWhitespace()) return false;
+            if (!isdigit(buffer[pos])) {
+                throw ParserException(std::string(filename_) + ": unexpected character: " + buffer[pos]);
+            }
+        }
+
+        while (isdigit(buffer[pos])) {
+            if (!skip()) break;
+        }
+        
+        return true;
     }
 
     /**
@@ -204,6 +240,38 @@ class StreamBuffer {
             }
         } else {
             throw ParserException(std::string(filename_) + ": strtol() errno: " + std::to_string(errno));
+        }
+    }
+
+    /**
+     * @brief read next unsigned 64bit integer, skip leading whitespace
+     * @param *out the read integer, output parameter
+     * @throw ParserException if no integer could be read
+     * @return true if integer was read before reaching eof, false otherwise
+     */
+    bool readUInt64(uint64_t* out) {
+        if (!skipWhitespace()) return false;
+
+        char* str = buffer + pos;
+        char* end = nullptr;
+
+        errno = 0;
+        unsigned long long number = strtoull(str, &end, 10);
+
+        if (errno == 0) {
+            if (end > str) {
+                if (number <= std::numeric_limits<uint64_t>::max()) {
+                    pos += static_cast<intptr_t>(end - str);
+                    *out = static_cast<uint64_t>(number);
+                    return true;
+                } else {
+                    throw ParserException(std::string(filename_) + ": number out of uint64 range");
+                }
+            } else {
+                throw ParserException(std::string(filename_) + ": unexpected character: " + buffer[pos]);
+            }
+        } else {
+            throw ParserException(std::string(filename_) + ": strtoull() errno: " + std::to_string(errno));
         }
     }
 
