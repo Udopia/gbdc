@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 
 project(gbdc VERSION 1.0)
 
+include(CTest)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
@@ -29,7 +31,11 @@ endif()
 add_library(solver STATIC IMPORTED)
 add_dependencies(solver cadical_external)
 set_target_properties(solver PROPERTIES IMPORTED_LOCATION "${CADICAL_LIB}")
-    
+
+if(APPLE)
+    set(LibArchive_INCLUDE_DIR "/usr/local/opt/libarchive/include")
+endif()
+
 find_package(LibArchive REQUIRED)
 include_directories(${LibArchive_INCLUDE_DIRS})
 set(LIBS ${LIBS} md5 ${LibArchive_LIBRARIES})
@@ -44,3 +50,5 @@ add_dependencies(gbdc solver)
 target_link_libraries(gbdc PUBLIC ${LIBS} solver $<TARGET_OBJECTS:gates> $<TARGET_OBJECTS:util> $<TARGET_OBJECTS:transform> $<TARGET_OBJECTS:extract>)
 
 target_include_directories(gbdc PUBLIC "${PROJECT_SOURCE_DIR}")
+
+add_test(NAME SomeTests COMMAND "src/test/tests")

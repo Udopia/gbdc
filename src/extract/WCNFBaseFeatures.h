@@ -10,6 +10,7 @@
 #include "IExtractor.h"
 #include "src/util/StreamBuffer.h"
 #include "src/extract/Util.h"
+#include <array>
 
 namespace WCNF {
 

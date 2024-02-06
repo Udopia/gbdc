@@ -1,0 +1,110 @@
+name: macOS Build-Test
+
+on:
+  push:
+    branches: [ master ]
+    
+jobs:
+        
+  build:
+    runs-on: macos-latest
+
+    outputs:
+      output1: ${{ steps.strings.outputs.build-output-dir }}
+    strategy:
+      # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
+      fail-fast: false
+
+      matrix:
+        build_type: [Release]
+        c_compiler: [clang]
+        cpp_compiler: [clang++]
+
+    steps:
+    - uses: actions/checkout@v4
+    # Add ssh-key to clone repository cadical
+    - uses: webfactory/ssh-agent@v0.9.0
+      with: 
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+
+    - name: Install libarchive
+      run:   |
+         echo ${{ github.ref }}
+         brew install libarchive
+      shell: bash
+
+    - name: Set reusable strings
+      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
+      id: strings
+      shell: bash
+      run: |
+          echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"        
+    
+    - name: Configure CMake
+      working-directory: ${{ github.workspace }}
+      run: |
+        cmake -B ${{ steps.strings.outputs.build-output-dir }} \
+          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -S ${{ github.workspace }}
+      shell: bash
+
+    - name: Build
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+
+    - name: Run tests
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      run: ctest --build-config ${{ matrix.build_type }}
+  
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifact
+        path: ${{ steps.strings.outputs.build-output-dir }}
+        
+  publish:
+    runs-on: macos-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')  
+    strategy:
+          # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
+        fail-fast: false
+    
+        matrix:
+          python_version: ['3.8','3.9','3.10','3.11','3.12']
+          
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifact
+          path: ${{needs.build.outputs.output1}}
+          
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "${{ matrix.python_version }}"
+          
+      - name: Python Build
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          pip install wheel
+          pip install -U pip setuptools 
+          brew install libarchive
+          export LDFLAGS="-L/usr/local/opt/libarchive/lib"
+          export CPPFLAGS="-I/usr/local/opt/libarchive/include -std=c++11 -mmacosx-version-min=11.7"
+          python3 setup.py bdist_wheel
+
+
+      - name: Publish package to TestPyPI
+        shell: bash
+        run: |
+          pip install twine
+          export TWINE_USERNAME="__token__"
+          export TWINE_PASSWORD="${{ secrets.TEST_PYPI_API_TOKEN }}"
+          twine upload --skip-existing --repository-url https://test.pypi.org/legacy/ dist/* --verbose
