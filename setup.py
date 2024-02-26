@@ -17,17 +17,17 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-from distutils.core import setup, Extension
+from setuptools import setup, Extension
 import os
 
 module = Extension("gbdc",
-        libraries = ["archive", "cadical"],
-        library_dirs=[os.path.abspath("./build/solvers/src/cadical_external/build")],
-        include_dirs=["."],
-        sources = ["src/gbdlib.cc", "lib/md5/md5.cpp"])
+                   libraries=["archive", "cadical"],
+                   library_dirs=["lib", os.path.abspath("./build/solvers/src/cadical_external/build")],
+                   include_dirs=["."],
+                   sources=["src/gbdlib.cc", "./lib/md5/md5.cpp"])
 
-setup(name="gbdc", 
-        version="2.0",
-        author="Markus Iser",
-        description="Accelerator Module for GBD",
-        ext_modules=[module])
+setup(name="gbdc",
+      version="2.0",
+      author="Markus Iser",
+      description="Accelerator Module for GBD",
+      ext_modules=[module])

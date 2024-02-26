@@ -1,3 +1,6 @@
+[![Linux Build-Test](https://github.com/fata-cmd/gbdc/actions/workflows/linux_build_test.yml/badge.svg?branch=master)](https://github.com/fata-cmd/gbdc/actions/workflows/linux_build_test.yml)
+[![MacOS Build-Test](https://github.com/fata-cmd/gbdc/actions/workflows/macos_build_test.yml/badge.svg?branch=master)](https://github.com/fata-cmd/gbdc/actions/workflows/macos_build_test.yml)
+[![Windows Build-Test](https://github.com/fata-cmd/gbdc/actions/workflows/windows_build_test.yml/badge.svg?branch=master)](https://github.com/fata-cmd/gbdc/actions/workflows/windows_build_test.yml)
 # GBDC (previously CNF Tools)
 
 GBDC provides the command-line program `cnftools` and the python module `gbdc`. All provided functionality is usually accessible from both the command-line but also from python via `gbdc`.

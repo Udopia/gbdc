@@ -35,6 +35,8 @@ build/
 uninstall.info
 dist/
 gbdc.egg-info/
+.idea/
+build-artifacts*.zip
 
 # autotools output
 configure
