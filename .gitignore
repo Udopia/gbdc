@@ -37,6 +37,8 @@ dist/
 gbdc.egg-info/
 .idea/
 build-artifacts*.zip
+key
+key.pub
 
 # autotools output
 configure
