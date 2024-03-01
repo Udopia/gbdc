@@ -91,7 +91,8 @@ class Constr {
   private:
     TermSum terms;
     Rel rel;
-    int bound;
+    std::string strbound;
+    double bound;
 
   public:
     Constr(StreamBuffer &in) : terms(in) {
@@ -102,7 +103,8 @@ class Constr {
             assert(*in == '=');
             in.skip();
         }
-        in.readInteger(&bound);
+        in.readNumber(&strbound);
+        bound = std::stod(strbound);
         in.skipWhitespace();
         if (*in == ';') in.skip();
     }
