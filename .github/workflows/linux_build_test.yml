@@ -3,6 +3,7 @@ name: Linux Build-Test
 on:
   push:
     branches: [ master ]
+    tags: 'v*.*.*'
 
 jobs:
         
@@ -49,10 +50,27 @@ jobs:
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifact
+        path: ${{ steps.strings.outputs.build-output-dir }}
+
     - name: Run tests
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       run: ctest --build-config ${{ matrix.build_type }}
 
+
+      # Steps from here on are only triggered for releases
+      # Set version = release-tag in setup.py
+    - name: Change version in setup.py
+      working-directory: ${{ github.workspace }}
+      run: |
+        PYPI_VERSION=$(echo ${{ github.ref_name }} | sed 's/[a-zA-Z]*//g')
+        sed -i "s/version=\"[^\"]*\"/version=\"$PYPI_VERSION\"/" setup.py
+      if: startsWith(github.ref_name, 'v')
+
+      # Build wheels using a docker image and different versions of python
     - name: Build manylinux wheels
       working-directory: ${{ github.workspace }}
       run: |
@@ -61,18 +79,19 @@ jobs:
         export DOCKER_IMAGE=quay.io/pypa/manylinux_2_28_x86_64
         docker pull $DOCKER_IMAGE
         docker run --rm -v ${{ github.workspace }}:/io $DOCKER_IMAGE /io/build-wheels.sh
-      if: startsWith(github.ref, 'refs/tags/')
+      # Trigger only for releases
+      if: startsWith(github.ref_name, 'v')
 
       
-
-    - name: Publish package to TestPyPI
+    - name: Publish package to PyPI
       shell: bash
       run: |
         pip install twine
         export TWINE_USERNAME="__token__"
-        export TWINE_PASSWORD="${{ secrets.TEST_PYPI_API_TOKEN }}"
-        twine upload --skip-existing --repository-url https://test.pypi.org/legacy/ wheelhouse/* --verbose
-      if: startsWith(github.ref, 'refs/tags/')
+        export TWINE_PASSWORD="${{ secrets.PYPI_API_TOKEN }}"
+        twine upload --skip-existing --repository-url https://upload.pypi.org/legacy/ wheelhouse/* --verbose
+      # Trigger only for releases
+      if: startsWith(github.ref_name, 'v')
    
     
         
