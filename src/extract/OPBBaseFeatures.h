@@ -20,17 +20,18 @@ class TermSum {
     friend Constr;
     friend BaseFeatures;
 
-    std::vector<int> coeffs{};
-    int max = 0;
-    int min = 0;
-    int abs_min_coeff = std::numeric_limits<int>::max();
+    std::vector<double> coeffs{};
+    double max = 0;
+    double min = 0;
+    double abs_min_coeff = std::numeric_limits<double>::max();
     Var max_var{0};
 
   public:
     TermSum(StreamBuffer &in) {
         for (in.skipWhitespace(); *in != ';' && *in != '>' && *in != '='; in.skipWhitespace()) {
-            int coeff;
-            in.readInteger(&coeff);
+            std::string coeffstr;
+            in.readNumber(&coeffstr);
+            double coeff = std::stod(coeffstr);
             in.skipWhitespace();
             if (*in == 'x') {
                 in.skip();
@@ -57,11 +58,11 @@ class TermSum {
         return coeffs.size();
     }
     
-    inline int const minVal() {
+    inline double const minVal() {
         return min;
     }
     
-    inline int const maxVal() {
+    inline double const maxVal() {
         return max;
     }
     
@@ -69,7 +70,7 @@ class TermSum {
         return max_var;
     }
     
-    inline int const minCoeff() {
+    inline double const minCoeff() {
         return abs_min_coeff;
     }
 };
@@ -153,8 +154,8 @@ class BaseFeatures : public IExtractor {
     bool trivially_unsat = false;
     
     unsigned obj_terms = 0;
-    int obj_max_val = 0, obj_min_val = 0;
-    std::vector<int> obj_coeffs{};
+    double obj_max_val = 0, obj_min_val = 0;
+    std::vector<double> obj_coeffs{};
 
   public:
     BaseFeatures(const char* filename) : filename_(filename), features(), names() { 
