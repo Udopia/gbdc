@@ -8,21 +8,24 @@ This project provides the Python module `gbdc`, which offers efficient implement
 These are used by the initialization functions of the database [GBD](https://github.com/Udopia/gbd).
 The functions are also available via the command-line tool `gbdc`, which can also be created from this repository.
 
-GBDC provides benchmark instance identifiers, feature extracters, and instance transformers for several problem domains, including those of propositional satisfiability (SAT) and optimization (MaxSAT), as well as Pseudo-Boolean Optimization (PBO).
-Inluded are the following implementations. 
+## Supported Domains and Features
+
+GBDC provides benchmark instance identifiers, feature extractors, and instance transformers for several problem domains, including those of propositional satisfiability (SAT) and optimization (MaxSAT), as well as Pseudo-Boolean Optimization (PBO).
+Inluded are the following implementations.
 
 * Implementations of `GBDHash` for domain-specific instance identifier calculation.
 * Implementations of `ISOHash` for domain-specific isomorphism class identification.
 * Implementations of several domain-specific feature extractors.
 * Implementations of instance normalizers and problem transformers.
 
-## Build and Installation Instructions
+More information on the supported domains can be found in the [documentation of domains](doc/Domains.md).
+More information on the supported feature extractors can be found in the [documentation of feature extractors](doc/Extractors.md).
+More information on the supported problem transformers can be found in the [documentation of problem transformers](doc/Extractors.md).
 
-### Build Dependencies
+## Build Dependencies and Installation Instructions
 
-* GBDC uses `libarchive` for reading from a large variety of compressed formats. Some systems provide this library by the package `libarchive-dev`.
-
-* Some GBDC functions use an [IPASIR](https://github.com/biotomas/ipasir) SAT Solver. The build-system of GBDC pulls the external SAT Solver [CaDiCaL](http://fmv.jku.at/cadical/) by A. Biere (MIT licensed).
+* GBDC uses `libarchive` for reading from a large variety of compressed formats (in some systems provided by the package `libarchive-dev`).
+* Some GBDC functions use an [IPASIR](https://github.com/biotomas/ipasir) SAT Solver. GBDC's build-system pulls the external SAT Solver [CaDiCaL](http://fmv.jku.at/cadical/) by A. Biere (MIT licensed).
 
 <!-- #### Shipped Dependencies
 
