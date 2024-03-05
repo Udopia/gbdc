@@ -48,7 +48,7 @@ class StreamBuffer {
     unsigned int buffer_size;
     char* buffer;
 
-    unsigned int pos;  // current read positition
+    unsigned int pos;  // current read position
     unsigned int end;  // 1+last valid position
     bool end_of_file;  // true when last chunk of file was read to buffer
 
@@ -70,7 +70,10 @@ class StreamBuffer {
             } else {
                 if (align) align_buffer();
             }
-            return true;
+            // In rare cases, the last buffer might have exactly lined up with
+            // eof, leading to `pos = end = 0` and `end_of_file = true`, in
+            // which case we want to return that eof was reached.
+            return end > 0;
         }
         return false;
     }

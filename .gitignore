@@ -37,9 +37,8 @@ dist/
 gbdc.egg-info/
 .idea/
 build-artifacts*.zip
-benchmarks/
-test.cnf
-test.db
+key
+key.pub
 
 # autotools output
 configure

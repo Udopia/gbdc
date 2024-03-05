@@ -96,6 +96,11 @@ namespace OPB {
                     if (*in == 'x') {
                         md5.consume(" x", 2);
                         in.skip();
+                    } else if (*in == '~') {
+                        md5.consume(" ~x", 3);
+                        in.skip();
+                        in.skipWhitespace();
+                        in.skip();
                     } else {
                         md5.consume(" ", 1);
                     }
@@ -109,6 +114,11 @@ namespace OPB {
                 while (*in != '>' && *in != '<' && *in != '=') {
                     if (*in == 'x') {
                         md5.consume("x", 1);
+                        in.skip();
+                    } else if (*in == '~') {
+                        md5.consume("~x", 2);
+                        in.skip();
+                        in.skipWhitespace();
                         in.skip();
                     }
                     in.readNumber(&num);
