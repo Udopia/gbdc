@@ -39,6 +39,10 @@ gbdc.egg-info/
 build-artifacts*.zip
 key
 key.pub
+benchmarks/
+test.sh
+build.sh
+Testing/
 
 # autotools output
 configure

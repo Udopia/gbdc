@@ -32,11 +32,27 @@ add_library(solver STATIC IMPORTED)
 add_dependencies(solver cadical_external)
 set_target_properties(solver PROPERTIES IMPORTED_LOCATION "${CADICAL_LIB}")
 
-if(APPLE)
-    set(LibArchive_INCLUDE_DIR "/usr/local/opt/libarchive/include")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    execute_process(
+        COMMAND brew --prefix libarchive
+        OUTPUT_VARIABLE LIBARCHIVE_PREFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        COMMAND_ERROR_IS_FATAL ANY
+    )
+    message("Libarchive prefix: ${LIBARCHIVE_PREFIX}")
+    set(LibArchive_INCLUDE_DIR "${LIBARCHIVE_PREFIX}/include")
+    list(INSERT CMAKE_PREFIX_PATH 0 "${LIBARCHIVE_PREFIX}")
 endif()
 
 find_package(LibArchive REQUIRED)
+if(LibArchive_FOUND)
+    message(STATUS "LibArchive found:")
+    message(STATUS "Include Directories: ${LibArchive_INCLUDE_DIRS}")
+    message(STATUS "Libraries: ${LibArchive_LIBRARIES}")
+else()
+    message(FATAL_ERROR "LibArchive not found. Please install it.")
+endif()
+
 include_directories(${LibArchive_INCLUDE_DIRS})
 set(LIBS ${LIBS} md5 ${LibArchive_LIBRARIES})
 
