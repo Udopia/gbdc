@@ -51,4 +51,5 @@ target_link_libraries(gbdc PUBLIC ${LIBS} solver $<TARGET_OBJECTS:gates> $<TARGE
 
 target_include_directories(gbdc PUBLIC "${PROJECT_SOURCE_DIR}")
 
-add_test(NAME SomeTests COMMAND "src/test/tests")
+add_test(NAME Test_StreamBuffer COMMAND "src/test/tests_streambuffer")
+add_test(NAME Test_CNFBaseFeatures COMMAND "src/test/tests_cnfbasefeatures")

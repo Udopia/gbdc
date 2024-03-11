@@ -18,8 +18,8 @@ class BaseFeatures1 : public IExtractor {
     const char* filename_;
     std::vector<double> features;
     std::vector<std::string> names;
-
-    unsigned n_vars = 0, n_clauses = 0;
+    
+    unsigned n_vars = 0, n_clauses = 0, bytes = 0, ccs = 0;
 
     // count occurences of clauses of small size
     std::array<unsigned, 11> clause_sizes;
@@ -45,7 +45,7 @@ class BaseFeatures1 : public IExtractor {
   public:
     BaseFeatures1(const char* filename) : filename_(filename), features(), names() { 
         clause_sizes.fill(0);
-        names.insert(names.end(), { "clauses", "variables" });
+        names.insert(names.end(), { "clauses", "variables", "bytes", "ccs" });
         names.insert(names.end(), { "cls1", "cls2", "cls3", "cls4", "cls5", "cls6", "cls7", "cls8", "cls9", "cls10p" });
         names.insert(names.end(), { "horn", "invhorn", "positive", "negative" });
         names.insert(names.end(), { "hornvars_mean", "hornvars_variance", "hornvars_min", "hornvars_max", "hornvars_entropy" });
@@ -58,19 +58,20 @@ class BaseFeatures1 : public IExtractor {
 
     virtual void extract() {
         StreamBuffer in(filename_);
-
+        UnionFind uf;
         Cl clause;
         while (in.readClause(clause)) {
-            ++n_clauses;
+            ++n_clauses;            
+            ++clause_sizes[std::min(clause.size(), 10UL)];
+            // +1 for 0 at EOL and +1 for linebreak
+            bytes += 2;
 
-            if (clause.size() < 10) {
-                ++clause_sizes[clause.size()];
-            } else {
-                ++clause_sizes[10];
-            }
+            uf.insert(clause);
 
             unsigned n_neg = 0;
             for (Lit lit : clause) {
+                // +1 for whitespace after variables
+                bytes += lit.sign() + numDigits(lit.var()) + 1;
                 // resize vectors if necessary
                 if (lit.var() > n_vars) {
                     n_vars = lit.var();
@@ -105,6 +106,8 @@ class BaseFeatures1 : public IExtractor {
                 balance_clause.push_back((double)std::min(n_pos, n_neg) / (double)std::max(n_pos, n_neg));
             }
         }
+        // subtract last linebreak
+        bytes -= 1;
 
         // balance of positive and negative literals per variable
         for (unsigned v = 0; v < n_vars; v++) {
@@ -114,12 +117,13 @@ class BaseFeatures1 : public IExtractor {
                 balance_variable.push_back(std::min(pos, neg) / std::max(pos, neg));
             }
         }
+        ccs = uf.count_components();
 
         load_feature_record();
     }
 
     void load_feature_record() {
-        features.insert(features.end(), { (double)n_clauses, (double)n_vars });
+        features.insert(features.end(), { (double)n_clauses, (double)n_vars, (double)bytes, (double)ccs });
         for (unsigned i = 1; i < 11; ++i) {
             features.push_back((double)clause_sizes[i]);
         }

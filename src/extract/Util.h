@@ -130,4 +130,74 @@ void push_distribution(std::vector<double>& record, std::vector<T> distribution)
     record.insert(record.end(), { mean, variance, min, max, entropy });
 }
 
-#endif  // SRC_FEATURES_UTIL_H_
+inline size_t numDigits(unsigned x)
+{
+    return ceil(log10(x));
+}
+
+class UnionFind
+{
+private:
+    template<typename T>
+    struct vwrapper
+    {
+        std::vector<T> v;
+        T &operator[](size_t idx)
+        {
+            if (idx >= v.size())
+            {
+                auto old_end = v.size();
+                v.resize(idx + 1);
+                std::generate(v.begin() + old_end, v.end(), [&]
+                              { return T(old_end++); });
+            }
+            return v[idx];
+        }
+
+        size_t size()
+        {
+            return v.size();
+        }
+    };
+    vwrapper<Var> ccs;
+public:
+    UnionFind() : ccs() {}
+    
+    /**
+     * @brief Inserts all variables of the given clause cl into the data structure and
+     * merges their components by selecting the representative with the lowest variable ID
+     * as the only remaining representative.
+     * @param cl Clause for which to insert all variables.
+     * @return
+     */
+    inline void insert(const Cl &cl)
+    {
+        Var min_var = Var(cl.front().var()), par;
+        for (const Lit &lit : cl) {
+            par = find(lit.var());
+            if (min_var > par){
+                ccs[min_var] = par;
+                min_var = par;
+            } else {
+                ccs[par] = min_var;
+            }
+        }
+    }
+
+    inline Var find(Var var)
+    {
+        return var == ccs[var] ? var : (ccs[var] = find(ccs[var]));
+    }
+
+    inline unsigned count_components()
+    {
+        unsigned num_components = 0;
+        for (unsigned i = 1; i < ccs.size(); ++i)
+        {
+            num_components += i == find(ccs[i]);
+        }
+        return num_components;
+    }
+};
+
+#endif // SRC_FEATURES_UTIL_H_
