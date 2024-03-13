@@ -91,6 +91,7 @@ class StreamBuffer {
     explicit StreamBuffer(const char* filename) : buffer_size(16384), pos(0), end(0), end_of_file(false), filename_(filename) {
         file = archive_read_new();
         archive_read_support_filter_all(file);
+        // archive_read_support_format_raw(file);
         archive_read_support_format_raw(file);
         int r = archive_read_open_filename(file, filename, buffer_size);
         if (r != ARCHIVE_OK) {
