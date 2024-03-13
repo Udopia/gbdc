@@ -1,26 +1,21 @@
+# GBDC: Global Benchmark Database, C++ Extension Module
+
 [![Linux Build-Test](https://github.com/Udopia/gbdc/actions/workflows/linux_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/linux_build_test.yml)
 [![MacOS Build-Test](https://github.com/Udopia/gbdc/actions/workflows/macos_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/macos_build_test.yml)
 [![Windows Build-Test](https://github.com/Udopia/gbdc/actions/workflows/windows_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/windows_build_test.yml)
 
-# Global Benchmark Database, C++ Extension Module
-
-This project provides the Python module `gbdc`, which offers efficient implementations of functions for benchmark instance identification, feature extraction and problem transformation in C++.
-These are used by the initialization functions of the database [GBD](https://github.com/Udopia/gbd).
-The functions are also available via the command-line tool `gbdc`, which can also be created from this repository.
+[GBDC](https://github.com/Udopia/gbdc) provides efficient implementations of functions for benchmark instance identification, instance feature extraction and instance transformation.
+GBDC provides a command-line tool as well as the Python package `gbdc`.
+The Python package `gbdc` is used by [Global Benchmark Database](https://github.com/Udopia/gbd).
 
 ## Supported Domains and Features
 
-GBDC provides benchmark instance identifiers, feature extractors, and instance transformers for several problem domains, including those of propositional satisfiability (SAT) and optimization (MaxSAT), as well as Pseudo-Boolean Optimization (PBO).
+GBDC provides benchmark instance identifiers, feature extractors, and instance transformers for several problem domains, including propositional satisfiability (SAT) and optimization (MaxSAT), as well as Pseudo-Boolean Optimization (PBO).
 Inluded are the following implementations.
-
-* Implementations of `GBDHash` for domain-specific instance identifier calculation.
-* Implementations of `ISOHash` for domain-specific isomorphism class identification.
-* Implementations of several domain-specific feature extractors.
-* Implementations of instance normalizers and problem transformers.
 
 More information on the supported domains can be found in the [documentation of domains](doc/Domains.md).
 More information on the supported feature extractors can be found in the [documentation of feature extractors](doc/Extractors.md).
-More information on the supported problem transformers can be found in the [documentation of problem transformers](doc/Extractors.md).
+More information on the supported problem transformers can be found in the [documentation of problem transformers](doc/Transformers.md).
 
 ## Build Dependencies and Installation Instructions
 
@@ -34,7 +29,7 @@ More information on the supported problem transformers can be found in the [docu
 * A copy of the [MD5 hash](https://github.com/CommanderBubble/MD5) implementation by M. Lloyd (MIT licensed) resides in the `lib` folder. -->
 
 ```bash
-# Build command-line tool
+# Build command-line tool and dependencies for the Python module
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
