@@ -1,13 +1,14 @@
-name: macOS Build-Test
+name: macOS-12 Build-Test
 
 on:
   push:
     branches: [ master ]
-    
+    tags: 'v*.*.*'
+
 jobs:
         
   build:
-    runs-on: macos-latest
+    runs-on: ${{ matrix.os }}
 
     outputs:
       output1: ${{ steps.strings.outputs.build-output-dir }}
@@ -16,9 +17,11 @@ jobs:
       fail-fast: false
 
       matrix:
+        os: [macos-latest]
         build_type: [Release]
         c_compiler: [clang]
         cpp_compiler: [clang++]
+
 
     steps:
     - uses: actions/checkout@v4
@@ -30,7 +33,6 @@ jobs:
 
     - name: Install libarchive
       run:   |
-         echo ${{ github.ref }}
          brew install libarchive
       shell: bash
 
@@ -56,8 +58,10 @@ jobs:
 
     - name: Run tests
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      run: ctest --build-config ${{ matrix.build_type }}
-  
+      run: |
+        ctest --build-config ${{ matrix.build_type }}
+      shell: bash
+
       
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -68,13 +72,17 @@ jobs:
   publish:
     runs-on: macos-latest
     needs: build
-    if: startsWith(github.ref, 'refs/tags/')  
+    # Trigger only for releases
+    if: startsWith(github.ref_name, 'v')  
     strategy:
           # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
-        fail-fast: false
+        fail-fast: true
     
+        # '3.8','3.9','3.10' do not build architecture-universal wheels
         matrix:
-          python_version: ['3.8','3.9','3.10','3.11','3.12']
+          python_version: [ '3.8','3.9','3.10', '3.11','3.12']
+          archive_lib: [ -L/usr/local/opt/libarchive/lib ]
+          archive_include: [ -I/usr/local/opt/libarchive/include ]
           
     steps:
       - uses: actions/checkout@v4
@@ -88,23 +96,45 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "${{ matrix.python_version }}"
-          
-      - name: Python Build
+
+        # Set version = release-tag in setup.py  
+      - name: Change version in setup.py
+        working-directory: ${{ github.workspace }}
+        run: |
+          PYPI_VERSION=$(echo ${{ github.ref_name }} | sed 's/[a-zA-Z]*//g')
+          sed -i "" "s/version=\"[^\"]*\"/version=\"$PYPI_VERSION\"/" setup.py
+        shell: bash
+      
+      - name: Install dependencies
         working-directory: ${{ github.workspace }}
         shell: bash
         run: |
           pip install wheel
           pip install -U pip setuptools 
+          pip install delocate
           brew install libarchive
-          export LDFLAGS="-L/usr/local/opt/libarchive/lib"
-          export CPPFLAGS="-I/usr/local/opt/libarchive/include -std=c++11 -mmacosx-version-min=11.7"
-          python3 setup.py bdist_wheel
 
 
-      - name: Publish package to TestPyPI
+      - name: Python Build
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          export _PYTHON_HOST_PLATFORM="macosx-12.0-x86_64"
+          export ARCHFLAGS="-arch x86_64"
+          export LDFLAGS="${{ matrix.archive_lib }}"
+          export CPPFLAGS="${{ matrix.archive_include }} -std=c++11"          
+          python3 setup.py bdist_wheel -v
+          for whl in dist/*.whl; do
+            delocate-listdeps --all "$whl"
+            delocate-wheel -v "$whl"
+            delocate-listdeps --all "$whl"
+          done
+
+
+      - name: Publish package to PyPI
         shell: bash
         run: |
           pip install twine
           export TWINE_USERNAME="__token__"
-          export TWINE_PASSWORD="${{ secrets.TEST_PYPI_API_TOKEN }}"
-          twine upload --skip-existing --repository-url https://test.pypi.org/legacy/ dist/* --verbose
+          export TWINE_PASSWORD="${{ secrets.PYPI_API_TOKEN }}"
+          twine upload --skip-existing --repository-url https://upload.pypi.org/legacy/ dist/* --verbose
