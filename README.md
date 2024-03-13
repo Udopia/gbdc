@@ -12,7 +12,7 @@ The Python package `gbdc` is used by [Global Benchmark Database](https://github.
 
 GBDC provides benchmark instance identifiers, feature extractors, and instance transformers for several problem domains, including propositional satisfiability (SAT) and optimization (MaxSAT), as well as Pseudo-Boolean Optimization (PBO).
 Inluded are the following implementations.
-A documentation on the supported domains, feature extractors, and instance transformers can be found in the [documentation](doc/Index.md).
+A documentation on the supported domains, feature extractors, and instance transformers can be found in the [documentation](https://udopia.github.io/gbdc/doc/Index.html).
 
 ## Build Dependencies and Installation Instructions
 
