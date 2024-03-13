@@ -1,13 +1,6 @@
-# Feature Extractors
+# Base Features for CNF Instances
 
-## CNF Context
-
-### Isohash for CNF Instances
-
-This feature extractor computes exactly one feature for each instance which is the hashsum of the sorted degree sequence of the normalize literal interaction graph. TODO: elaborate. 
-The feature over-approximates the equivalence class of isomorphic instances and can be used to reduce redundancy in experimentation.
-
-### Base Features for CNF Instances
+- Context: cnf
 
 This feature extractor computes several statististical features which can roughly be grouped into the four categories \textsf{clause type}, \textsf{horn proximity}, \textsf{polarity balance}, and \textsf{graph based}.
 
@@ -24,17 +17,3 @@ This feature extractor computes several statististical features which can roughl
   - based on the Variable Graph: 'vg_degree_mean', 'vg_degree_variance', 'vg_degree_min', 'vg_degree_max', 'vg_degree_entropy'
 
   - based on the Clause Graph: 'cg_degree_mean', 'cg_degree_variance', 'cg_degree_min', 'cg_degree_max', 'cg_degree_entropy'
-
-### Gate Features for CNF Instances
-
-Runs the gate feature extraction algorithm described in~\cite{} and extracts features denoting the numbers of gates of specific types and their distribution of the levels of the detected hierarchical gate structure.
-
-## WCNF Context
-
-### Isohash for WCNF Instances
-
-### Base Features for WCNF Instances
-
-## OPB Context
-
-### Base Features for OPB Instances
