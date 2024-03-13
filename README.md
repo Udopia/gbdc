@@ -1,18 +1,19 @@
 # GBDC: Global Benchmark Database, C++ Extension Module
 
+<!--
 [![Linux Build-Test](https://github.com/Udopia/gbdc/actions/workflows/linux_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/linux_build_test.yml)
 [![MacOS Build-Test](https://github.com/Udopia/gbdc/actions/workflows/macos_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/macos_build_test.yml)
 [![Windows Build-Test](https://github.com/Udopia/gbdc/actions/workflows/windows_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/windows_build_test.yml)
+-->
 
 [GBDC](https://github.com/Udopia/gbdc) provides efficient implementations of functions for benchmark instance identification, instance feature extraction and instance transformation.
 GBDC provides a command-line tool as well as the Python package `gbdc`.
 The Python package `gbdc` is used by [Global Benchmark Database](https://github.com/Udopia/gbd).
 
-## Supported Domains and Features
+## Documentation
 
 GBDC provides benchmark instance identifiers, feature extractors, and instance transformers for several problem domains, including propositional satisfiability (SAT) and optimization (MaxSAT), as well as Pseudo-Boolean Optimization (PBO).
-Inluded are the following implementations.
-A documentation on the supported domains, feature extractors, and instance transformers can be found in the [documentation](https://udopia.github.io/gbdc/doc/Index.html).
+A description of the supported domains, feature extractors, and instance transformers can be found in the [documentation](https://udopia.github.io/gbdc/doc/Index.html).
 
 ## Build Dependencies and Installation Instructions
 
