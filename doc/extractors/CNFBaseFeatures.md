@@ -8,9 +8,9 @@ This feature extractor computes several statistical features which can roughly b
 
 | Category              | Feature Name           | Description                                                                     |
 |-----------------------|------------------------|---------------------------------------------------------------------------------|
-| Clause types          | `clauses`              | Number of clauses                                                               |
+| Basic statistics      | `clauses`              | Number of clauses                                                               |
 |                       | `variables`            | Number of variables                                                             |
-|                       | `cls<n>` for `<n>` 1-9 | Number of clauses with `<n>` literals                                           |
+| Clause types          | `cls<n>` for `<n>` 1-9 | Number of clauses with `<n>` literals                                           |
 |                       | `cls10p`               | Number of clauses with 10 or more literals                                      |
 |                       | `horn`                 | Number of horn clauses                                                          |
 |                       | `invhorn`              | Number of inverted horn clauses                                                 |
