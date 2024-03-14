@@ -2,7 +2,8 @@
 
 <!--
 [![Linux Build-Test](https://github.com/Udopia/gbdc/actions/workflows/linux_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/linux_build_test.yml)
-[![MacOS Build-Test](https://github.com/Udopia/gbdc/actions/workflows/macos_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/macos_build_test.yml)
+[![MacOS 12 Build-Test](https://github.com/Udopia/gbdc/actions/workflows/macos12_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/macos12_build_test.yml)
+[![MacOS 14 Build-Test](https://github.com/Udopia/gbdc/actions/workflows/macos14_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/macos14_build_test.yml)
 [![Windows Build-Test](https://github.com/Udopia/gbdc/actions/workflows/windows_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/windows_build_test.yml)
 -->
 
@@ -10,10 +11,10 @@
 GBDC provides a command-line tool as well as the Python package `gbdc`.
 The Python package `gbdc` is used by [Global Benchmark Database](https://github.com/Udopia/gbd).
 
-## Documentation
+## [Documentation](doc/Index.html)
 
 GBDC provides benchmark instance identifiers, feature extractors, and instance transformers for several problem domains, including propositional satisfiability (SAT) and optimization (MaxSAT), as well as Pseudo-Boolean Optimization (PBO).
-A description of the supported domains, feature extractors, and instance transformers can be found in the [documentation](https://udopia.github.io/gbdc/doc/Index.html).
+A description of the supported domains, feature extractors, and instance transformers can be found in the [documentation](doc/Index.html).
 
 ## Build Dependencies and Installation Instructions
 
