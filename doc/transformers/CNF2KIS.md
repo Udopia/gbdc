@@ -1,6 +1,7 @@
 # CNF to KIS transformer
 
 **Source context**: `cnf`
+
 **Target context**: `kis`
 
 The CNF to KIS transformer translates SAT instances given in conjunctive normal form into instances of the k-Independent Set Problem.
