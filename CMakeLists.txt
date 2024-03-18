@@ -69,3 +69,4 @@ target_include_directories(gbdc PUBLIC "${PROJECT_SOURCE_DIR}")
 
 add_test(NAME Test_StreamBuffer COMMAND "src/test/tests_streambuffer")
 add_test(NAME Test_CNFBaseFeatures COMMAND "src/test/tests_cnfbasefeatures")
+add_test(NAME Test_StreamCompressor COMMAND "src/test/tests_streamcompressor")

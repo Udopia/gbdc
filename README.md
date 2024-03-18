@@ -26,7 +26,7 @@ A description of the supported domains, feature extractors, and instance transfo
    - For Ubuntu: `apt install libarchive-dev`
    - For macOS: `brew install libarchive`
 
-2. Inside the directory containing this repository run the installation script `install-pymod.sh`.
+2. Run the installation script `install-pymod.sh` within the repository directory.
 
 ### Experimental:
 The PyPI package `gbdc` contains pre-built distributions that can be installed via `pip install gbdc`. However, please note that some platform-specific distributions may be missing and that existing ones have not undergone extensive testing yet.
