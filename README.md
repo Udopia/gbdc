@@ -14,7 +14,7 @@ The Python package `gbdc` is used by [Global Benchmark Database](https://github.
 GBDC provides benchmark instance identifiers, feature extractors, and instance transformers for several problem domains, including propositional satisfiability (SAT) and optimization (MaxSAT), as well as Pseudo-Boolean Optimization (PBO).
 A description of the supported domains, feature extractors, and instance transformers can be found in the [documentation](doc/Index.html).
 
-## Installation
+## Installation from Source
 
 * GBDC uses `libarchive` for reading from a large variety of compressed formats (in some systems provided by the package `libarchive-dev`).
 * Some GBDC functions use an [IPASIR](https://github.com/biotomas/ipasir) SAT Solver. GBDC's build-system pulls the external SAT Solver [CaDiCaL](http://fmv.jku.at/cadical/) by A. Biere (MIT licensed).
@@ -26,7 +26,7 @@ A description of the supported domains, feature extractors, and instance transfo
 
 2. Run the installation script `install-pymod.sh` within the repository directory.
 
-### Experimental:
+## Installation from PyPI (Experimental):
 The PyPI package `gbdc` contains pre-built distributions that can be installed via `pip install gbdc`. However, please note that some platform-specific distributions may be missing and that existing ones have not undergone extensive testing yet.
 <!-- #### Shipped Dependencies
 
