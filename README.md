@@ -1,11 +1,9 @@
 # GBDC: Global Benchmark Database, C++ Extension Module
 
-<!--
 [![Linux Build-Test](https://github.com/Udopia/gbdc/actions/workflows/linux_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/linux_build_test.yml)
 [![MacOS 12 Build-Test](https://github.com/Udopia/gbdc/actions/workflows/macos12_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/macos12_build_test.yml)
 [![MacOS 14 Build-Test](https://github.com/Udopia/gbdc/actions/workflows/macos14_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/macos14_build_test.yml)
 [![Windows Build-Test](https://github.com/Udopia/gbdc/actions/workflows/windows_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/windows_build_test.yml)
--->
 
 [GBDC](https://github.com/Udopia/gbdc) provides efficient implementations of functions for benchmark instance identification, instance feature extraction and instance transformation.
 GBDC provides a command-line tool as well as the Python package `gbdc`.
