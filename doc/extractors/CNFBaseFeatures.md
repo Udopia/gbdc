@@ -10,6 +10,8 @@ This feature extractor computes several statistical features which can roughly b
 |-----------------------|------------------------|---------------------------------------------------------------------------------|
 | Basic statistics      | `clauses`              | Number of clauses                                                               |
 |                       | `variables`            | Number of variables                                                             |
+|                       | `bytes`                | Number of bytes/characters in text file                                          |
+|                       | `ccs`                  | Number of connected components                                                  |
 | Clause types          | `cls<n>` for `<n>` 1-9 | Number of clauses with `<n>` literals                                           |
 |                       | `cls10p`               | Number of clauses with 10 or more literals                                      |
 |                       | `horn`                 | Number of horn clauses                                                          |
