@@ -30,6 +30,9 @@ jobs:
     - name: Run tests
       run: |
         cd build
+        if [ "${{ matrix.os }}" == 'Linux']; then
+          export LDFLAGS="-L/usr/local/lib"
+        fi 
         ctest --debug
   
       
