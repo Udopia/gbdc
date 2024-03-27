@@ -15,14 +15,12 @@ jobs:
         ref: master
     
     - name: Change version in setup.py
-      if: startsWith(github.ref_name, 'v')  
       working-directory: ${{ github.workspace }}
       run: |
          PYPI_VERSION=$(echo ${{ github.ref_name }} | sed 's/[a-zA-Z]*//g')
          sed -i "s/version=\"[^\"]*\"/version=\"$PYPI_VERSION\"/" setup.py
     
     - name: Push to github
-      if: startsWith(github.ref_name, 'v')  
       uses: EndBug/add-and-commit@v9
       with:
         message: 'Change setup.py version'
@@ -91,7 +89,6 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref_name, 'v')  
 
     steps:
     - uses: actions/checkout@v4
