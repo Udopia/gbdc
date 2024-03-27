@@ -1,0 +1,119 @@
+name: Build Wheels
+
+on:
+  push:
+    tags: 'v*.*.*'
+
+  workflow_dispatch:
+jobs:
+  # change version in setup.py and commit to the repository
+  versioning:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: master
+    
+    - name: Change version in setup.py
+      if: startsWith(github.ref_name, 'v')  
+      working-directory: ${{ github.workspace }}
+      run: |
+         PYPI_VERSION=$(echo ${{ github.ref_name }} | sed 's/[a-zA-Z]*//g')
+         sed -i "s/version=\"[^\"]*\"/version=\"$PYPI_VERSION\"/" setup.py
+    
+    - name: Push to github
+      if: startsWith(github.ref_name, 'v')  
+      uses: EndBug/add-and-commit@v9
+      with:
+        message: 'Change setup.py version'
+      
+  build:
+    runs-on: ${{ matrix.os }}
+    needs: versioning
+
+    strategy:
+      # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
+      fail-fast: false
+
+      matrix:
+        os: [ubuntu-latest, macos-13, macos-14]
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: master
+    # Add ssh-key to clone repository cadical
+    - uses: webfactory/ssh-agent@v0.9.0
+      with: 
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+    
+    # needed for cross-compilation on linux
+    - name: Set up QEMU
+      if: runner.os == 'Linux'
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: all
+
+    - name: Build wheels
+      uses: pypa/cibuildwheel@v2.17.0
+      env:
+        MACOSX_DEPLOYMENT_TARGET: "10.15"
+        CIBW_BUILD_FRONTEND: build # python -m build --wheel
+        CIBW_ARCHS_MACOS: auto
+        CIBW_ARCHS_LINUX: auto aarch64 ppc64le s390x
+        CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+        CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
+        CIBW_MANYLINUX_PPC64LE_IMAGE: manylinux_2_28
+        CIBW_MANYLINUX_S390X_IMAGE: manylinux_2_28
+        CIBW_MUSLLINUX_X86_64_IMAGE: musllinux_1_2
+        CIBW_MUSLLINUX_AARCH64_IMAGE: musllinux_1_2
+        CIBW_MUSLLINUX_PPC64LE_IMAGE: musllinux_1_2
+        CIBW_MUSLLINUX_S390X_IMAGE: musllinux_1_2
+        # skip PyPy, cpython3.6/3.7 for all archs, cpython3.8/3.9 for macos-arm64, windows, 32-bit
+        # and only build arch-specific for macos
+        CIBW_SKIP: pp* cp3[67]* cp3[89]*mac*arm* *win* *i686* *universal2* #cp311* cp312*
+
+        CIBW_BUILD_VERBOSITY: 3
+        CIBW_BEFORE_ALL_LINUX: bash before_build.sh
+        CIBW_BEFORE_ALL_MACOS: bash before_build.sh
+      
+        CIBW_ENVIRONMENT_MACOS: CPPFLAGS="-I/usr/local/include -std=c++11"
+      with:        
+        package-dir: .
+        output-dir: wheelhouse
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+        path: ./wheelhouse/*.whl
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref_name, 'v')  
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: master
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        # unpacks all CIBW artifacts into wheelhouse/
+        pattern: cibw-*
+        path: wheelhouse
+        merge-multiple: true
+
+
+    - name: Publish package to PyPI
+      shell: bash
+      run: |
+        pip install twine
+        export TWINE_USERNAME="__token__"
+        export TWINE_PASSWORD="${{ secrets.PYPI_API_TOKEN }}"
+        twine upload --skip-existing --repository-url https://upload.pypi.org/legacy/ wheelhouse/* --verbose
+   
+    
+        

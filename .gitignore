@@ -40,7 +40,6 @@ build-artifacts*.zip
 benchmarks/
 test.cnf
 test.db
-build.sh
 Testing/
 test.sh
 key

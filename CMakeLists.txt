@@ -17,7 +17,7 @@ else()
     message(STATUS "Building Cadical")
     include(ExternalProject)
     ExternalProject_Add(cadical_external
-        GIT_REPOSITORY git@github.com:arminbiere/cadical.git 
+        GIT_REPOSITORY https://github.com/arminbiere/cadical.git
         GIT_TAG master
         PREFIX solvers
         CONFIGURE_COMMAND ./configure "CXXFLAGS=-fPIC"
@@ -32,7 +32,7 @@ add_library(solver STATIC IMPORTED)
 add_dependencies(solver cadical_external)
 set_target_properties(solver PROPERTIES IMPORTED_LOCATION "${CADICAL_LIB}")
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin" AND NOT DEFINED LA_PREFIX)
     execute_process(
         COMMAND brew --prefix libarchive
         OUTPUT_VARIABLE LIBARCHIVE_PREFIX
@@ -44,13 +44,17 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     list(INSERT CMAKE_PREFIX_PATH 0 "${LIBARCHIVE_PREFIX}")
 endif()
 
+if(DEFINED LA_PREFIX)
+    message(STATUS "Setting Libarchive include dir: ${LA_PREFIX}/include")
+    set(LibArchive_INCLUDE_DIR "${LA_PREFIX}/include")
+    list(INSERT CMAKE_PREFIX_PATH 0 "${LA_PREFIX}")
+endif()
+
 find_package(LibArchive REQUIRED)
 if(LibArchive_FOUND)
     message(STATUS "LibArchive found:")
-    message(STATUS "Include Directories: ${LibArchive_INCLUDE_DIRS}")
-    message(STATUS "Libraries: ${LibArchive_LIBRARIES}")
-else()
-    message(FATAL_ERROR "LibArchive not found. Please install it.")
+    message(STATUS "LibArchive_INCLUDE_DIRS: ${LibArchive_INCLUDE_DIRS}")
+    message(STATUS "LibArchive_LIBRARIES: ${LibArchive_LIBRARIES}")
 endif()
 
 include_directories(${LibArchive_INCLUDE_DIRS})
