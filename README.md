@@ -1,9 +1,6 @@
 # GBDC: Global Benchmark Database, C++ Extension Module
 
-[![Linux Build-Test](https://github.com/Udopia/gbdc/actions/workflows/linux_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/linux_build_test.yml)
-[![MacOS 12 Build-Test](https://github.com/Udopia/gbdc/actions/workflows/macos12_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/macos12_build_test.yml)
-[![MacOS 14 Build-Test](https://github.com/Udopia/gbdc/actions/workflows/macos14_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/macos14_build_test.yml)
-[![Windows Build-Test](https://github.com/Udopia/gbdc/actions/workflows/windows_build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/windows_build_test.yml)
+[![Build-Test](https://github.com/Udopia/gbdc/actions/workflows/build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/build_test.yml)
 
 [GBDC](https://github.com/Udopia/gbdc) provides efficient implementations of functions for benchmark instance identification, instance feature extraction and instance transformation.
 GBDC provides a command-line tool as well as the Python package `gbdc`.
@@ -13,6 +10,11 @@ The Python package `gbdc` is used by [Global Benchmark Database](https://github.
 
 GBDC provides benchmark instance identifiers, feature extractors, and instance transformers for several problem domains, including propositional satisfiability (SAT) and optimization (MaxSAT), as well as Pseudo-Boolean Optimization (PBO).
 A description of the supported domains, feature extractors, and instance transformers can be found in the [documentation](https://udopia.github.io/gbdc/doc/Index.html).
+
+## Installation from PyPI
+* Pre-built distributions for Linux and MacOS.
+* Requires at least Python 3.8.0 (3.10.0 for Apple Silicon).
+* Installation via `pip install gbdc`
 
 ## Installation from Source
 
@@ -25,9 +27,6 @@ A description of the supported domains, feature extractors, and instance transfo
    - For macOS: `brew install libarchive`
 
 2. Run the installation script `install-pymod.sh` within the repository directory.
-
-## Installation from PyPI (Experimental):
-The PyPI package `gbdc` contains pre-built distributions that can be installed via `pip install gbdc`. However, please note that some platform-specific distributions may be missing and that existing ones have not undergone extensive testing yet.
 <!-- #### Shipped Dependencies
 
 * A copy of the command-line argument parser by P. S. Kumar [`argparse.h`](https://github.com/p-ranav/argparse) (MIT licensed) resides in the `lib` folder.
