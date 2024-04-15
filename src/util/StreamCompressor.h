@@ -34,7 +34,8 @@ public:
     explicit StreamCompressorException(const std::string &msg, archive *arch) : std::runtime_error(msg + ": " + std::string(archive_error_string(arch))) {}
 };
 
-class StreamCompressor {
+class StreamCompressor
+{
     unsigned size_;
     unsigned cursor;
 
@@ -42,6 +43,7 @@ class StreamCompressor {
     struct archive_entry *entry;
 
     int status;
+    bool closed;
 
 public:
     StreamCompressor(const char *output, unsigned size = 0) : size_(size), cursor(0), status(0)
@@ -79,6 +81,8 @@ public:
 
     ~StreamCompressor()
     {
+        if (!closed)
+            close();
     }
 
     void write(const char *buf, unsigned len)
@@ -88,11 +92,10 @@ public:
         {
             throw StreamCompressorException("Attempt to write more than announced");
         }
-    
+
         int bytes_written = archive_write_data(arch, buf, len);
         if (bytes_written != len)
         {
-            std::cerr << archive_error_string << "\n";
             throw StreamCompressorException("Error writing to archive", arch);
         }
     }
@@ -139,7 +142,8 @@ public:
         {
             throw StreamCompressorException("Error freeing archive", arch);
         }
+        closed = true;
     }
 };
 
-#endif  // SRC_UTIL_STREAMCOMPRESSOR_H_
+#endif // SRC_UTIL_STREAMCOMPRESSOR_H_

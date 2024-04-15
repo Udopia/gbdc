@@ -47,9 +47,9 @@ class CNFGateFeatures : public IExtractor {
     unsigned n_none = 0, n_generic = 0, n_mono = 0;
     unsigned n_and = 0, n_or = 0, n_triv = 0, n_equiv = 0, n_full = 0;
 
-    std::vector<unsigned> levels, levels_none, levels_generic, levels_mono;
-    std::vector<unsigned> levels_and, levels_or, levels_triv;
-    std::vector<unsigned> levels_equiv, levels_full;
+    tvector<unsigned> levels, levels_none, levels_generic, levels_mono;
+    tvector<unsigned> levels_and, levels_or, levels_triv;
+    tvector<unsigned> levels_equiv, levels_full;
 
   public:
     CNFGateFeatures(const char* filename) : filename_(filename), features(), names() { 
@@ -80,8 +80,8 @@ class CNFGateFeatures : public IExtractor {
         levels.resize(n_vars + 1, 0);
         // BFS for level determination
         unsigned level = 0;
-        std::vector<Lit> current = gates.getRoots();
-        std::vector<Lit> next;
+        tvector<Lit> current = gates.getRoots();
+        tvector<Lit> next;
         while (!current.empty()) {
             ++level;
             for (Lit lit : current) {

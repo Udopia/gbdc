@@ -27,7 +27,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/util/StreamBuffer.h"
 #include "src/util/SolverTypes.h"
-#include "src/util/ResourceLimits.h"
 
 class CNFFormula {
     For formula;
@@ -92,6 +91,7 @@ class CNFFormula {
 
     void readDimacsFromFile(const char* filename) {
         StreamBuffer in(filename);
+        
         Cl clause;
         while (in.skipWhitespace()) {
             if (*in == 'p' || *in == 'c') {

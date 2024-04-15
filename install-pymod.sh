@@ -11,5 +11,5 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j$j
 cd ..
-pip install . --user --force-reinstall
+pip install . --force-reinstall
 rm -rf gbdc.egg-info

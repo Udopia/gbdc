@@ -96,9 +96,6 @@ int main(int argc, char** argv) {
     int verbose = argparse.get<int>("verbose");
     int repeat = argparse.get<int>("repeat");
 
-    ResourceLimits limits(argparse.get<int>("timeout"), argparse.get<int>("memout"), argparse.get<int>("fileout"));
-    limits.set_rlimits();
-
     std::cerr << "c Running: " << toolname << " " << filename << std::endl;
 
     try {
@@ -206,19 +203,5 @@ int main(int argc, char** argv) {
         std::cerr << "Memory Limit Exceeded" << std::endl;
         return 1;
     }
-    catch (MemoryLimitExceeded& e) {
-        std::cerr << "Memory Limit Exceeded" << std::endl;
-        return 1;
-    }
-    catch (TimeLimitExceeded& e) {
-        std::cerr << "Time Limit Exceeded" << std::endl;
-        return 1;
-    }
-    catch (FileSizeLimitExceeded& e) {
-        std::remove(output.c_str());
-        std::cerr << "File Size Limit Exceeded" << std::endl;
-        return 1;
-    }
-
     return 0;
 }

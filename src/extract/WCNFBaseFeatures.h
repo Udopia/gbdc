@@ -35,19 +35,19 @@ class BaseFeatures1 : public IExtractor {
     unsigned positive = 0, negative = 0;
 
     // occurrence counts in horn clauses (per variable)
-    std::vector<unsigned> variable_horn, variable_inv_horn;
+    tvector<unsigned> variable_horn, variable_inv_horn;
 
     // pos-neg literal balance (per clause)
-    std::vector<double> balance_clause;
+    tvector<double> balance_clause;
 
     // pos-neg literal balance (per variable)
-    std::vector<double> balance_variable;
+    tvector<double> balance_variable;
 
     // Literal Occurrences
-    std::vector<unsigned> literal_occurrences;
+    tvector<unsigned> literal_occurrences;
     
     // Soft clause weights
-    std::vector<uint64_t> weights;
+    tvector<uint64_t> weights;
 
   public:
     BaseFeatures1(const char* filename) : filename_(filename), features(), names() { 
@@ -106,7 +106,7 @@ class BaseFeatures1 : public IExtractor {
             }
             
             for (Lit lit : clause) {
-                if (lit.var() > n_vars) {
+                if (static_cast<unsigned>(lit.var()) > n_vars) {
                     n_vars = lit.var();
                     variable_horn.resize(n_vars + 1);
                     variable_inv_horn.resize(n_vars + 1);
@@ -212,14 +212,14 @@ class BaseFeatures2 : public IExtractor {
     unsigned n_vars = 0;
 
     // VCG Degree Distribution
-    std::vector<unsigned> vcg_cdegree; // clause sizes
-    std::vector<unsigned> vcg_vdegree; // occurence counts
+    tvector<unsigned> vcg_cdegree; // clause sizes
+    tvector<unsigned> vcg_vdegree; // occurence counts
 
     // VIG Degree Distribution
-    std::vector<unsigned> vg_degree;
+    tvector<unsigned> vg_degree;
 
     // CG Degree Distribution
-    std::vector<unsigned> clause_degree;
+    tvector<unsigned> clause_degree;
 
   public:
     BaseFeatures2(const char* filename) : filename_(filename), features(), names() { 
@@ -268,14 +268,14 @@ class BaseFeatures2 : public IExtractor {
 
             for (Lit lit : clause) {
                 // resize vectors if necessary
-                if (lit.var() > n_vars) {
+                if (static_cast<unsigned>(lit.var()) > n_vars) {
                     n_vars = lit.var();
                     vcg_vdegree.resize(n_vars + 1);
                     vg_degree.resize(n_vars + 1);
                 }
 
                 // count variable occurrences (only for hard clauses)
-                if (!top && !weight || weight >= top) {
+                if ((!top && !weight) || weight >= top) {
                     ++vcg_vdegree[lit.var()];
                     vg_degree[lit.var()] += clause.size();
                 }
@@ -284,6 +284,7 @@ class BaseFeatures2 : public IExtractor {
 
         // clause graph features
         StreamBuffer in2(filename_);
+
         while (in2.skipWhitespace()) {
             if (*in2 == 'c' || *in2 == 'p') {
                 if (!in2.skipLine()) break;
@@ -333,10 +334,10 @@ class BaseFeatures : public IExtractor {
   public:
     BaseFeatures(const char* filename) : filename_(filename), features(), names() { 
         BaseFeatures1 baseFeatures1(filename_);
-        std::vector<std::string> names1 = baseFeatures1.getNames();
+        auto names1 = baseFeatures1.getNames();
         names.insert(names.end(), names1.begin(), names1.end());
         BaseFeatures2 baseFeatures2(filename_);
-        std::vector<std::string> names2 = baseFeatures2.getNames();
+        auto names2 = baseFeatures2.getNames();
         names.insert(names.end(), names2.begin(), names2.end());
     }
 
@@ -350,14 +351,14 @@ class BaseFeatures : public IExtractor {
     void extractBaseFeatures1() {
         BaseFeatures1 baseFeatures1(filename_);
         baseFeatures1.extract();
-        std::vector<double> feat = baseFeatures1.getFeatures();
+        auto feat = baseFeatures1.getFeatures();
         features.insert(features.end(), feat.begin(), feat.end());
     }
 
     void extractBaseFeatures2() {
         BaseFeatures2 baseFeatures2(filename_);
         baseFeatures2.extract();
-        std::vector<double> feat = baseFeatures2.getFeatures();
+        auto feat = baseFeatures2.getFeatures();
         features.insert(features.end(), feat.begin(), feat.end());
     }
 

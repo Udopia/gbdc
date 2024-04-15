@@ -48,7 +48,7 @@ namespace CNF {
             } else {
                 int plit;
                 while (in.readInteger(&plit)) {
-                    if (abs(plit) >= degrees.size()) degrees.resize(abs(plit));
+                    if (static_cast<size_t>(abs(plit)) >= degrees.size()) degrees.resize(abs(plit));
                     if (plit == 0) break;
                     else if (plit < 0) ++degrees[abs(plit) - 1].neg;
                     else ++degrees[abs(plit) - 1].pos;
@@ -102,7 +102,7 @@ namespace WCNF {
                 in.skip();
                 int plit;
                 while (in.readInteger(&plit)) {
-                    if (abs(plit) >= hard_degrees.size()) hard_degrees.resize(abs(plit));
+                    if (static_cast<size_t>(abs(plit)) >= hard_degrees.size()) hard_degrees.resize(abs(plit));
                     if (plit == 0) break;
                     else if (plit < 0) ++hard_degrees[abs(plit) - 1].neg;
                     else ++hard_degrees[abs(plit) - 1].pos;
@@ -114,7 +114,7 @@ namespace WCNF {
                     // old format hard clause
                     int plit;
                     while (in.readInteger(&plit)) {
-                        if (abs(plit) >= hard_degrees.size()) hard_degrees.resize(abs(plit));
+                        if (static_cast<size_t>(abs(plit)) >= hard_degrees.size()) hard_degrees.resize(abs(plit));
                         if (plit == 0) break;
                         else if (plit < 0) ++hard_degrees[abs(plit) - 1].neg;
                         else ++hard_degrees[abs(plit) - 1].pos;
@@ -123,7 +123,7 @@ namespace WCNF {
                     // soft clause
                     int plit;
                     while (in.readInteger(&plit)) {
-                        if (abs(plit) >= soft_degrees.size()) soft_degrees.resize(abs(plit));
+                        if (static_cast<size_t>(abs(plit)) >= soft_degrees.size()) soft_degrees.resize(abs(plit));
                         if (plit == 0) break;
                         else if (plit < 0) ++soft_degrees[abs(plit) - 1].neg += weight;
                         else ++soft_degrees[abs(plit) - 1].pos += weight;
@@ -150,13 +150,13 @@ namespace WCNF {
         char buffer[64];
         for (Node node : hard_degrees) {
             if (node.neg == 0 && node.pos == 0) continue;  // get invariant against variable gaps
-            int n = snprintf(buffer, sizeof(buffer), "%llu %llu ", node.neg, node.pos);
+            int n = snprintf(buffer, sizeof(buffer), "%lu %lu ", node.neg, node.pos);
             md5.consume(buffer, n);
         }
         md5.consume("softs ", 6);
         for (Node node : soft_degrees) {
             if (node.neg == 0 && node.pos == 0) continue;  // get invariant against variable gaps
-            int n = snprintf(buffer, sizeof(buffer), "%llu %llu ", node.neg, node.pos);
+            int n = snprintf(buffer, sizeof(buffer), "%lu %lu ", node.neg, node.pos);
             md5.consume(buffer, n);
         }
         return md5.produce();
