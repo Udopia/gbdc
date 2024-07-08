@@ -14,6 +14,7 @@
 
 namespace CNF {
 
+template <template <typename> typename Alloc>
 class BaseFeatures1 : public IExtractor {
     const char* filename_;
     std::vector<double> features;
@@ -31,16 +32,16 @@ class BaseFeatures1 : public IExtractor {
     unsigned positive = 0, negative = 0;
 
     // occurrence counts in horn clauses (per variable)
-    tvector<unsigned> variable_horn, variable_inv_horn;
+    std::vector<unsigned, Alloc<unsigned>> variable_horn, variable_inv_horn;
 
     // pos-neg literal balance (per clause)
-    tvector<double> balance_clause;
+    std::vector<double, Alloc<double>> balance_clause;
 
     // pos-neg literal balance (per variable)
-    tvector<double> balance_variable;
+    std::vector<double, Alloc<double>> balance_variable;
 
     // Literal Occurrences
-    tvector<unsigned> literal_occurrences;
+    std::vector<unsigned, Alloc<unsigned>> literal_occurrences;
 
   public:
     BaseFeatures1(const char* filename) : filename_(filename), features(), names() { 
@@ -146,6 +147,7 @@ class BaseFeatures1 : public IExtractor {
     }
 };
 
+template <template <typename> typename Alloc>
 class BaseFeatures2 : public IExtractor {
     const char* filename_;
     std::vector<double> features;
@@ -153,15 +155,15 @@ class BaseFeatures2 : public IExtractor {
 
     unsigned n_vars = 0, n_clauses = 0;
 
-    // VCG Degree Distribwait_for_starting_permissionution
-    tvector<unsigned> vcg_cdegree; // clause sizes
-    tvector<unsigned> vcg_vdegree; // occurence counts
+    // VCG Degree Distribution
+    std::vector<unsigned, Alloc<unsigned>> vcg_cdegree; // clause sizes
+    std::vector<unsigned, Alloc<unsigned>> vcg_vdegree; // occurence counts
 
     // VIG Degree Distribution
-    tvector<unsigned> vg_degree;
+    std::vector<unsigned, Alloc<unsigned>> vg_degree;
 
     // CG Degree Distribution
-    tvector<unsigned> clause_degree;
+    std::vector<unsigned, Alloc<unsigned>> clause_degree;
 
   public:
     BaseFeatures2(const char* filename) : filename_(filename), features(), names() { 
@@ -222,6 +224,7 @@ class BaseFeatures2 : public IExtractor {
     }
 };
 
+template <template <typename> typename Alloc = std::allocator>
 class BaseFeatures : public IExtractor {
     const char* filename_;
     std::vector<double> features;
@@ -229,10 +232,10 @@ class BaseFeatures : public IExtractor {
 
   public:
     BaseFeatures(const char* filename) : filename_(filename), features(), names() { 
-        BaseFeatures1 baseFeatures1(filename_);
+        BaseFeatures1<Alloc> baseFeatures1(filename_);
         auto names1 = baseFeatures1.getNames();
         names.insert(names.end(), names1.begin(), names1.end());
-        BaseFeatures2 baseFeatures2(filename_);
+        BaseFeatures2<Alloc> baseFeatures2(filename_);
         auto names2 = baseFeatures2.getNames();
         names.insert(names.end(), names2.begin(), names2.end());
     }
@@ -245,14 +248,14 @@ class BaseFeatures : public IExtractor {
     }
 
     void extractBaseFeatures1() {
-        BaseFeatures1 baseFeatures1(filename_);
+        BaseFeatures1<Alloc> baseFeatures1(filename_);
         baseFeatures1.extract();
         auto feat = baseFeatures1.getFeatures();
         features.insert(features.end(), feat.begin(), feat.end());
     }
 
     void extractBaseFeatures2() {
-        BaseFeatures2 baseFeatures2(filename_);
+        BaseFeatures2<Alloc> baseFeatures2(filename_);
         baseFeatures2.extract();
         auto feat = baseFeatures2.getFeatures();
         features.insert(features.end(), feat.begin(), feat.end());

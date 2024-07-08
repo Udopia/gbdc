@@ -64,7 +64,6 @@ static void bind_MPSCQueue(py::module &m, const std::string &type_name)
 
 py::dict cnf2kis(const std::string filename, const std::string output, const size_t maxEdges, const size_t maxNodes)
 {
-    // std::unordered_map<std::string, std::variant<std::string, unsigned>> dict;
     py::dict dict;
 
     IndependentSetFromCNF gen(filename.c_str());
@@ -89,10 +88,10 @@ py::dict cnf2kis(const std::string filename, const std::string output, const siz
     return dict;
 }
 
-template <typename Extractor>
+template <typename Extractor, int type_id = 0>
 py::dict extract_features(const std::string filepath, const size_t rlim, const size_t mlim)
 {
-    // tp::extract_ret_t emergency;
+    constexpr auto d = get_runtime_desc<type_id>();
     py::dict emergency;
     ResourceLimits limits(rlim, mlim);
     limits.set_rlimits();
@@ -103,7 +102,7 @@ py::dict extract_features(const std::string filepath, const size_t rlim, const s
         py::dict dict;
         const auto names = stats.getNames();
         const auto features = stats.getFeatures();
-        // dict[py::str("base_features_runtime")] = (double)limits.get_runtime();
+        dict[py::str(d)] = (double)limits.get_runtime();
         for (size_t i = 0; i < features.size(); ++i)
         {
             dict[py::str(names[i])] = features[i];
@@ -112,12 +111,12 @@ py::dict extract_features(const std::string filepath, const size_t rlim, const s
     }
     catch (TimeLimitExceeded &e)
     {
-        // emergency[py::str("base_features_runtime")] = "timeout";
+        emergency[py::str(d)] = "timeout";
         return emergency;
     }
     catch (MemoryLimitExceeded &e)
     {
-        // emergency[py::str("base_features_runtime")] = "memout";
+        emergency[py::str(d)] = "memout";
         return emergency;
     }
 }
@@ -126,20 +125,20 @@ PYBIND11_MODULE(gbdc, m)
 {
     bind_MPSCQueue<tp::extract_ret_t>(m, "MPSCQueue_Extract");
     m.def("tp_extract_base_features", &tp_extract<CNF::BaseFeatures>, "Extract base features", py::arg("mlim"), py::arg("jobs"), py::arg("args"));
-    m.def("extract_base_features", &extract_features<CNF::BaseFeatures>, "Extract base features", py::arg("filepath"), py::arg("rlim"), py::arg("mlim"));
-    m.def("tp_extract_wcnf_base_features", &tp_extract<WCNF::BaseFeatures>, "Extract wcnf base features", py::arg("mlim"), py::arg("jobs"), py::arg("args"));
-    m.def("extract_wcnf_base_features", &extract_features<WCNF::BaseFeatures>, "Extract wcnf base features", py::arg("filepath"), py::arg("rlim"), py::arg("mlim"));
-    m.def("tp_extract_opb_base_features", &tp_extract<OPB::BaseFeatures>, "Extract opb base features", py::arg("mlim"), py::arg("jobs"), py::arg("args"));
-    m.def("extract_opb_base_features", &extract_features<OPB::BaseFeatures>, "Extract opb base features", py::arg("filepath"), py::arg("rlim"), py::arg("mlim"));
+    m.def("extract_base_features", &extract_features<CNF::BaseFeatures<>>, "Extract base features", py::arg("filepath"), py::arg("rlim"), py::arg("mlim"));
     m.def("tp_extract_gate_features", &tp_extract<CNFGateFeatures>, "Extract gate features", py::arg("mlim"), py::arg("jobs"), py::arg("args"));
-    m.def("extract_gate_features", &extract_features<CNFGateFeatures>, "Extract gate features", py::arg("filepath"), py::arg("rlim"), py::arg("mlim"));
+    m.def("extract_gate_features", &extract_features<CNFGateFeatures<>, 1>, "Extract gate features", py::arg("filepath"), py::arg("rlim"), py::arg("mlim"));
+    m.def("tp_extract_wcnf_base_features", &tp_extract<WCNF::BaseFeatures>, "Extract wcnf base features", py::arg("mlim"), py::arg("jobs"), py::arg("args"));
+    m.def("extract_wcnf_base_features", &extract_features<WCNF::BaseFeatures<>>, "Extract wcnf base features", py::arg("filepath"), py::arg("rlim"), py::arg("mlim"));
+    m.def("tp_extract_opb_base_features", &tp_extract<OPB::BaseFeatures>, "Extract opb base features", py::arg("mlim"), py::arg("jobs"), py::arg("args"));
+    m.def("extract_opb_base_features", &extract_features<OPB::BaseFeatures<>>, "Extract opb base features", py::arg("filepath"), py::arg("rlim"), py::arg("mlim"));
     m.def("version", &version, "Return current version of gbdc.");
     m.def("cnf2kis", &cnf2kis, "Create k-ISP Instance from given CNF Instance.", py::arg("filename"), py::arg("output"), py::arg("maxEdges"), py::arg("maxNodes"));
     m.def("sanitize", &sanitize, "Print sanitized, i.e., no duplicate literals in clauses and no tautologic clauses, CNF to stdout.", py::arg("filename"));
-    m.def("base_feature_names", &feature_names<CNF::BaseFeatures>, "Get Base Feature Names");
-    m.def("gate_feature_names", &feature_names<CNFGateFeatures>, "Get Gate Feature Names");
-    m.def("wcnf_base_feature_names", &feature_names<WCNF::BaseFeatures>, "Get WCNF Base Feature Names");
-    m.def("opb_base_feature_names", &feature_names<OPB::BaseFeatures>, "Get OPB Base Feature Names");
+    m.def("base_feature_names", &feature_names<CNF::BaseFeatures<>>, "Get Base Feature Names");
+    m.def("gate_feature_names", &feature_names<CNFGateFeatures<>, 1>, "Get Gate Feature Names");
+    m.def("wcnf_base_feature_names", &feature_names<WCNF::BaseFeatures<>>, "Get WCNF Base Feature Names");
+    m.def("opb_base_feature_names", &feature_names<OPB::BaseFeatures<>>, "Get OPB Base Feature Names");
     m.def("gbdhash", &CNF::gbdhash, "Calculates GBD-Hash (md5 of normalized file) of given DIMACS CNF file.", py::arg("filename"));
     m.def("isohash", &WCNF::isohash, "Calculates ISO-Hash (md5 of sorted degree sequence) of given DIMACS CNF file.", py::arg("filename"));
     m.def("opbhash", &OPB::gbdhash, "Calculates OPB-Hash (md5 of normalized file) of given OPB file.", py::arg("filename"));

@@ -35,6 +35,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/identify/ISOHash.h"
 
 #include "src/util/threadpool/ThreadPool.h"
+#include "src/util/threadpool/TrackingAllocator.h"
 
 #include "src/extract/CNFBaseFeatures.h"
 #include "src/extract/CNFGateFeatures.h"
@@ -70,6 +71,20 @@ static std::string version()
     return "Error: Version not found in setup.py";
 }
 
+template <int type_id>
+constexpr auto get_runtime_desc()
+{
+    switch (type_id)
+    {
+    case 0:
+        return "base_features_runtime";
+    case 1:
+        return "gate_features_runtime";
+    default:
+        throw;
+    }
+}
+
 template <typename Extractor>
 static auto tp_extract_features(const std::string filepath)
 {
@@ -85,20 +100,22 @@ static auto tp_extract_features(const std::string filepath)
     return dict;
 }
 
-template <typename Extractor>
+template <typename Extractor, int type_id = 0>
 static auto feature_names()
 {
-    return Extractor("").getNames();
+    auto names = Extractor("").getNames();
+    names.push_back(get_runtime_desc<type_id>());
+    return names;
 }
 
-template <typename Extractor>
+template <template <template <typename> typename> typename Extractor>
 static auto tp_extract(const std::uint64_t _mem_max, const std::uint32_t _jobs_max, const std::vector<std::tuple<tp::extract_arg_t>> args)
 {
-    auto tp = std::make_shared<tp::ThreadPool<tp::extract_ret_t, tp::extract_arg_t>>(_mem_max, _jobs_max, &tp_extract_features<Extractor>, args);
+    auto tp = std::make_shared<tp::ThreadPool<tp::extract_ret_t, tp::extract_arg_t>>(_mem_max, _jobs_max, &tp_extract_features<Extractor<TrackingAllocator>>, args);
     auto q = tp->get_result_queue();
     std::thread([tp]()
                 { tp->start_threadpool(); 
-                std::cerr << "Destroying Threadpool!" << std::endl;})
+                std::cerr << "Destroying Threadpool!" << std::endl; })
         .detach();
     return q;
 }

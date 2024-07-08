@@ -7,6 +7,7 @@
 
 #include "src/test/Util.h"
 #include "src/extract/CNFBaseFeatures.h"
+#include "src/util/threadpool/TrackingAllocator.h"
 #include "src/gbdlib.h"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
@@ -17,13 +18,22 @@ namespace fs = std::filesystem;
 
 TEST_CASE("GBDLib")
 {
+    SUBCASE("BaseFeature_Names")
+    {
+        auto super = feature_names<CNF::BaseFeatures<>>();
+        auto sub = CNF::BaseFeatures("").getNames();
+        check_subset(sub, super);
+        CHECK_EQ(sub.size(), super.size() - 1);
+        CHECK_EQ(super.back(), get_runtime_desc<0>());
+    }
+
     SUBCASE("BaseFeatures_ThreadPool_Extract_Correct")
     {
         std::string cnf_file = "src/test/resources/01bd0865ab694bc71d80b7d285d5777d-shuffling-2-s1480152728-of-bench-sat04-434.used-as.sat04-711.cnf.xz";
         const char *expected_record_file = "src/test/resources/expected_record.txt";
         auto map = record_to_map<std::variant<double, std::string>>(expected_record_file);
 
-        auto dict = tp_extract_features<CNF::BaseFeatures>(cnf_file);
+        auto dict = tp_extract_features<CNF::BaseFeatures<TrackingAllocator>>(cnf_file);
         check_subset(map, dict);
     }
 

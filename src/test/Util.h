@@ -45,6 +45,15 @@ static void check_subset(tp::extract_ret_t &expected, tp::extract_ret_t &actual)
     }
 }
 
+template <typename Container>
+static void check_subset(Container &&subset, Container&& superset)
+{
+    for (size_t i = 0; i < subset.size(); ++i)
+    {
+        CHECK((subset[i] == superset[i]));
+    }
+}
+
 template <typename Val>
 static std::unordered_map<std::string, Val> record_to_map(std::string record_file_name)
 {

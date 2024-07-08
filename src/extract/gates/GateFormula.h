@@ -163,8 +163,9 @@ class GateFormula {
         return artificialRoot;
     }
 
-    std::vector<Lit> getRoots() {
-        std::vector<Lit> result;
+    template <template <typename> typename Alloc = std::allocator>
+    std::vector<Lit, Alloc<Lit>> getRoots() {
+        std::vector<Lit, Alloc<Lit>> result;
         for (Cl* root : roots) {
             result.insert(result.end(), root->begin(), root->end());
         }

@@ -9,6 +9,7 @@
 #include "src/test/Util.h"
 #include "src/extract/CNFBaseFeatures.h"
 #include "src/util/threadpool/ThreadPool.h"
+#include "src/util/threadpool/TrackingAllocator.h"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
@@ -18,7 +19,7 @@ namespace tp = threadpool;
 
 static std::vector<double> test_extract(std::string filepath)
 {
-    CNF::BaseFeatures stats(filepath.c_str());
+    CNF::BaseFeatures<TrackingAllocator> stats(filepath.c_str());
     stats.extract();
     return stats.getFeatures();
 };
