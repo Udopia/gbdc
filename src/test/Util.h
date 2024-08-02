@@ -14,6 +14,14 @@
 
 namespace tp = threadpool;
 
+template <typename Entry>
+static bool has_extension(Entry entry, std::string ex)
+{
+    std::string filename = entry.path().filename().string();
+    ex = "."+ex+".";
+    return (filename.find(ex) != std::string::npos);
+}
+
 static double string_to_double(const std::string &s)
 {
     std::istringstream os(s);
@@ -28,7 +36,6 @@ static bool is_number(const std::string &s)
                                       s.end(), [](unsigned char c)
                                       { return !std::isdigit(c); }) == s.end();
 }
-
 
 static bool fequal(const double a, const double b)
 {
@@ -46,7 +53,7 @@ static void check_subset(tp::extract_ret_t &expected, tp::extract_ret_t &actual)
 }
 
 template <typename Container>
-static void check_subset(Container &&subset, Container&& superset)
+static void check_subset(Container &&subset, Container &&superset)
 {
     for (size_t i = 0; i < subset.size(); ++i)
     {

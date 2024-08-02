@@ -16,7 +16,6 @@
 
 namespace tp = threadpool;
 
-
 static std::vector<double> test_extract(std::string filepath)
 {
     CNF::BaseFeatures<TrackingAllocator> stats(filepath.c_str());
@@ -29,11 +28,14 @@ TEST_CASE("Threadpool_Extract")
     SUBCASE("Basefeature extraction")
     {
         namespace fs = std::filesystem;
-        const std::string folderPath = "src/test/resources/benchmarks";
+        const std::string folderPath = "src/test/resources/test_files";
         std::vector<std::tuple<std::string>> paths;
         for (const auto &entry : fs::directory_iterator(folderPath))
         {
-            paths.push_back(entry.path());
+            if (has_extension(entry, "cnf"))
+            {
+                paths.push_back(entry.path());
+            }
         }
         tp::ThreadPool<std::vector<double>, std::string> tp(1UL << 25UL, 2U, test_extract, paths);
         auto q = tp.get_result_queue();
@@ -55,4 +57,3 @@ TEST_CASE("Threadpool_Extract")
         CHECK_EQ(paths.size(), job_counter);
     }
 }
-

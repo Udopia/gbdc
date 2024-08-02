@@ -29,8 +29,8 @@ TEST_CASE("GBDLib")
 
     SUBCASE("BaseFeatures_ThreadPool_Extract_Correct")
     {
-        std::string cnf_file = "src/test/resources/01bd0865ab694bc71d80b7d285d5777d-shuffling-2-s1480152728-of-bench-sat04-434.used-as.sat04-711.cnf.xz";
-        const char *expected_record_file = "src/test/resources/expected_record.txt";
+        std::string cnf_file = "src/test/resources/test_files/cnf_test.cnf.xz";
+        const char *expected_record_file = "src/test/resources/expected_records/cnf_base.txt";
         auto map = record_to_map<std::variant<double, std::string>>(expected_record_file);
 
         auto dict = tp_extract_features<CNF::BaseFeatures<TrackingAllocator>>(cnf_file);
@@ -39,11 +39,14 @@ TEST_CASE("GBDLib")
 
     SUBCASE("BaseFeatures_ThreadPool_Async")
     {
-        const std::string folderPath = "src/test/resources/benchmarks";
+        const std::string folderPath = "src/test/resources/test_files";
         std::vector<std::tuple<std::string>> paths;
         for (const auto &entry : fs::directory_iterator(folderPath))
         {
-            paths.push_back(entry.path());
+            if (has_extension(entry,"cnf"))
+            {
+                paths.push_back(entry.path());
+            }
         }
         auto q = tp_extract<CNF::BaseFeatures>(1UL << 25UL, 2U, paths);
         std::cerr << q.use_count() << "\n";

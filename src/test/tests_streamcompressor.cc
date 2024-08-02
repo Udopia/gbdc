@@ -37,7 +37,7 @@ TEST_CASE("StreamCompressor")
     SUBCASE("Write from istream to archive")
     {
         const char *tmp_file = strcat(tmpnam(nullptr), ".cnf.xz");
-        const char *cnf_file = "src/test/resources/ibm-2004-03-k70.cnf";
+        const char *cnf_file = "src/test/resources/test_files/ibm-2004-03-k70.cnf";
         StreamBuffer cnf_buf(cnf_file);
 
         StreamCompressor cmpr(tmp_file);

@@ -185,6 +185,7 @@ int main(int argc, char** argv) {
                 }
             }
         } else if (toolname == "gates") {
+            std::cerr << "Extracting cnf gate features" << std::endl;
             CNFGateFeatures stats(filename.c_str());
             stats.extract();
             std::vector<double> record = stats.getFeatures();
