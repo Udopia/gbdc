@@ -72,5 +72,7 @@ target_link_libraries(gbdc PUBLIC ${LIBS} solver $<TARGET_OBJECTS:gates> $<TARGE
 target_include_directories(gbdc PUBLIC "${PROJECT_SOURCE_DIR}")
 
 add_test(NAME Test_StreamBuffer COMMAND "src/test/tests_streambuffer")
-add_test(NAME Test_CNFBaseFeatures COMMAND "src/test/tests_cnfbasefeatures")
+add_test(NAME Test_Feature_Extraction COMMAND "src/test/tests_feature_extraction")
 add_test(NAME Test_StreamCompressor COMMAND "src/test/tests_streamcompressor")
+add_test(NAME Test_ThreadPool COMMAND "src/test/tests_threadpool")
+add_test(NAME Test_GBDLib COMMAND "src/test/tests_gbdlib")

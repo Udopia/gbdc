@@ -43,12 +43,13 @@ test.db
 Testing/
 test.sh
 key
+.eggs/
 key.pub
 benchmarks/
 test.sh
 build.sh
 Testing/
-
+data.csv
 # autotools output
 configure
 makefile

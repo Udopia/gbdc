@@ -37,9 +37,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/extract/Util.h"
 
-
+template <template <typename> typename Alloc = std::allocator>
 class CNFGateFeatures : public IExtractor {
-    const char* filename_;
+    const char *filename_;
     std::vector<double> features;
     std::vector<std::string> names;
 
@@ -47,11 +47,11 @@ class CNFGateFeatures : public IExtractor {
     unsigned n_none = 0, n_generic = 0, n_mono = 0;
     unsigned n_and = 0, n_or = 0, n_triv = 0, n_equiv = 0, n_full = 0;
 
-    std::vector<unsigned> levels, levels_none, levels_generic, levels_mono;
-    std::vector<unsigned> levels_and, levels_or, levels_triv;
-    std::vector<unsigned> levels_equiv, levels_full;
+    std::vector<unsigned, Alloc<unsigned>> levels, levels_none, levels_generic, levels_mono;
+    std::vector<unsigned, Alloc<unsigned>> levels_and, levels_or, levels_triv;
+    std::vector<unsigned, Alloc<unsigned>> levels_equiv, levels_full;
 
-  public:
+public:
     CNFGateFeatures(const char* filename) : filename_(filename), features(), names() { 
         names.insert(names.end(), { "n_vars", "n_gates", "n_roots" });
         names.insert(names.end(), { "n_none", "n_generic", "n_mono" });
@@ -66,7 +66,6 @@ class CNFGateFeatures : public IExtractor {
         names.insert(names.end(), { "levels_equiv_mean", "levels_equiv_variance", "levels_equiv_min", "levels_equiv_max", "levels_equiv_entropy" });
         names.insert(names.end(), { "levels_full_mean", "levels_full_variance", "levels_full_min", "levels_full_max", "levels_full_entropy" });
     }
-    
     virtual ~CNFGateFeatures() { }
 
     virtual void extract() {
@@ -80,8 +79,8 @@ class CNFGateFeatures : public IExtractor {
         levels.resize(n_vars + 1, 0);
         // BFS for level determination
         unsigned level = 0;
-        std::vector<Lit> current = gates.getRoots();
-        std::vector<Lit> next;
+        std::vector<Lit, Alloc<Lit>> current = gates.getRoots<Alloc>();
+        std::vector<Lit, Alloc<Lit>> next;
         while (!current.empty()) {
             ++level;
             for (Lit lit : current) {

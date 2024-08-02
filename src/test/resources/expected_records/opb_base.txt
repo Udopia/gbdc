@@ -1,0 +1,17 @@
+constraints=1581
+variables=635
+pbs_ge=0
+pbs_eq=0
+cards_ge=0
+cards_eq=0
+clauses=1581
+assignments=0
+trivially_unsat=0
+obj_terms=634
+obj_max_val=634
+obj_min_val=0
+obj_coeffs_mean=1
+obj_coeffs_variance=0
+obj_coeffs_min=1
+obj_coeffs_max=1
+obj_coeffs_entropy=0

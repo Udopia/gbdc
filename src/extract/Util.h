@@ -26,9 +26,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <algorithm>
 #include <numeric>
 #include <unordered_map>
+#include "src/util/threadpool/TrackingAllocator.h"
 
-template <typename T>
-double Mean(std::vector<T> distribution) {
+template <typename Container>
+double Mean(Container&& distribution) {
     double mean = 0.0;
     for (size_t i = 0; i < distribution.size(); i++) {
         mean += (distribution[i] - mean) / (i + 1);
@@ -36,8 +37,8 @@ double Mean(std::vector<T> distribution) {
     return mean;
 }
 
-template <typename T>
-double Variance(std::vector<T> distribution, double mean) {
+template <typename Container>
+double Variance(Container&& distribution, double mean) {
     double vari = 0.0;
     for (size_t i = 0; i < distribution.size(); i++) {
         double diff = distribution[i] - mean;
@@ -65,47 +66,11 @@ double ScaledEntropyFromOccurenceCounts(std::unordered_map<int64_t, int64_t> occ
     return log2(summands.size()) == 0 ? 0 : (double)entropy / log2(summands.size());
 }
 
-double ScaledEntropy(std::vector<unsigned> distribution) {
-    std::unordered_map<int64_t, int64_t> occurence;
-    for (unsigned value : distribution) {
-        if (occurence.count(value)) {
-            occurence[value] = occurence[value] + 1;
-        } else {
-            occurence[value] = 1;
-        }
-    }
-    return ScaledEntropyFromOccurenceCounts(occurence, distribution.size());
-}
-
-double ScaledEntropy(std::vector<int> distribution) {
-    std::unordered_map<int64_t, int64_t> occurence;
-    for (unsigned value : distribution) {
-        if (occurence.count(value)) {
-            occurence[value] = occurence[value] + 1;
-        } else {
-            occurence[value] = 1;
-        }
-    }
-    return ScaledEntropyFromOccurenceCounts(occurence, distribution.size());
-}
-
-double ScaledEntropy(std::vector<uint64_t> distribution) {
-    std::unordered_map<int64_t, int64_t> occurence;
-    for (unsigned value : distribution) {
-        if (occurence.count(value)) {
-            occurence[value] = occurence[value] + 1;
-        } else {
-            occurence[value] = 1;
-        }
-    }
-    return ScaledEntropyFromOccurenceCounts(occurence, distribution.size());
-}
-
 double ScaledEntropy(std::vector<double> distribution) {
     std::unordered_map<int64_t, int64_t> occurence;
     for (double value : distribution) {
         // snap to 3 digits after decimal point
-        int64_t snap = static_cast<int64_t>(std::round(1000*value));
+        int64_t snap = static_cast<int64_t>(std::round(1000 * value));
         if (occurence.count(value)) {
             occurence[value] = occurence[value] + 1;
         } else {
@@ -115,8 +80,21 @@ double ScaledEntropy(std::vector<double> distribution) {
     return ScaledEntropyFromOccurenceCounts(occurence, distribution.size());
 }
 
-template <typename T>
-void push_distribution(std::vector<double>& record, std::vector<T> distribution) {
+template <typename Container>
+double ScaledEntropy(Container&& distribution) {
+    std::unordered_map<int64_t, int64_t> occurence;
+    for (unsigned value : distribution) {
+        if (occurence.count(value)) {
+            occurence[value] = occurence[value] + 1;
+        } else {
+            occurence[value] = 1;
+        }
+    }
+    return ScaledEntropyFromOccurenceCounts(occurence, distribution.size());
+}
+
+template <typename V, typename W>
+void push_distribution(V&& record, W&& distribution) {
     if (distribution.size() == 0) {
         record.insert(record.end(), { 0, 0, 0, 0, 0 });
         return;
@@ -141,7 +119,7 @@ private:
     template<typename T>
     struct vwrapper
     {
-        std::vector<T> v;
+        std::vector<T, TrackingAllocator<T>> v;
         T &operator[](size_t idx)
         {
             if (idx >= v.size())
@@ -194,7 +172,7 @@ public:
         unsigned num_components = 0;
         for (unsigned i = 1; i < ccs.size(); ++i)
         {
-            num_components += i == find(ccs[i]);
+            num_components += i == static_cast<unsigned>(find(ccs[i]));
         }
         return num_components;
     }

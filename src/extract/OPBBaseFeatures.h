@@ -12,15 +12,17 @@
 #include "src/extract/Util.h"
 
 namespace OPB {
-    
+template <template <typename> typename Alloc = std::allocator>
 class Constr;
+template <template <typename> typename Alloc = std::allocator>
 class BaseFeatures;
     
+template <template <typename> typename Alloc = std::allocator>
 class TermSum {
-    friend Constr;
-    friend BaseFeatures;
+    friend Constr<Alloc>;
+    friend BaseFeatures<Alloc>;
 
-    std::vector<double> coeffs{};
+    std::vector<double, Alloc<double>> coeffs{};
     double max = 0;
     double min = 0;
     double abs_min_coeff = std::numeric_limits<double>::max();
@@ -75,8 +77,9 @@ class TermSum {
     }
 };
 
+template <template <typename> typename Alloc>
 class Constr {
-    friend BaseFeatures;
+    friend BaseFeatures<Alloc>;
     
   public:
     enum Rel { GE, EQ };
@@ -89,7 +92,7 @@ class Constr {
     };
 
   private:
-    TermSum terms;
+    TermSum<Alloc> terms;
     Rel rel;
     std::string strbound;
     double bound;
@@ -144,6 +147,7 @@ class Constr {
     }
 };
 
+template <template <typename> typename Alloc>
 class BaseFeatures : public IExtractor {
     const char* filename_;
     std::vector<double> features;
@@ -157,7 +161,7 @@ class BaseFeatures : public IExtractor {
     
     unsigned obj_terms = 0;
     double obj_max_val = 0, obj_min_val = 0;
-    std::vector<double> obj_coeffs{};
+    std::vector<double, Alloc<double>> obj_coeffs{};
 
   public:
     BaseFeatures(const char* filename) : filename_(filename), features(), names() { 
@@ -186,20 +190,20 @@ class BaseFeatures : public IExtractor {
                     continue;
                 }
                 seen_obj = true;
-                TermSum obj(in);
+                TermSum<Alloc> obj(in);
                 obj_terms = obj.nTerms();
                 obj_max_val = obj.maxVal();
                 obj_min_val = obj.minVal();
                 obj_coeffs = obj.coeffs;
-                if (obj.maxVar() > n_vars) n_vars = obj.maxVar();
+                if (static_cast<unsigned>(obj.maxVar()) > n_vars) n_vars = obj.maxVar();
                 in.skipWhitespace();
                 if (*in == ';') in.skip();
             } else {
                 n_constraints++;
                 
-                Constr constr(in);
-                if (constr.maxVar() > n_vars) n_vars = constr.maxVar();
-                Constr::Analysis a = constr.analyse();
+                Constr<Alloc> constr(in);
+                if (static_cast<unsigned>(constr.maxVar()) > n_vars) n_vars = constr.maxVar();
+                auto a = constr.analyse();
                 if (a.unsat) {
                     trivially_unsat = true;
                 }
@@ -210,18 +214,18 @@ class BaseFeatures : public IExtractor {
                     n_clauses++;
                 } else if (a.card) {
                     switch (constr.rel) {
-                        case Constr::GE:
+                        case Constr<>::GE:
                             n_cards_ge++;
                             break;                        
-                        case Constr::EQ:
+                        case Constr<>::EQ:
                             n_cards_eq++;
                     }
                 } else {
                     switch (constr.rel) {
-                        case Constr::GE:
+                        case Constr<>::GE:
                             n_pbs_ge++;
                             break;
-                        case Constr::EQ:
+                        case Constr<>::EQ:
                             n_pbs_eq++;
                     }
                 }

@@ -32,6 +32,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/transform/IndependentSet.h"
 #include "src/transform/Normalize.h"
+#include "src/util/ResourceLimits.h"
 
 #include "src/extract/CNFGateFeatures.h"
 #include "src/extract/CNFBaseFeatures.h"
@@ -98,7 +99,6 @@ int main(int argc, char** argv) {
 
     ResourceLimits limits(argparse.get<int>("timeout"), argparse.get<int>("memout"), argparse.get<int>("fileout"));
     limits.set_rlimits();
-
     std::cerr << "c Running: " << toolname << " " << filename << std::endl;
 
     try {
@@ -219,6 +219,5 @@ int main(int argc, char** argv) {
         std::cerr << "File Size Limit Exceeded" << std::endl;
         return 1;
     }
-
     return 0;
 }
