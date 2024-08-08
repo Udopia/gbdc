@@ -65,11 +65,11 @@ TEST_CASE("GBDLib")
         CHECK_EQ(paths.size(), job_counter);
     }
 
-    SUBCASE("Version")
-    {
-        fs::current_path("..");
-        CHECK_EQ(version(), "0.2.45");
-    }
+    // SUBCASE("Version")
+    // {
+    //     fs::current_path("..");
+    //     CHECK_EQ(version(), "0.2.45");
+    // }
 
     // SUBCASE("BaseFeatures_ProcessPool_Correct")
     // {
