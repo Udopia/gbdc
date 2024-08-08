@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <mutex>
 #include <atomic>
-#include <barrier>
 #include "MPSCQueue.h"
 #include <unordered_map>
 #include "Util.h"
