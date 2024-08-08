@@ -37,7 +37,7 @@ TEST_CASE("Threadpool_Extract")
                 paths.push_back(entry.path());
             }
         }
-        tp::ThreadPool<std::vector<double>, std::string> tp(1UL << 25UL, 2U, test_extract, paths);
+        tp::ThreadPool<std::vector<double>, std::string> tp(1UL << 26UL, 4U, test_extract, paths);
         auto q = tp.get_result_queue();
         std::thread tp_thread(&tp::ThreadPool<std::vector<double>, std::string>::start_threadpool, &tp);
         auto names = CNF::BaseFeatures("").getNames();
