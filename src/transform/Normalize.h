@@ -99,11 +99,11 @@ void sanitize(const char* filename) {
             int plit;
             while (in.readInteger(&plit)) {
                 if (plit == 0) break;
-                if (mask[-plit] == stamp) {
+                if (static_cast<unsigned>(mask[-plit]) == stamp) {
                     tautological = true;
                     break;
                 }
-                else if (mask[plit] != stamp) {
+                else if (static_cast<unsigned>(mask[plit]) != stamp) {
                     mask[plit] = stamp;
                     clause.push_back(plit);
                 }
@@ -146,7 +146,7 @@ bool check_sanitized(const char* filename) {
             int plit;
             while (in.readInteger(&plit)) {
                 if (plit == 0) break;
-                if (mask[plit] == stamp || mask[-plit] == stamp) {
+                if (static_cast<unsigned>(mask[plit]) == stamp || static_cast<unsigned>(mask[-plit]) == stamp) {
                     return false;
                 }
             }

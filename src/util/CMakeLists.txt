@@ -5,3 +5,6 @@ add_library(util OBJECT
     Stamp.h
     StreamBuffer.h
 )
+
+add_subdirectory(threadpool)
+add_subdirectory(pybind11)

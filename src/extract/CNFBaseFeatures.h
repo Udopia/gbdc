@@ -14,11 +14,11 @@
 
 namespace CNF {
 
+template <template <typename> typename Alloc>
 class BaseFeatures1 : public IExtractor {
     const char* filename_;
     std::vector<double> features;
     std::vector<std::string> names;
-    
     unsigned n_vars = 0, n_clauses = 0, bytes = 0, ccs = 0;
 
     // count occurences of clauses of small size
@@ -31,16 +31,16 @@ class BaseFeatures1 : public IExtractor {
     unsigned positive = 0, negative = 0;
 
     // occurrence counts in horn clauses (per variable)
-    std::vector<unsigned> variable_horn, variable_inv_horn;
+    std::vector<unsigned, Alloc<unsigned>> variable_horn, variable_inv_horn;
 
     // pos-neg literal balance (per clause)
-    std::vector<double> balance_clause;
+    std::vector<double, Alloc<double>> balance_clause;
 
     // pos-neg literal balance (per variable)
-    std::vector<double> balance_variable;
+    std::vector<double, Alloc<double>> balance_variable;
 
     // Literal Occurrences
-    std::vector<unsigned> literal_occurrences;
+    std::vector<unsigned, Alloc<unsigned>> literal_occurrences;
 
   public:
     BaseFeatures1(const char* filename) : filename_(filename), features(), names() { 
@@ -73,7 +73,7 @@ class BaseFeatures1 : public IExtractor {
                 // +1 for whitespace after variables
                 bytes += lit.sign() + numDigits(lit.var()) + 1;
                 // resize vectors if necessary
-                if (lit.var() > n_vars) {
+                if (static_cast<unsigned>(lit.var()) > n_vars) {
                     n_vars = lit.var();
                     variable_horn.resize(n_vars + 1);
                     variable_inv_horn.resize(n_vars + 1);
@@ -143,6 +143,7 @@ class BaseFeatures1 : public IExtractor {
     }
 };
 
+template <template <typename> typename Alloc>
 class BaseFeatures2 : public IExtractor {
     const char* filename_;
     std::vector<double> features;
@@ -151,14 +152,14 @@ class BaseFeatures2 : public IExtractor {
     unsigned n_vars = 0, n_clauses = 0;
 
     // VCG Degree Distribution
-    std::vector<unsigned> vcg_cdegree; // clause sizes
-    std::vector<unsigned> vcg_vdegree; // occurence counts
+    std::vector<unsigned, Alloc<unsigned>> vcg_cdegree; // clause sizes
+    std::vector<unsigned, Alloc<unsigned>> vcg_vdegree; // occurence counts
 
     // VIG Degree Distribution
-    std::vector<unsigned> vg_degree;
+    std::vector<unsigned, Alloc<unsigned>> vg_degree;
 
     // CG Degree Distribution
-    std::vector<unsigned> clause_degree;
+    std::vector<unsigned, Alloc<unsigned>> clause_degree;
 
   public:
     BaseFeatures2(const char* filename) : filename_(filename), features(), names() { 
@@ -178,7 +179,7 @@ class BaseFeatures2 : public IExtractor {
 
             for (Lit lit : clause) {
                 // resize vectors if necessary
-                if (lit.var() > n_vars) {
+                if (static_cast<unsigned>(lit.var()) > n_vars) {
                     n_vars = lit.var();
                     vcg_vdegree.resize(n_vars + 1);
                     vg_degree.resize(n_vars + 1);
@@ -218,6 +219,7 @@ class BaseFeatures2 : public IExtractor {
     }
 };
 
+template <template <typename> typename Alloc = std::allocator>
 class BaseFeatures : public IExtractor {
     const char* filename_;
     std::vector<double> features;
@@ -225,11 +227,11 @@ class BaseFeatures : public IExtractor {
 
   public:
     BaseFeatures(const char* filename) : filename_(filename), features(), names() { 
-        BaseFeatures1 baseFeatures1(filename_);
-        std::vector<std::string> names1 = baseFeatures1.getNames();
+        BaseFeatures1<Alloc> baseFeatures1(filename_);
+        auto names1 = baseFeatures1.getNames();
         names.insert(names.end(), names1.begin(), names1.end());
-        BaseFeatures2 baseFeatures2(filename_);
-        std::vector<std::string> names2 = baseFeatures2.getNames();
+        BaseFeatures2<Alloc> baseFeatures2(filename_);
+        auto names2 = baseFeatures2.getNames();
         names.insert(names.end(), names2.begin(), names2.end());
     }
 
@@ -241,16 +243,16 @@ class BaseFeatures : public IExtractor {
     }
 
     void extractBaseFeatures1() {
-        BaseFeatures1 baseFeatures1(filename_);
+        BaseFeatures1<Alloc> baseFeatures1(filename_);
         baseFeatures1.extract();
-        std::vector<double> feat = baseFeatures1.getFeatures();
+        auto feat = baseFeatures1.getFeatures();
         features.insert(features.end(), feat.begin(), feat.end());
     }
 
     void extractBaseFeatures2() {
-        BaseFeatures2 baseFeatures2(filename_);
+        BaseFeatures2<Alloc> baseFeatures2(filename_);
         baseFeatures2.extract();
-        std::vector<double> feat = baseFeatures2.getFeatures();
+        auto feat = baseFeatures2.getFeatures();
         features.insert(features.end(), feat.begin(), feat.end());
     }
 

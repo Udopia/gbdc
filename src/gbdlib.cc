@@ -18,14 +18,21 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
  **************************************************************************************************/
 
 #include <cstdio>
-
-#include "Python.h"
+#include <cstdint>
+#include <string>
+#include <chrono>
+#include <regex>
+#include <fstream>
+#include <memory>
+#include <sstream>
+#include <future>
+#include <unordered_map>
+#include <variant>
 
 #include "src/identify/GBDHash.h"
 #include "src/identify/ISOHash.h"
 
-#include "src/util/ResourceLimits.h"
-#include "src/util/py_util.h"
+#include "src/util/threadpool/ThreadPool.h"
 
 #include "src/extract/CNFBaseFeatures.h"
 #include "src/extract/CNFGateFeatures.h"
@@ -34,315 +41,108 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/transform/IndependentSet.h"
 #include "src/transform/Normalize.h"
+#include "src/util/ResourceLimits.h"
 
-static PyObject* version(PyObject* self) {
-    return pytype(1);
+#include "src/util/pybind11/include/pybind11/pybind11.h"
+#include "src/util/pybind11/include/pybind11/stl.h"
+#include "src/util/pybind11/include/pybind11/functional.h"
+#include "gbdlib.h"
+
+namespace py = pybind11;
+namespace tp = threadpool;
+
+template <typename Ret>
+static void bind_MPSCQueue(py::module &m, const std::string &type_name)
+{
+    using q = MPSCQueue<tp::result_t<Ret>>;
+    py::class_<q, std::shared_ptr<q>>(m, type_name.c_str())
+        .def(py::init<std::uint16_t>())
+        .def("pop", &q::pop, "Pop an element from the queue in a synchronized manner.")
+        .def("empty", &q::empty, "Returns true if queue is empty, false otherwise.")
+        .def("done", &q::done, "Returns true if producers are done, false otherwise.");
 }
 
-static PyObject* gbdhash(PyObject* self, PyObject* arg) {
-    const char* filename;
-    PyArg_ParseTuple(arg, "s", &filename);
-    std::string result = CNF::gbdhash(filename);
-    return pytype(result.c_str());
+py::dict cnf2kis(const std::string filename, const std::string output, const size_t maxEdges, const size_t maxNodes)
+{
+    py::dict dict;
+
+    IndependentSetFromCNF gen(filename.c_str());
+    unsigned nNodes = gen.numNodes();
+    unsigned nEdges = gen.numEdges();
+    unsigned minK = gen.minK();
+
+    dict[py::str("nodes")] = nNodes;
+    dict[py::str("edges")] = nEdges;
+    dict[py::str("k")] = minK;
+
+    if ((maxEdges > 0 && nEdges > maxEdges) || (maxNodes > 0 && nNodes > maxNodes))
+    {
+        dict[py::str("hash")] = "fileout";
+        return dict;
+    }
+
+    gen.generate_independent_set_problem(output.c_str());
+    dict[py::str("local")] = output;
+
+    dict[py::str("hash")] = CNF::gbdhash(output.c_str());
+    return dict;
 }
 
-static PyObject* isohash(PyObject* self, PyObject* arg) {
-    const char* filename;
-    PyArg_ParseTuple(arg, "s", &filename);
-    std::string result = CNF::isohash(filename);
-    return pytype(result.c_str());
-}
-
-static PyObject* opbhash(PyObject* self, PyObject* arg) {
-    const char* filename;
-    PyArg_ParseTuple(arg, "s", &filename);
-    std::string result = OPB::gbdhash(filename);
-    return pytype(result.c_str());
-}
-
-static PyObject* pqbfhash(PyObject* self, PyObject* arg) {
-    const char* filename;
-    PyArg_ParseTuple(arg, "s", &filename);
-    std::string result = PQBF::gbdhash(filename);
-    return pytype(result.c_str());
-}
-
-static PyObject* wcnfhash(PyObject* self, PyObject* arg) {
-    const char* filename;
-    PyArg_ParseTuple(arg, "s", &filename);
-    std::string result = WCNF::gbdhash(filename);
-    return pytype(result.c_str());
-}
-
-static PyObject* wcnfisohash(PyObject* self, PyObject* arg) {
-    const char* filename;
-    PyArg_ParseTuple(arg, "s", &filename);
-    std::string result = WCNF::isohash(filename);
-    return pytype(result.c_str());
-}
-
-
-static PyObject* extract_base_features(PyObject* self, PyObject* arg) {
-    const char* filename;
-    unsigned rlim = 0, mlim = 0;
-    PyArg_ParseTuple(arg, "s|II", &filename, &rlim, &mlim);
-
-    PyObject *emergency = pydict();
-    pydict(emergency, "base_features_runtime", "memout");
-
+template <typename Extractor, int type_id = 0>
+py::dict extract_features(const std::string filepath, const size_t rlim, const size_t mlim)
+{
+    constexpr auto d = get_runtime_desc<type_id>();
+    py::dict emergency;
     ResourceLimits limits(rlim, mlim);
     limits.set_rlimits();
-    try {
-        CNF::BaseFeatures stats(filename);
+    try
+    {
+        Extractor stats(filepath.c_str());
         stats.extract();
-        std::vector<double> record = stats.getFeatures();
-        std::vector<std::string> names = stats.getNames();
-        PyObject *dict = pydict();
-        pydict(dict, "base_features_runtime", limits.get_runtime());
-        for (unsigned int i = 0; i < record.size(); i++) {
-            pydict(dict, names[i].c_str(), record[i]);
+        py::dict dict;
+        const auto names = stats.getNames();
+        const auto features = stats.getFeatures();
+        dict[py::str(d)] = (double)limits.get_runtime();
+        for (size_t i = 0; i < features.size(); ++i)
+        {
+            dict[py::str(names[i])] = features[i];
         }
         return dict;
-    } catch (TimeLimitExceeded& e) {
-        pydict(emergency, "base_features_runtime", "timeout");
-        return emergency;
-    } catch (MemoryLimitExceeded& e) {
+    }
+    catch (TimeLimitExceeded &e)
+    {
+        emergency[py::str(d)] = "timeout";
         return emergency;
     }
-}
-
-
-static PyObject* extract_gate_features(PyObject* self, PyObject* arg) {
-    const char* filename;
-    unsigned rlim = 0, mlim = 0;
-    PyArg_ParseTuple(arg, "s|II", &filename, &rlim, &mlim);
-
-    PyObject *emergency = pydict();
-    pydict(emergency, "gate_features_runtime", "memout");
-
-    ResourceLimits limits(rlim, mlim);
-    limits.set_rlimits();
-    try {
-        CNFGateFeatures stats(filename);
-        stats.extract();
-        std::vector<double> record = stats.getFeatures();
-        std::vector<std::string> names = stats.getNames();
-        PyObject *dict = pydict();
-        for (unsigned int i = 0; i < record.size(); i++) {
-            pydict(dict, names[i].c_str(), record[i]);
-        }
-        pydict(dict, "gate_features_runtime", limits.get_runtime());
-        return dict;
-    } catch (TimeLimitExceeded& e) {
-        pydict(emergency, "gate_features_runtime", "timeout");
-        return emergency;
-    } catch (MemoryLimitExceeded& e) {
+    catch (MemoryLimitExceeded &e)
+    {
+        emergency[py::str(d)] = "memout";
         return emergency;
     }
 }
 
-
-static PyObject* extract_wcnf_base_features(PyObject* self, PyObject* arg) {
-    const char* filename;
-    unsigned rlim = 0, mlim = 0;
-    PyArg_ParseTuple(arg, "s|II", &filename, &rlim, &mlim);
-
-    PyObject *emergency = pydict();
-    pydict(emergency, "base_features_runtime", "memout");
-
-    ResourceLimits limits(rlim, mlim);
-    limits.set_rlimits();
-    try {
-        WCNF::BaseFeatures stats(filename);
-        stats.extract();
-        std::vector<double> record = stats.getFeatures();
-        std::vector<std::string> names = stats.getNames();
-        PyObject *dict = pydict();
-        pydict(dict, "base_features_runtime", limits.get_runtime());
-        for (unsigned int i = 0; i < record.size(); i++) {
-            pydict(dict, names[i].c_str(), record[i]);
-        }
-        return dict;
-    } catch (TimeLimitExceeded& e) {
-        pydict(emergency, "base_features_runtime", "timeout");
-        return emergency;
-    } catch (MemoryLimitExceeded& e) {
-        return emergency;
-    }
-}
-
-
-static PyObject* extract_opb_base_features(PyObject* self, PyObject* arg) {
-    const char* filename;
-    unsigned rlim = 0, mlim = 0;
-    PyArg_ParseTuple(arg, "s|II", &filename, &rlim, &mlim);
-
-    PyObject *emergency = pydict();
-    pydict(emergency, "base_features_runtime", "memout");
-
-    ResourceLimits limits(rlim, mlim);
-    limits.set_rlimits();
-    try {
-        OPB::BaseFeatures stats(filename);
-        stats.extract();
-        std::vector<double> record = stats.getFeatures();
-        std::vector<std::string> names = stats.getNames();
-        PyObject *dict = pydict();
-        pydict(dict, "base_features_runtime", limits.get_runtime());
-        for (unsigned int i = 0; i < record.size(); i++) {
-            pydict(dict, names[i].c_str(), record[i]);
-        }
-        return dict;
-    } catch (TimeLimitExceeded& e) {
-        pydict(emergency, "base_features_runtime", "timeout");
-        return emergency;
-    } catch (MemoryLimitExceeded& e) {
-        return emergency;
-    }
-}
-
-static PyObject* base_feature_names(PyObject* self) {
-    PyObject *list = PyList_New(0);
-    PyList_Append(list, pytype("base_features_runtime"));
-    CNF::BaseFeatures stats("");
-    std::vector<std::string> names = stats.getNames();
-    for (unsigned int i = 0; i < names.size(); i++) {
-        PyList_Append(list, pytype(names[i].c_str()));
-    }
-    return list;
-}
-
-static PyObject* gate_feature_names(PyObject* self) {
-    PyObject *list = PyList_New(0);
-    PyList_Append(list, pytype("gate_features_runtime"));
-    CNFGateFeatures stats("");
-    std::vector<std::string> names = stats.getNames();
-    for (unsigned int i = 0; i < names.size(); i++) {
-        PyList_Append(list, pytype(names[i].c_str()));
-    }
-    return list;
-}
-
-static PyObject* wcnf_base_feature_names(PyObject* self) {
-    PyObject *list = PyList_New(0);
-    PyList_Append(list, pytype("base_features_runtime"));
-    WCNF::BaseFeatures stats("");
-    std::vector<std::string> names = stats.getNames();
-    for (unsigned int i = 0; i < names.size(); i++) {
-        PyList_Append(list, pytype(names[i].c_str()));
-    }
-    return list;
-}
-
-static PyObject* opb_base_feature_names(PyObject* self) {
-    PyObject *list = PyList_New(0);
-    PyList_Append(list, pytype("base_features_runtime"));
-    OPB::BaseFeatures stats("");
-    std::vector<std::string> names = stats.getNames();
-    for (unsigned int i = 0; i < names.size(); i++) {
-        PyList_Append(list, pytype(names[i].c_str()));
-    }
-    return list;
-}
-
-
-static PyObject* cnf2kis(PyObject* self, PyObject* arg) {
-    const char* filename;
-    const char* output;
-    unsigned maxEdges, maxNodes;
-    unsigned rlim = 0, mlim = 0, flim = 0;
-    PyArg_ParseTuple(arg, "ssII|III", &filename, &output, &maxEdges, &maxNodes, &rlim, &mlim, &flim);
-
-    PyObject *dict = pydict();
-    pydict(dict, "nodes", 0);
-    pydict(dict, "edges", 0);
-    pydict(dict, "k", 0);
-
-    ResourceLimits limits(rlim, mlim, flim);
-    limits.set_rlimits();
-    try {
-        IndependentSetFromCNF gen(filename);
-        unsigned nNodes = gen.numNodes();
-        unsigned nEdges = gen.numEdges();
-        unsigned minK = gen.minK();
-
-        pydict(dict, "nodes", nNodes);
-        pydict(dict, "edges", nEdges);
-        pydict(dict, "k", minK);
-
-        if ((maxEdges > 0 && nEdges > maxEdges) || (maxNodes > 0 && nNodes > maxNodes)) {
-            pydict(dict, "hash", "fileout");
-            return dict;
-        }
-
-        gen.generate_independent_set_problem(output);
-        pydict(dict, "local", output);
-
-        std::string hash = CNF::gbdhash(output);
-        pydict(dict, "hash", hash.c_str());
-
-        return dict;
-    } catch (TimeLimitExceeded& e) {
-        std::remove(output);
-        pydict(dict, "hash", "timeout");
-        return dict;
-    } catch (MemoryLimitExceeded& e) {
-        std::remove(output);
-        pydict(dict, "hash", "memout");
-        return dict;
-    } catch (FileSizeLimitExceeded& e) {
-        std::remove(output);
-        pydict(dict, "hash", "fileout");
-        return dict;
-    }
-}
-
-static PyObject* print_sanitized(PyObject* self, PyObject* arg) {
-    const char* filename;
-    unsigned rlim = 0, mlim = 0;
-    PyArg_ParseTuple(arg, "s|II", &filename, &rlim, &mlim);
-
-    ResourceLimits limits(rlim, mlim);
-    limits.set_rlimits();
-    try {
-        sanitize(filename);
-        Py_RETURN_TRUE;
-    } catch (TimeLimitExceeded& e) {
-        Py_RETURN_FALSE;
-    } catch (MemoryLimitExceeded& e) {
-        Py_RETURN_FALSE;
-    }
-}
-
-static PyMethodDef myMethods[] = {
-    {"extract_gate_features", extract_gate_features, METH_VARARGS, "Extract Gate Features."},
-    {"extract_base_features", extract_base_features, METH_VARARGS, "Extract Base Features."},
-    {"base_feature_names", (PyCFunction)base_feature_names, METH_NOARGS, "Get Base Feature Names."},
-    {"gate_feature_names", (PyCFunction)gate_feature_names, METH_NOARGS, "Get Gate Feature Names."},
-    {"sanitize", print_sanitized, METH_VARARGS, "Print sanitized, i.e., no duplicate literals in clauses and no tautologic clauses, CNF to stdout."},
-    {"cnf2kis", cnf2kis, METH_VARARGS, "Create k-ISP Instance from given CNF Instance."},
-    {"gbdhash", gbdhash, METH_VARARGS, "Calculates GBD-Hash (md5 of normalized file) of given DIMACS CNF file."},
-    {"isohash", isohash, METH_VARARGS, "Calculates ISO-Hash (md5 of sorted degree sequence) of given DIMACS CNF file."},
-    {"opbhash", opbhash, METH_VARARGS, "Calculates OPB-Hash (md5 of normalized file) of given OPB file."},
-    {"pqbfhash", pqbfhash, METH_VARARGS, "Calculates PQBF-Hash (md5 of normalized file) of given PQBF file."},
-    {"wcnfhash", wcnfhash, METH_VARARGS, "Calculates WCNF-Hash (md5 of normalized file) of given WCNF file."},
-    {"wcnfisohash", wcnfisohash, METH_VARARGS, "Calculates WCNF ISO-Hash of given WCNF file."},
-    {"extract_wcnf_base_features", extract_wcnf_base_features, METH_VARARGS, "Extract WCNF Base Features."},
-    {"wcnf_base_feature_names", (PyCFunction)wcnf_base_feature_names, METH_NOARGS, "Get WCNF Base Feature Names."},
-    {"extract_opb_base_features", extract_opb_base_features, METH_VARARGS, "Extract OPB Base Features."},
-    {"opb_base_feature_names", (PyCFunction)opb_base_feature_names, METH_NOARGS, "Get OPB Base Feature Names."},
-    {"version", (PyCFunction)version, METH_NOARGS, "Returns Version"},
-    {nullptr, nullptr, 0, nullptr}
-};
-
-static struct PyModuleDef myModule = {
-    PyModuleDef_HEAD_INIT,
-    "gbdc",
-    "GBDC Accelerator Module",
-    -1,
-    myMethods
-};
-
-PyMODINIT_FUNC PyInit_gbdc(void) {
-    return PyModule_Create(&myModule);
+PYBIND11_MODULE(gbdc, m)
+{
+    bind_MPSCQueue<tp::extract_ret_t>(m, "MPSCQueue_Extract");
+    m.def("tp_extract_base_features", &tp_extract<CNF::BaseFeatures>, "Extract base features", py::arg("mlim"), py::arg("jobs"), py::arg("args"));
+    m.def("extract_base_features", &extract_features<CNF::BaseFeatures<>>, "Extract base features", py::arg("filepath"), py::arg("rlim"), py::arg("mlim"));
+    m.def("tp_extract_gate_features", &tp_extract<CNFGateFeatures>, "Extract gate features", py::arg("mlim"), py::arg("jobs"), py::arg("args"));
+    m.def("extract_gate_features", &extract_features<CNFGateFeatures<>, 1>, "Extract gate features", py::arg("filepath"), py::arg("rlim"), py::arg("mlim"));
+    m.def("tp_extract_wcnf_base_features", &tp_extract<WCNF::BaseFeatures>, "Extract wcnf base features", py::arg("mlim"), py::arg("jobs"), py::arg("args"));
+    m.def("extract_wcnf_base_features", &extract_features<WCNF::BaseFeatures<>>, "Extract wcnf base features", py::arg("filepath"), py::arg("rlim"), py::arg("mlim"));
+    m.def("tp_extract_opb_base_features", &tp_extract<OPB::BaseFeatures>, "Extract opb base features", py::arg("mlim"), py::arg("jobs"), py::arg("args"));
+    m.def("extract_opb_base_features", &extract_features<OPB::BaseFeatures<>>, "Extract opb base features", py::arg("filepath"), py::arg("rlim"), py::arg("mlim"));
+    m.def("version", &version, "Return current version of gbdc.");
+    m.def("cnf2kis", &cnf2kis, "Create k-ISP Instance from given CNF Instance.", py::arg("filename"), py::arg("output"), py::arg("maxEdges"), py::arg("maxNodes"));
+    m.def("sanitize", &sanitize, "Print sanitized, i.e., no duplicate literals in clauses and no tautologic clauses, CNF to stdout.", py::arg("filename"));
+    m.def("base_feature_names", &feature_names<CNF::BaseFeatures<>>, "Get Base Feature Names");
+    m.def("gate_feature_names", &feature_names<CNFGateFeatures<>, 1>, "Get Gate Feature Names");
+    m.def("wcnf_base_feature_names", &feature_names<WCNF::BaseFeatures<>>, "Get WCNF Base Feature Names");
+    m.def("opb_base_feature_names", &feature_names<OPB::BaseFeatures<>>, "Get OPB Base Feature Names");
+    m.def("gbdhash", &CNF::gbdhash, "Calculates GBD-Hash (md5 of normalized file) of given DIMACS CNF file.", py::arg("filename"));
+    m.def("isohash", &WCNF::isohash, "Calculates ISO-Hash (md5 of sorted degree sequence) of given DIMACS CNF file.", py::arg("filename"));
+    m.def("opbhash", &OPB::gbdhash, "Calculates OPB-Hash (md5 of normalized file) of given OPB file.", py::arg("filename"));
+    m.def("pqbfhash", &PQBF::gbdhash, "Calculates PQBF-Hash (md5 of normalized file) of given PQBF file.", py::arg("filename"));
+    m.def("wcnfhash", &WCNF::gbdhash, "Calculates WCNF-Hash (md5 of normalized file) of given WCNF file.", py::arg("filename"));
+    m.def("wcnfisohash", &WCNF::isohash, "Calculates WCNF ISO-Hash of given WCNF file.", py::arg("filename"));
 }
