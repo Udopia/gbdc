@@ -116,7 +116,7 @@ static auto tp_extract(const std::uint64_t _mem_max, const std::uint32_t _jobs_m
     auto q = tp->get_result_queue();
     std::thread([tp]()
                 { tp->start_threadpool(); 
-                std::cerr << "Destroying Threadpool!" << std::endl; })
+                })
         .detach();
     return q;
 }

@@ -75,9 +75,9 @@ namespace threadpool
                     cleanup_termination();
                     terminated = false;
                 }
-                wait_for_starting_permission();
                 try
                 {
+                    wait_for_starting_permission();
                     const auto result = std::apply(func, in_process[tl_id].args);
                     output_result(result, true);
                     finish_job();
@@ -147,9 +147,13 @@ namespace threadpool
         void wait_for_starting_permission()
         {
             debug_msg("Waiting...\n");
-            while (!can_start(in_process[tl_id].memnbt))
+            auto mem_needed = in_process[tl_id].memnbt;
+            if (mem_needed > mem_max){
+                terminate(mem_needed);
+            }
+            while (!can_start(mem_needed))
             {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                std::this_thread::sleep_for(std::chrono::milliseconds(0));
             }
             threads_working.fetch_add(1, relaxed);
             debug_msg("Start job with index " + std::to_string(in_process[tl_id].idx) + " ...");
@@ -246,7 +250,6 @@ namespace threadpool
             for (uint i = 0; i < threads.size(); ++i)
                 threads[i].join();
             debug_msg("Number of references to queue left: " + std::to_string(results.use_count()));
-            // std::cerr << "Peak RSS: " << getPeakRSS() << std::endl;
         }
 
         auto get_result_queue()
@@ -263,7 +266,6 @@ namespace threadpool
          */
         ThreadPool(std::uint64_t _mem_max, std::uint32_t _jobs_max, std::function<Ret(Args...)> _func, std::vector<std::tuple<Args...>> args) : jobs(_jobs_max), in_process(_jobs_max), func(_func)
         {
-            std::cerr << "Initialising thread pool: \nMemory: " << _mem_max << "\nThreads: " << _jobs_max << std::endl;
             results = std::make_shared<MPSCQueue<result_t<Ret>>>(_jobs_max);
             init_memory_management(_mem_max);
             init_jobs(args);

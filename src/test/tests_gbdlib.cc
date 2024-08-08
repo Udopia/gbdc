@@ -48,7 +48,7 @@ TEST_CASE("GBDLib")
                 paths.push_back(entry.path());
             }
         }
-        auto q = tp_extract<CNF::BaseFeatures>(1UL << 25UL, 2U, paths);
+        auto q = tp_extract<CNF::BaseFeatures>(1UL << 26UL, 4U, paths);
         std::cerr << q.use_count() << "\n";
         size_t job_counter = 0;
         while (!q->done())
