@@ -27,7 +27,7 @@ module = Extension("gbdc",
                    sources=["src/gbdlib.cc", "./lib/md5/md5.cpp"])
 
 setup(name="gbdc",
-      version="0.2.45",
+      version="0.2.46",
       author="Markus Iser",
       description="Accelerator Module for GBD",
       ext_modules=[module])

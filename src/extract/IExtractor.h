@@ -16,6 +16,7 @@ public:
     virtual void extract() = 0;
     virtual std::vector<double> getFeatures() const = 0;
     virtual std::vector<std::string> getNames() const = 0;
+    virtual std::string getRuntimeDesc() {return "base_features_runtime";};
 };
 
 #endif // EXTRACTOR_INTERFACE_H_
