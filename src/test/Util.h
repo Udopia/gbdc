@@ -70,6 +70,16 @@ static void check_subset(tp::extract_ret_t &expected, tp::extract_ret_t &actual)
     }
 }
 
+static void check_eqset(tp::extract_ret_t &expected, tp::extract_ret_t &actual)
+{
+    CHECK_EQ(expected.size(), actual.size());
+    for (const auto [key, val] : expected)
+    {
+        if (val.index() == 0)
+            CHECK(fequal(std::get<double>(val), std::get<double>(actual[key])));
+    }
+}
+
 template <typename Container>
 static void check_subset(Container &&subset, Container &&superset)
 {

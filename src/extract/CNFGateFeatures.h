@@ -156,6 +156,10 @@ public:
     virtual std::vector<std::string> getNames() const {
         return names;
     }
+
+    virtual std::string getRuntimeDesc() const {
+        return "gate_features_runtime";
+    }
 };
 
 #endif // GATESTATS_H_
