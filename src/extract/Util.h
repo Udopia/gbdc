@@ -72,9 +72,9 @@ double ScaledEntropy(std::vector<double> distribution) {
         // snap to 3 digits after decimal point
         int64_t snap = static_cast<int64_t>(std::round(1000 * value));
         if (occurence.count(value)) {
-            occurence[value] = occurence[value] + 1;
+            occurence[snap] = occurence[snap] + 1;
         } else {
-            occurence[value] = 1;
+            occurence[snap] = 1;
         }
     }
     return ScaledEntropyFromOccurenceCounts(occurence, distribution.size());
