@@ -5,11 +5,13 @@
 #include <filesystem>
 #include <string>
 
-#include "src/test/Util.h"
+#include "src/util/CaptureDistribution.h"
 #include "src/extract/CNFBaseFeatures.h"
 #include "src/extract/OPBBaseFeatures.h"
 #include "src/extract/WCNFBaseFeatures.h"
 #include "src/extract/CNFGateFeatures.h"
+
+#include "test/Util.h"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
@@ -29,8 +31,8 @@ void extract(const char *test_file, const char *expected_record_file)
     }
 }
 
-const std::string test_dir = "src/test/resources/test_files/";
-const std::string records_dir = "src/test/resources/expected_records/";
+const std::string test_dir = "test/resources/test_files/";
+const std::string records_dir = "test/resources/expected_records/";
 
 TEST_CASE("Feature extraction")
 {
@@ -38,27 +40,27 @@ TEST_CASE("Feature extraction")
     {
         const auto test_file = test_dir + "cnf_test.cnf.xz";
         const auto expected_record_file = records_dir + "cnf_base.txt";
-        extract<CNF::BaseFeatures<>>(test_file.c_str(), expected_record_file.c_str());
+        extract<CNF::BaseFeatures>(test_file.c_str(), expected_record_file.c_str());
     }
 
     SUBCASE("CNF gates")
     {
         const auto test_file = test_dir + "cnf_test.cnf.xz";
         const auto expected_record_file = records_dir + "cnf_gates.txt";
-        extract<CNFGateFeatures<>>(test_file.c_str(), expected_record_file.c_str());
+        extract<CNF::GateFeatures>(test_file.c_str(), expected_record_file.c_str());
     }
 
     SUBCASE("WCNF base")
     {
         const auto test_file = test_dir + "wcnf_test.wcnf.xz";
         const auto expected_record_file = records_dir + "wcnf_base.txt";
-        extract<WCNF::BaseFeatures<>>(test_file.c_str(), expected_record_file.c_str());
+        extract<WCNF::BaseFeatures>(test_file.c_str(), expected_record_file.c_str());
     }
 
     SUBCASE("OPB base")
     {
         const auto test_file = test_dir + "opb_test.opb.xz";
         const auto expected_record_file = records_dir + "opb_base.txt";
-        extract<OPB::BaseFeatures<>>(test_file.c_str(), expected_record_file.c_str());
+        extract<OPB::BaseFeatures>(test_file.c_str(), expected_record_file.c_str());
     }
 }

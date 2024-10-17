@@ -7,12 +7,9 @@
 #include <random>
 #include <cstdlib>
 #include <algorithm>
-#include "../util/threadpool/ThreadPool.h"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
-
-namespace tp = threadpool;
 
 static std::string tmp_filename(std::string dir, std::string ext, uint length = 32U)
 {
@@ -59,25 +56,6 @@ static bool fequal(const double a, const double b)
 {
     const double epsilon = fmax(fabs(a), fabs(b)) * 1e-5;
     return fabs(a - b) <= epsilon;
-}
-
-static void check_subset(tp::extract_ret_t &expected, tp::extract_ret_t &actual)
-{
-    for (const auto [key, val] : expected)
-    {
-        if (val.index() == 0)
-            CHECK(fequal(std::get<double>(val), std::get<double>(actual[key])));
-    }
-}
-
-static void check_eqset(tp::extract_ret_t &expected, tp::extract_ret_t &actual)
-{
-    CHECK_EQ(expected.size(), actual.size());
-    for (const auto [key, val] : expected)
-    {
-        if (val.index() == 0)
-            CHECK(fequal(std::get<double>(val), std::get<double>(actual[key])));
-    }
 }
 
 template <typename Container>

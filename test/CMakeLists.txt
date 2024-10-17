@@ -14,13 +14,11 @@ add_executable(tests_streambuffer tests_streambuffer.cc)
 add_executable(tests_feature_extraction tests_feature_extraction.cc)
 add_executable(tests_streamcompressor tests_streamcompressor.cc)
 add_executable(tests_gbdlib tests_gbdlib.cc)
-add_executable(tests_threadpool tests_threadpool.cc)
 
 target_link_libraries(tests_streambuffer PRIVATE util ${LibArchive_LIBRARIES})
-target_link_libraries(tests_feature_extraction PRIVATE util solver ${LibArchive_LIBRARIES})
+target_link_libraries(tests_feature_extraction PRIVATE util solver extract ${LibArchive_LIBRARIES})
 target_link_libraries(tests_streamcompressor PRIVATE util ${LibArchive_LIBRARIES})
 target_link_libraries(tests_gbdlib PRIVATE util ${LIBS})
-target_link_libraries(tests_threadpool PRIVATE util ${LibArchive_LIBRARIES})
 
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)

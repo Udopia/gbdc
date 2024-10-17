@@ -22,8 +22,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <cstdio>
 #include <filesystem>
 
-#include "lib/argparse/argparse.hpp"
-#include "lib/ipasir.h"
+
+#include "src/external/argparse/argparse.h"
+#include "src/external/ipasir.h"
 
 #include "src/identify/GBDHash.h"
 #include "src/identify/ISOHash.h"
@@ -56,32 +57,11 @@ int main(int argc, char** argv) {
         });
 
     argparse.add_argument("file").help("Path to Input File");
-    argparse.add_argument("-o", "--output").help("Path to Output File (used by cnf2kis if set, default is stdout)").default_value(std::string("-"));
-
-    argparse.add_argument("-t", "--timeout")
-        .help("Timeout in seconds (default: 0, disabled)")
-        .default_value(0)
-        .scan<'i', int>();
-
-    argparse.add_argument("-m", "--memout")
-        .help("Memout in megabytes (default: 0, disabled)")
-        .default_value(0)
-        .scan<'i', int>();
-
-    argparse.add_argument("-f", "--fileout")
-        .help("Maximum generated file size in megabytes (default: 0, disabled)")
-        .default_value(0)
-        .scan<'i', int>();
-
-    argparse.add_argument("-v", "--verbose")
-        .help("Verbosity level (default: 0, disabled)")
-        .default_value(0)
-        .scan<'i', int>();
-
-    argparse.add_argument("-r", "--repeat")
-        .help("Give number of root selections for gate recognition")
-        .default_value(1)
-        .scan<'i', int>();
+    argparse.add_argument("-o", "--output").default_value(std::string("-")).help("Path to Output File (used by cnf2* transformers, default is stdout)");
+    argparse.add_argument("-t", "--timeout").default_value(0).scan<'i', int>().help("Time limit in seconds");
+    argparse.add_argument("-m", "--memout").default_value(0).scan<'i', int>().help("Memory limit in MB");
+    argparse.add_argument("-f", "--fileout").default_value(0).scan<'i', int>().help("File size limit in MB");
+    argparse.add_argument("-v", "--verbose").default_value(0).scan<'i', int>().help("Verbosity");
 
     try {
         argparse.parse_args(argc, argv);
@@ -96,7 +76,6 @@ int main(int argc, char** argv) {
     std::string toolname = argparse.get("tool");
     std::string output = argparse.get("output");
     int verbose = argparse.get<int>("verbose");
-    int repeat = argparse.get<int>("repeat");
 
     ResourceLimits limits(argparse.get<int>("timeout"), argparse.get<int>("memout"), argparse.get<int>("fileout"));
     limits.set_rlimits();
@@ -193,7 +172,7 @@ int main(int argc, char** argv) {
                 }
             }
         } else if (toolname == "gates") {
-            CNFGateFeatures stats(filename.c_str());
+            CNF::GateFeatures stats(filename.c_str());
             stats.extract();
             std::vector<double> record = stats.getFeatures();
             std::vector<std::string> names = stats.getNames();

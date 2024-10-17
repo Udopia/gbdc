@@ -7,6 +7,7 @@ else
 fi
 
 mkdir -p build
+cp -R src/ build/
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j$j

@@ -63,16 +63,13 @@ set(LIBS ${LIBS} md5 ${LibArchive_LIBRARIES})
 include_directories(gbdc PUBLIC "${PROJECT_SOURCE_DIR}")
 
 add_subdirectory("src")
-add_subdirectory("lib/md5")
+add_subdirectory("test")
 
 add_executable(gbdc src/Main.cc)
-add_dependencies(gbdc solver)
-target_link_libraries(gbdc PUBLIC ${LIBS} solver $<TARGET_OBJECTS:gates> $<TARGET_OBJECTS:util> $<TARGET_OBJECTS:transform> $<TARGET_OBJECTS:extract>)
-
+target_link_libraries(gbdc PUBLIC ${LIBS} solver util extract transform)
 target_include_directories(gbdc PUBLIC "${PROJECT_SOURCE_DIR}")
 
-add_test(NAME Test_StreamBuffer COMMAND "src/test/tests_streambuffer")
-add_test(NAME Test_Feature_Extraction COMMAND "src/test/tests_feature_extraction")
-add_test(NAME Test_StreamCompressor COMMAND "src/test/tests_streamcompressor")
-add_test(NAME Test_ThreadPool COMMAND "src/test/tests_threadpool")
-add_test(NAME Test_GBDLib COMMAND "src/test/tests_gbdlib")
+add_test(NAME Test_StreamBuffer COMMAND "test/tests_streambuffer")
+add_test(NAME Test_Feature_Extraction COMMAND "test/tests_feature_extraction")
+add_test(NAME Test_StreamCompressor COMMAND "test/tests_streamcompressor")
+add_test(NAME Test_GBDLib COMMAND "test/tests_gbdlib")

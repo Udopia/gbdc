@@ -4,7 +4,7 @@
 #include <fstream>
 #include "src/util/StreamBuffer.h"
 #include "src/util/StreamCompressor.h"
-#include "src/test/Util.h"
+#include "test/Util.h"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
@@ -14,7 +14,7 @@ TEST_CASE("StreamCompressor")
     SUBCASE("Write to archive")
     {
         std::cerr << std::filesystem::current_path() << "\n";
-        auto tmp_file = tmp_filename("src/test/resources", ".cnf.xz");
+        auto tmp_file = tmp_filename("test/resources", ".cnf.xz");
         StreamCompressor c(tmp_file.c_str(), 30);
         const char *data = "p cnf 1 2\n1 2 0\n1 0\n-2 3 0";
         c.write(data, strlen(data));
@@ -37,8 +37,8 @@ TEST_CASE("StreamCompressor")
 
     SUBCASE("Write from istream to archive")
     {
-        auto tmp_file = tmp_filename("src/test/resources", ".cnf.xz");
-        const char *cnf_file = "src/test/resources/test_files/ibm-2004-03-k70.cnf";
+        auto tmp_file = tmp_filename("test/resources", ".cnf.xz");
+        const char *cnf_file = "test/resources/test_files/ibm-2004-03-k70.cnf";
         StreamBuffer cnf_buf(cnf_file);
 
         StreamCompressor cmpr(tmp_file.c_str());
@@ -60,7 +60,3 @@ TEST_CASE("StreamCompressor")
         remove(tmp_file.c_str());
     }
 }
-
-// int main()
-// {
-// }

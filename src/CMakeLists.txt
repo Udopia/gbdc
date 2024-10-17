@@ -1,6 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
-add_subdirectory(extract/gates)
+add_subdirectory(external/md5)
 add_subdirectory(util)
 add_subdirectory(extract)
 add_subdirectory(transform)
-add_subdirectory(test)

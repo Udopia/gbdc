@@ -23,7 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <string>
 #include <sstream>
 
-#include "lib/md5/md5.h"
+#include "src/external/md5/md5.h"
 #include "src/util/StreamBuffer.h"
 
 namespace CNF {

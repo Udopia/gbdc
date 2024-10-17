@@ -19,15 +19,24 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 from setuptools import setup, Extension
 import os
+import glob
+
+source_files = glob.glob('./src/**/*.cc', recursive=True)
+print("source_files", source_files)
+
+directories = glob.glob('./src/**/', recursive=True)
+print("directories", directories)
 
 module = Extension("gbdc",
-                   libraries=["archive", "cadical"],
-                   library_dirs=["lib", os.path.abspath("./build/solvers/src/cadical_external/build")],
-                   include_dirs=["."],
-                   sources=["src/gbdlib.cc", "./lib/md5/md5.cpp"])
+      sources=source_files,
+      include_dirs=[os.path.abspath(d) for d in directories],
+      library_dirs=[os.path.abspath("./build/solvers/src/cadical_external/build")],
+      libraries=["archive", "cadical"],
+)
 
 setup(name="gbdc",
       version="0.2.46",
       author="Markus Iser",
       description="Accelerator Module for GBD",
-      ext_modules=[module])
+      ext_modules=[module]
+)

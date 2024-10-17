@@ -24,7 +24,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <algorithm>
 #include <stdio.h>
 
-#include "lib/md5/md5.h"
+#include "src/external/md5/md5.h"
 
 #include "src/util/StreamBuffer.h"
 #include "src/util/SolverTypes.h"
@@ -161,6 +161,6 @@ namespace WCNF {
         }
         return md5.produce();
     }
-} // namespace CNF
+} // namespace WCNF
 
 #endif  // ISOHASH_H_

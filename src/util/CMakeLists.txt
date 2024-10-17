@@ -4,7 +4,8 @@ add_library(util OBJECT
     SolverTypes.h
     Stamp.h
     StreamBuffer.h
+    UnionFind.cc
+    CaptureDistribution.cc
 )
 
-add_subdirectory(threadpool)
 add_subdirectory(pybind11)

@@ -17,8 +17,7 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef SRC_UTIL_RESOURCELIMITS_H_
-#define SRC_UTIL_RESOURCELIMITS_H_
+#pragma once
 
 #include <iomanip>
 #include <iostream>
@@ -114,12 +113,10 @@ class ResourceLimits {
     }
 
     bool within_memory_limit() const {
-        // std::cout << "Memory: " << get_memory() << " MB" << std::endl;
         return mlim_ == 0 || get_memory() <= mlim_;
     }
 
     bool within_time_limit() const {
-        // std::cout << "Runtime: " << get_runtime() << " sec" << std::endl;
         return rlim_ == 0 || get_runtime() <= rlim_;
     }
 
@@ -151,10 +148,9 @@ class ResourceLimits {
             }
 
             /**
-             * Thanks to Sascha Witt for pointing me to std::set_new_handler().
-             * 
              * For graceful out-of-memory handling, the new-handler 'memout()' expands memory limits before exiting. 
              * Otherwise, python process pool implementations either stall or crash, depending on the used library. 
+             * Thanks to Sascha Witt for pointing me to std::set_new_handler().
              */
             as_limit = limit;
             as_limit.rlim_cur = limit.rlim_max;
@@ -288,5 +284,3 @@ class ResourceLimits {
     }
 #endif
 };
-
-#endif  // SRC_UTIL_RESOURCELIMITS_H_

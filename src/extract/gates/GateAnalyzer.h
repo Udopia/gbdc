@@ -28,7 +28,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <unordered_set>
 #include <climits>
 
-#include "lib/ipasir.h"
+#include "src/external/ipasir.h"
 
 #include "src/util/CNFFormula.h"
 

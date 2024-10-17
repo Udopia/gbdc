@@ -33,7 +33,7 @@ jobs:
         cd build
         
         if [ "$(uname)" == "Darwin" ]; then
-          otool -L src/test/tests_streamcompressor
+          otool -L test/tests_streamcompressor
         fi 
         ctest --debug
       

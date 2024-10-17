@@ -25,7 +25,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <fstream>
 #include <memory>
 
-#include "src/util/ResourceLimits.h"
 #include "src/util/CNFFormula.h"
 
 class BipartiteGraphFromCNF {
