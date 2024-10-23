@@ -1,6 +1,8 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
+project(gbdc VERSION 1.0 LANGUAGES CXX)
 
-project(gbdc VERSION 1.0)
+set(PYBIND11_FINDPYTHON ON)
+find_package(pybind11 CONFIG REQUIRED)
 
 include(CTest)
 
@@ -65,9 +67,14 @@ include_directories(gbdc PUBLIC "${PROJECT_SOURCE_DIR}")
 add_subdirectory("src")
 add_subdirectory("test")
 
-add_executable(gbdc src/Main.cc)
+add_executable(gbdctool src/Main.cc)
+target_link_libraries(gbdctool PUBLIC ${LIBS} solver util extract transform)
+# target_include_directories(gbdctool PUBLIC "${PROJECT_SOURCE_DIR}")
+set_property(TARGET gbdctool PROPERTY OUTPUT_NAME gbdc)
+
+pybind11_add_module(gbdc src/gbdlib.cc)
 target_link_libraries(gbdc PUBLIC ${LIBS} solver util extract transform)
-target_include_directories(gbdc PUBLIC "${PROJECT_SOURCE_DIR}")
+install(TARGETS gbdc DESTINATION .)
 
 add_test(NAME Test_StreamBuffer COMMAND "test/tests_streambuffer")
 add_test(NAME Test_Feature_Extraction COMMAND "test/tests_feature_extraction")

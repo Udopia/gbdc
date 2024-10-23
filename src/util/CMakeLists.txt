@@ -7,5 +7,4 @@ add_library(util OBJECT
     UnionFind.cc
     CaptureDistribution.cc
 )
-
-add_subdirectory(pybind11)
+set_property(TARGET util PROPERTY POSITION_INDEPENDENT_CODE ON)

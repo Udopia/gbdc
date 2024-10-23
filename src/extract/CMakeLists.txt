@@ -4,3 +4,4 @@ add_library(extract OBJECT
     OPBBaseFeatures.cc
     WCNFBaseFeatures.cc
 )
+set_property(TARGET extract PROPERTY POSITION_INDEPENDENT_CODE ON)

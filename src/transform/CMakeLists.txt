@@ -3,3 +3,4 @@ add_library(transform OBJECT
     Normalize.h
     cnf2bip.h
 )
+set_property(TARGET transform PROPERTY POSITION_INDEPENDENT_CODE ON)

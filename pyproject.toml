@@ -1,0 +1,30 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[tool.scikit-build]
+sdist.cmake = true
+cmake.version = ">=3.15"
+cmake.build-type = "Release"
+
+[project]
+name = "gbdc"
+version = "0.2.47"
+description = "Extension Module for GBD"
+authors = [
+  {name = "Markus Iser", email = "markus.iser@kit.edu"},
+  {name = "Christoph Jabs", email = "christoph.jabs@helsinki.fi"},
+]
+maintainers = [
+  {name = "Markus Iser", email = "markus.iser@kit.edu"},
+]
+readme = "README.md"
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: C++",
+]
+
+[project.urls]
+Homepage = "https://benchmark-database.de"
+Documentation = "https://udopia.github.io/gbdc/"
+Repository = "https://github.com/Udopia/gbdc"
