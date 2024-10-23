@@ -41,9 +41,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/transform/Normalize.h"
 #include "src/util/ResourceLimits.h"
 
-#include "src/util/pybind11/include/pybind11/pybind11.h"
-#include "src/util/pybind11/include/pybind11/stl.h"
-#include "src/util/pybind11/include/pybind11/functional.h"
+// #include "src/util/pybind11/include/pybind11/pybind11.h"
+// #include "src/util/pybind11/include/pybind11/stl.h"
+// #include "src/util/pybind11/include/pybind11/functional.h"
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
+#include "pybind11/functional.h"
 
 namespace py = pybind11;
 
