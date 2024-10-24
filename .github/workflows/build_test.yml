@@ -26,11 +26,12 @@ jobs:
     - name: Setup Libraries
       run: |
         if [ "$(uname)" == "Darwin" ]; then
-          brew install libarchive pypind11
+          brew install libarchive
         else
           sudo apt-get update
-          sudo apt-get install -y libarchive-dev pypind11-dev
+          sudo apt-get install -y libarchive-dev
         fi
+        pip install pybind11
 
     - name: Build
       run: |
