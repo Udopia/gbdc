@@ -71,7 +71,7 @@ jobs:
         # and only build arch-specific for macos
         CIBW_SKIP: pp* cp3[67]* cp3[89]*mac*arm* *win* *i686* *universal2* #cp311* cp312*
 
-        CIBW_BUILD_VERBOSITY: 2
+        CIBW_BUILD_VERBOSITY: 1
         
         CIBW_BEFORE_ALL_LINUX: bash ./instdeps.sh
         CIBW_BEFORE_ALL_MACOS: brew install libarchive pybind11
