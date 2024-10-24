@@ -14,16 +14,16 @@ jobs:
       with:
         ref: master
     
-    - name: Change version in setup.py
-      working-directory: ${{ github.workspace }}
-      run: |
-         PYPI_VERSION=$(echo ${{ github.ref_name }} | sed 's/[a-zA-Z]*//g')
-         sed -i "s/version=\"[^\"]*\"/version=\"$PYPI_VERSION\"/" setup.py
+    # - name: Change version in setup.py
+    #   working-directory: ${{ github.workspace }}
+    #   run: |
+    #      PYPI_VERSION=$(echo ${{ github.ref_name }} | sed 's/[a-zA-Z]*//g')
+    #      sed -i "s/version=\"[^\"]*\"/version=\"$PYPI_VERSION\"/" setup.py
     
-    - name: Push to github
-      uses: EndBug/add-and-commit@v9
-      with:
-        message: 'Change setup.py version'
+    # - name: Push to github
+    #   uses: EndBug/add-and-commit@v9
+    #   with:
+    #     message: 'Change setup.py version'
       
   build:
     runs-on: ${{ matrix.os }}
