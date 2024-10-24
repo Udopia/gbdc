@@ -73,7 +73,7 @@ jobs:
 
         CIBW_BUILD_VERBOSITY: 3
         
-        CIBW_BEFORE_ALL_LINUX: apt-get install -y libarchive-dev && apt-get install -y pybind11-dev
+        CIBW_BEFORE_ALL_LINUX: yum install -y libarchive-devel pybind11-devel
         CIBW_BEFORE_ALL_MACOS: brew install libarchive pybind11
       
         CIBW_ENVIRONMENT_MACOS: CPPFLAGS="-I/usr/local/include"
