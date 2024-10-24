@@ -73,7 +73,9 @@ jobs:
 
         CIBW_BUILD_VERBOSITY: 3
         
-        CIBW_BEFORE_ALL_LINUX: dnf install epel-release libarchive-devel; dnf install pybind11-devel
+        CIBW_BEFORE_ALL_LINUX: >
+          dnf install epel-release libarchive-devel &&
+          dnf install pybind11-devel
         CIBW_BEFORE_ALL_MACOS: brew install libarchive pybind11
       
         CIBW_ENVIRONMENT_MACOS: CPPFLAGS="-I/usr/local/include"
