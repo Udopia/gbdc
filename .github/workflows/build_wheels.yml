@@ -72,10 +72,17 @@ jobs:
         CIBW_SKIP: pp* cp3[67]* cp3[89]*mac*arm* *win* *i686* *universal2* #cp311* cp312*
 
         CIBW_BUILD_VERBOSITY: 3
-        CIBW_BEFORE_ALL_LINUX: bash before_build.sh
-        CIBW_BEFORE_ALL_MACOS: bash before_build.sh
+        
+        CIBW_BEFORE_ALL_LINUX: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-dev
+          sudo apt-get install -y pybind11-dev
+        CIBW_BEFORE_ALL_MACOS: |
+          brew install libarchive pybind11
+          export LDFLAGS="-L/usr/local/opt/libarchive/lib -L/usr/local/lib"
+          export CPPFLAGS="-I/usr/local/opt/libarchive/include -I/usr/local/include"
       
-        CIBW_ENVIRONMENT_MACOS: CPPFLAGS="-I/usr/local/include -std=c++11"
+        CIBW_ENVIRONMENT_MACOS: CPPFLAGS="-I/usr/local/include"
       with:        
         package-dir: .
         output-dir: wheelhouse
