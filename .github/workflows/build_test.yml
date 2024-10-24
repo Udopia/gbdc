@@ -28,7 +28,7 @@ jobs:
         if [ "$(uname)" == "Darwin" ]; then
           brew install libarchive pybind11
           export LDFLAGS="-L/usr/local/opt/libarchive/lib -L/usr/local/lib"
-          export CPPFLAGS="-I/usr/local/opt/libarchive/include -I/usr/local/include -std=c++11"
+          export CPPFLAGS="-I/usr/local/opt/libarchive/include -I/usr/local/include"
         else
           sudo apt-get update
           sudo apt-get install -y libarchive-dev

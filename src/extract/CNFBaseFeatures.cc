@@ -37,7 +37,7 @@ void CNF::BaseFeatures1::extract() {
 
         unsigned n_neg = 0;
         for (Lit lit : clause) {
-            bytes += lit.sign() + ceil(log10(lit.var())) + 1;
+            bytes += lit.sign() + ceil(log10((float)lit.var())) + 1;
             // resize vectors if necessary
             if (static_cast<unsigned>(lit.var()) > n_vars) {
                 n_vars = lit.var();
