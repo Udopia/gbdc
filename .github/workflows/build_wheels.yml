@@ -58,18 +58,14 @@ jobs:
         MACOSX_DEPLOYMENT_TARGET: "10.15"
         CIBW_BUILD_FRONTEND: build # python -m build --wheel
         CIBW_ARCHS_MACOS: auto
-        CIBW_ARCHS_LINUX: auto aarch64 ppc64le s390x
+        CIBW_ARCHS_LINUX: auto aarch64
         CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
         CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
-        CIBW_MANYLINUX_PPC64LE_IMAGE: manylinux_2_28
-        CIBW_MANYLINUX_S390X_IMAGE: manylinux_2_28
         CIBW_MUSLLINUX_X86_64_IMAGE: musllinux_1_2
         CIBW_MUSLLINUX_AARCH64_IMAGE: musllinux_1_2
-        CIBW_MUSLLINUX_PPC64LE_IMAGE: musllinux_1_2
-        CIBW_MUSLLINUX_S390X_IMAGE: musllinux_1_2
-        # skip PyPy, cpython3.6/3.7 for all archs, cpython3.8/3.9 for macos-arm64, windows, 32-bit
+        # skip PyPy, cpython3.6/3.7/3.8/3.9/3.10 for all archs, windows, 32-bit
         # and only build arch-specific for macos
-        CIBW_SKIP: pp* cp3[67]* cp3[89]*mac*arm* *win* *i686* *universal2* #cp311* cp312*
+        CIBW_SKIP: pp* cp3[6789]* cp310* *win* *i686* *universal2*
 
         CIBW_BUILD_VERBOSITY: 1
         
