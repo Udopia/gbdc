@@ -9,4 +9,4 @@ cd pybind11
 mkdir build
 cd build
 cmake ..
-make -j install
+make -j6 install
