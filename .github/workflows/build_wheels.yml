@@ -1,40 +1,15 @@
 name: Build Wheels
 
-on:
-  push:
-    tags: 'v*.*.*'
+on: workflow_dispatch
 
-  workflow_dispatch:
-jobs:
-  # change version in setup.py and commit to the repository
-  versioning:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        ref: master
-    
-    # - name: Change version in setup.py
-    #   working-directory: ${{ github.workspace }}
-    #   run: |
-    #      PYPI_VERSION=$(echo ${{ github.ref_name }} | sed 's/[a-zA-Z]*//g')
-    #      sed -i "s/version=\"[^\"]*\"/version=\"$PYPI_VERSION\"/" setup.py
-    
-    # - name: Push to github
-    #   uses: EndBug/add-and-commit@v9
-    #   with:
-    #     message: 'Change setup.py version'
-      
+jobs: 
   build:
+    name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    needs: versioning
-
     strategy:
-      # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
       fail-fast: false
-
       matrix:
-        os: [ubuntu-latest, macos-13, macos-14]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
     - uses: actions/checkout@v4
@@ -68,7 +43,6 @@ jobs:
         CIBW_SKIP: pp* cp3[6789]* cp310* *win* *i686* *universal2*
 
         CIBW_BUILD_VERBOSITY: 1
-        
         CIBW_BEFORE_ALL_LINUX: bash ./instdeps.sh
         CIBW_BEFORE_ALL_MACOS: brew install libarchive pybind11
       
