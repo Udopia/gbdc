@@ -10,8 +10,8 @@ install_pybind_devel_from_source() {
 }
 
 install_libarchive_devel_from_source() {
-    curl -L  http://http.debian.net/debian/pool/main/liba/libarchive/libarchive_3.2.2.orig.tar.gz
-    tar -zxvf libarchive_3.2.2.orig.tar.gz
+    curl -o libarchive.tar.gz -L https://ftp.debian.org/debian/pool/main/liba/libarchive/libarchive_3.7.4-1.1.debian.tar.xz
+    tar -zxvf libarchive.tar.gz
     cd libarchive_3.2.2.orig
     ./configure
     make
