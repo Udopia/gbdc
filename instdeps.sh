@@ -10,12 +10,10 @@ if command -v dnf > /dev/null; then
     cd build
     cmake ..
     make -j6 install
-elif command -v apt > /dev/null; then
+else
     sudo apt update
     sudo apt install -y libarchive-dev
     sudo apt install -y cmake
     sudo apt install -y build-essential
     sudo apt install -y pybind11-dev
 fi
-
-pip install scikit-build
