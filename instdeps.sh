@@ -10,6 +10,11 @@ if command -v dnf > /dev/null; then
     cd build
     cmake ..
     make -j6 install
+elif command -v yum > /dev/null; then
+    yum install -y libarchive-devel
+    yum install -y cmake
+    yum groupinstall -y "Development Tools"
+    yum install -y pybind11-devel
 else
     apt update
     apt install -y libarchive-dev
