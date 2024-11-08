@@ -14,7 +14,7 @@ elif command -v yum > /dev/null; then
     yum install -y libarchive-devel
     yum install -y cmake
     yum groupinstall -y "Development Tools"
-    yum install -y pybind11-devel
+    yum install -y pybind11-dev
 else
     apt update
     apt install -y libarchive-dev
