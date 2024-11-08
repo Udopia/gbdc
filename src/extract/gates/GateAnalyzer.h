@@ -21,6 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define SRC_GATES_GATEANALYZER_H_
 
 #include <cstdlib>
+#include <cstdint>
 #include <algorithm>
 #include <memory>
 #include <cmath>
