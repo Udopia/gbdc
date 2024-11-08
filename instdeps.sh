@@ -15,7 +15,7 @@ install_libarchive_devel_from_source() {
     cd libarchive_3.2.2.orig
     ./configure
     make
-    sudo make install
+    make install
 }
 
 if command -v dnf > /dev/null; then
