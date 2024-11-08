@@ -44,9 +44,9 @@ elif command -v apt > /dev/null; then
     apt install -y pybind11-dev
 elif command -v apk > /dev/null; then
     apk update
-    apk install -y libarchive-dev
-    apk install -y cmake
-    apk install -y build-base
+    apk add libarchive-dev
+    apk add cmake
+    apk add build-base
     install_pybind_devel_from_source
 else
     echo "No package manager found"
