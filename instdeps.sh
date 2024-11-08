@@ -10,9 +10,12 @@ install_pybind_devel_from_source() {
 }
 
 install_libarchive_devel_from_source() {
-    git clone https://github.com/libarchive/libarchive.git
-    cd libarchive
-    /bin/sh build/autogen.sh
+    #git clone https://github.com/libarchive/libarchive.git
+    #cd libarchive
+    #/bin/sh build/autogen.sh
+    curl -L https://libarchive.org/downloads/libarchive-3.7.7.tar.gz -o libarchive-3.7.7.tar.gz
+    tar -xvf libarchive-3.7.7.tar.gz
+    cd libarchive-3.7.7
     ./configure
     make
     make check
@@ -21,18 +24,18 @@ install_libarchive_devel_from_source() {
 
 if command -v dnf > /dev/null; then
     dnf update
-    dnf install -y libarchive-devel
+    #dnf install -y libarchive-devel
     dnf install -y cmake #autoconf automake libtool autoconf-archive
     dnf groupinstall -y "Development Tools"
     install_pybind_devel_from_source
-    # install_libarchive_devel_from_source
+    install_libarchive_devel_from_source
 elif command -v yum > /dev/null; then
     yum update
-    yum install -y libarchive-devel
+    #yum install -y libarchive-devel
     yum install -y cmake #autoconf automake libtool autoconf-archive
     yum groupinstall -y "Development Tools"
     install_pybind_devel_from_source
-    # install_libarchive_devel_from_source
+    install_libarchive_devel_from_source
 else
     apt update
     apt install -y libarchive-dev
