@@ -28,7 +28,7 @@ elif command -v yum > /dev/null; then
     yum install -y cmake
     yum groupinstall -y "Development Tools"
     install_pybind_devel_from_source
-    install_libarchive_devel_from_source()
+    install_libarchive_devel_from_source
 else
     apt update
     apt install -y libarchive-dev
