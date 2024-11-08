@@ -1,8 +1,16 @@
 #!/bin/bash
 
-dnf install -y libarchive-devel
-dnf install -y cmake
-dnf groupinstall -y "Development Tools"
+if command -v dnf > /dev/null; then
+    dnf install -y libarchive-devel
+    dnf install -y cmake
+    dnf groupinstall -y "Development Tools"
+elif command -v apt > /dev/null; then
+    sudo apt update
+    sudo apt install -y libarchive-dev
+    sudo apt install -y cmake
+    sudo apt install -y build-essential
+fi
+pip install scikit-build
 # cd /project
 git clone https://github.com/pybind/pybind11.git
 cd pybind11
