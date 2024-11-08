@@ -10,7 +10,7 @@ install_pybind_devel_from_source() {
 }
 
 install_libarchive_devel_from_source() {
-    http://http.debian.net/debian/pool/main/liba/libarchive/libarchive_3.2.2.orig.tar.gz
+    wget http://http.debian.net/debian/pool/main/liba/libarchive/libarchive_3.2.2.orig.tar.gz
     tar -zxvf libarchive_3.2.2.orig.tar.gz
     cd libarchive_3.2.2.orig
     ./configure
