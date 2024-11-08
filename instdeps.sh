@@ -26,11 +26,11 @@ if command -v dnf > /dev/null; then
     install_pybind_devel_from_source
     install_libarchive_devel_from_source
 elif command -v yum > /dev/null; then
-    #yum install -y libarchive-devel
-    yum install -y cmake autoconf automake libtool autoconf-archive
+    yum install -y libarchive-devel
+    yum install -y cmake #autoconf automake libtool autoconf-archive
     yum groupinstall -y "Development Tools"
     install_pybind_devel_from_source
-    install_libarchive_devel_from_source
+    # install_libarchive_devel_from_source
 else
     apt update
     apt install -y libarchive-dev
