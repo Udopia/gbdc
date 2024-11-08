@@ -11,9 +11,9 @@ if command -v dnf > /dev/null; then
     cmake ..
     make -j6 install
 else
-    sudo apt update
-    sudo apt install -y libarchive-dev
-    sudo apt install -y cmake
-    sudo apt install -y build-essential
-    sudo apt install -y pybind11-dev
+    apt update
+    apt install -y libarchive-dev
+    apt install -y cmake
+    apt install -y build-essential
+    apt install -y pybind11-dev
 fi
