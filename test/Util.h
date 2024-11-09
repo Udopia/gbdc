@@ -12,7 +12,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
 
-static std::string tmp_filename(std::string dir, std::string ext, uint length = 32U)
+static std::string tmp_filename(std::string dir, std::string ext, unsigned length = 32U)
 {
     const char hex_chars[] = "0123456789abcdef";
     std::random_device rd;
