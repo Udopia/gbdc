@@ -61,6 +61,7 @@ OPB::Constr::Constr(StreamBuffer &in) : terms(in) {
         in.skipString(">=");
     } else {
         assert(*in == '=');
+        rel = EQ;
         in.skip();
     }
     in.readNumber(&strbound);
