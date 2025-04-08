@@ -22,9 +22,9 @@ A description of the supported domains, feature extractors, and instance transfo
 * Some GBDC functions use an [IPASIR](https://github.com/biotomas/ipasir) SAT Solver. GBDC's build-system pulls the external SAT Solver [CaDiCaL](http://fmv.jku.at/cadical/) by A. Biere (MIT licensed).
 
 ### Steps:
-1. **Install libarchive**
-   - For Ubuntu: `apt install libarchive-dev pybind11-dev`
-   - For macOS: `brew install libarchive pybind11`
+1. **Install Dependencies** (libarchive, pybind, ninja)
+   - For Ubuntu: `apt install libarchive-dev pybind11-dev ninja-build`
+   - For macOS: `brew install libarchive pybind11 ninja`
 
 2. Run `pip install . --user` in the repository directory.
 <!-- #### Shipped Dependencies
