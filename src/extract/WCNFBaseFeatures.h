@@ -42,7 +42,7 @@ class BaseFeatures1 : public IExtractor {
   public:
     BaseFeatures1(const char* filename);
     virtual ~BaseFeatures1();
-    virtual void extract();
+    virtual void run();
     virtual std::vector<double> getFeatures() const;
     virtual std::vector<std::string> getNames() const;
 };
@@ -65,7 +65,7 @@ class BaseFeatures2 : public IExtractor {
   public:
     BaseFeatures2(const char* filename);
     virtual ~BaseFeatures2();
-    virtual void extract();
+    virtual void run();
     virtual std::vector<double> getFeatures() const;
     virtual std::vector<std::string> getNames() const;
 };
@@ -81,7 +81,7 @@ class BaseFeatures : public IExtractor {
   public:
     BaseFeatures(const char* filename);
     virtual ~BaseFeatures();
-    virtual void extract();
+    virtual void run();
     virtual std::vector<double> getFeatures() const;
     virtual std::vector<std::string> getNames() const;
 };

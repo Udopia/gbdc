@@ -79,7 +79,7 @@ class BaseFeatures : public IExtractor {
   public:
     BaseFeatures(const char* filename);
     virtual ~BaseFeatures();
-    virtual void extract();
+    virtual void run();
     virtual std::vector<double> getFeatures() const;
     virtual std::vector<std::string> getNames() const;
 };

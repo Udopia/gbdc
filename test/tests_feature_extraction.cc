@@ -21,7 +21,7 @@ void extract(const char *test_file, const char *expected_record_file)
 {
     auto expected_record = record_to_map<double>(expected_record_file);
     Extractor stats(test_file);
-    stats.extract();
+    stats.run();
     auto record = stats.getFeatures();
     auto names = stats.getNames();
     CHECK(record.size() == expected_record.size());

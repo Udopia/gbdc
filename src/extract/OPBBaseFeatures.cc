@@ -115,7 +115,7 @@ OPB::BaseFeatures::BaseFeatures(const char* filename) : filename_(filename), fea
 
 OPB::BaseFeatures::~BaseFeatures() { }
 
-void OPB::BaseFeatures::extract() {
+void OPB::BaseFeatures::run() {
     StreamBuffer in(filename_);
 
     bool seen_obj = false;

@@ -37,8 +37,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/extract/WCNFBaseFeatures.h"
 #include "src/extract/OPBBaseFeatures.h"
 
-#include "src/transform/IndependentSet.h"
-#include "src/transform/Normalize.h"
+#include "src/transform/cnf2kis.h"
+#include "src/transform/cnf2cnf.h"
 #include "src/util/ResourceLimits.h"
 
 // #include "src/util/pybind11/include/pybind11/pybind11.h"
@@ -69,14 +69,6 @@ std::string version() {
     return "Error: Version not found in setup.py";
 }
 
-template <typename Extractor>
-auto feature_names() {
-    auto ex = Extractor("");
-    auto names = ex.getNames();
-    names.push_back(ex.getRuntimeDesc());
-    return names;
-}
-
 py::dict cnf2kis(const std::string filename, const std::string output) {
     py::dict dict;
 
@@ -93,14 +85,22 @@ py::dict cnf2kis(const std::string filename, const std::string output) {
 }
 
 template <typename Extractor>
+auto feature_names() {
+    auto ex = Extractor("");
+    auto names = ex.getNames();
+    names.push_back("status");
+    return names;
+}
+
+template <typename Extractor>
 py::dict extract_features(const std::string filepath, const size_t rlim, const size_t mlim) {
     py::dict dict;
     Extractor stats(filepath.c_str());
     ResourceLimits limits(rlim, mlim);
     limits.set_rlimits();
     try {
-        stats.extract();
-        dict[py::str(stats.getRuntimeDesc())] = (double)limits.get_runtime();
+        stats.run();
+        dict["status"] = (double)limits.get_runtime();
         const auto names = stats.getNames();
         const auto features = stats.getFeatures();
         for (size_t i = 0; i < features.size(); ++i) {
@@ -108,10 +108,10 @@ py::dict extract_features(const std::string filepath, const size_t rlim, const s
         }
     }
     catch (TimeLimitExceeded &e) {
-        dict[py::str(stats.getRuntimeDesc())] = "timeout";
+        dict[py::str("status")] = "timeout";
     }
     catch (MemoryLimitExceeded &e) {
-        dict[py::str(stats.getRuntimeDesc())] = "memout";
+        dict[py::str("status")] = "memout";
     }
     return dict;
 }

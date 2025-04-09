@@ -1,6 +1,6 @@
 add_library(transform OBJECT 
-    IndependentSet.h
-    Normalize.h
-    cnf2bip.h
+    cnf2bip.cc
+    cnf2cnf.h
+    cnf2kis.h
 )
 set_property(TARGET transform PROPERTY POSITION_INDEPENDENT_CODE ON)

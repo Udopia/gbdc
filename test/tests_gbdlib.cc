@@ -22,6 +22,5 @@ namespace fs = std::filesystem;
 //         auto sub = ex.getNames();
 //         check_subset(sub, super);
 //         CHECK_EQ(sub.size(), super.size() - 1);
-//         CHECK_EQ(super.back(), ex.getRuntimeDesc());
 //     }
 

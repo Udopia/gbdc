@@ -1,64 +1,31 @@
-/*************************************************************************************************
-CNFTools -- Copyright (c) 2021, Markus Iser, KIT - Karlsruhe Institute of Technology
+/**
+ * MIT License
+ * Copyright (c) 2024 Markus Iser 
+ */
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the "Software"), to deal in the Software without restriction,
-including without limitation the rights to use, copy, modify, merge, publish, distribute,
-sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+#pragma once
 
-The above copyright notice and this permission notice shall be included in all copies or
-substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
-NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
-OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- **************************************************************************************************/
-
-#ifndef SRC_TRANSFORM_BIP_H_
-#define SRC_TRANSFORM_BIP_H_
-
-#include <string>
 #include <vector>
-#include <fstream>
-#include <memory>
 
+#include "src/extract/IExtractor.h"
 #include "src/util/CNFFormula.h"
 
-class BipartiteGraphFromCNF {
+namespace CNF {
+
+class cnf2bip : public IExtractor {
  private:
     CNFFormula F;
+    const char* filename_;
+    const char* output_;
+    std::vector<double> features;
+    std::vector<std::string> names;
 
  public:
-    explicit BipartiteGraphFromCNF(const char* filename) : F() {
-        F.readDimacsFromFile(filename);
-    }
-
-    void generate_bipartite_graph(const char* output = nullptr) {
-        std::shared_ptr<std::ostream> of;
-        if (output != nullptr) {
-            of.reset(new std::ofstream(output, std::ofstream::out));
-        } else {
-            of.reset(&std::cout, [](...){});
-        }
-
-        *of << "c directed bipartite graph representation from cnf" << std::endl;
-        *of << "p edge " << F.nVars() + F.nClauses() << std::endl;
-
-        unsigned clause_id = F.nVars() + 1;
-        for (Cl* clause : F) {
-            for (unsigned i = 0; i < clause->size(); i++) {
-                if ((*clause)[i].sign()) {
-                    *of << "e " << (*clause)[i].var() << " " << clause_id << std::endl;
-                } else {
-                    *of << "e " << clause_id << " " << (*clause)[i].var() << std::endl;
-                }
-            }
-            clause_id++;
-        }
-    }
+    cnf2bip(const char* filename, const char* output = nullptr);
+    virtual ~cnf2bip();
+    virtual void run();
+    virtual std::vector<double> getFeatures() const;
+    virtual std::vector<std::string> getNames() const;
 };
 
-#endif  // SRC_TRANSFORM_BIP_H_
+}  // namespace CNF

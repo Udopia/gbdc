@@ -31,10 +31,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/util/SolverTypes.h"
 
-#include "src/transform/IndependentSet.h"
-#include "src/transform/Normalize.h"
 #include "src/util/ResourceLimits.h"
 #include "src/transform/cnf2bip.h"
+#include "src/transform/cnf2kis.h"
+#include "src/transform/cnf2cnf.h"
 
 #include "src/extract/CNFGateFeatures.h"
 #include "src/extract/CNFBaseFeatures.h"
@@ -46,10 +46,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 int main(int argc, char** argv) {
     argparse::ArgumentParser argparse("CNF Tools");
 
-    argparse.add_argument("tool").help("Select Tool: solve, id|identify (gbdhash, opbhash, pqbfhash), isohash, normalize, sanitize, checksani, cnf2kis, cnf2bip, extract, gates")
+    argparse.add_argument("tool").help("Select Tool: id, isohash, normalize, sanitize, checksani, cnf2kis, cnf2bip, extract, gates")
         .default_value("identify")
         .action([](const std::string& value) {
-            static const std::vector<std::string> choices = { "solve", "id", "identify", "gbdhash", "opbhash", "pqbfhash", "isohash", "normalize", "sanitize", "checksani", "cnf2kis", "cnf2bip", "extract", "gates", "test" };
+            static const std::vector<std::string> choices = { "id", "isohash", "normalize", "sanitize", "checksani", "cnf2kis", "cnf2bip", "extract", "gates" };
             if (std::find(choices.begin(), choices.end(), value) != choices.end()) {
                 return value;
             }
@@ -60,8 +60,7 @@ int main(int argc, char** argv) {
     argparse.add_argument("-o", "--output").default_value(std::string("-")).help("Path to Output File (used by cnf2* transformers, default is stdout)");
     argparse.add_argument("-t", "--timeout").default_value(0).scan<'i', int>().help("Time limit in seconds");
     argparse.add_argument("-m", "--memout").default_value(0).scan<'i', int>().help("Memory limit in MB");
-    argparse.add_argument("-f", "--fileout").default_value(0).scan<'i', int>().help("File size limit in MB");
-    argparse.add_argument("-v", "--verbose").default_value(0).scan<'i', int>().help("Verbosity");
+    argparse.add_argument("-f", "--fileout").default_value(0).scan<'i', int>().help("File size limit in MB"); 
 
     try {
         argparse.parse_args(argc, argv);
@@ -75,52 +74,47 @@ int main(int argc, char** argv) {
     std::string filename = argparse.get("file");
     std::string toolname = argparse.get("tool");
     std::string output = argparse.get("output");
-    int verbose = argparse.get<int>("verbose");
 
     ResourceLimits limits(argparse.get<int>("timeout"), argparse.get<int>("memout"), argparse.get<int>("fileout"));
     limits.set_rlimits();
     std::cerr << "c Running: " << toolname << " " << filename << std::endl;
 
+    std::string ext = std::filesystem::path(filename).extension();
+    if (ext == ".xz" || ext == ".lzma" || ext == ".bz2" || ext == ".gz") {
+        ext = std::filesystem::path(filename).stem().extension();
+    }
+
+    if (ext == ".cnf" || ext == ".wecnf") {
+        std::cerr << "Detected CNF" << std::endl;
+    } else if (ext == ".opb") {
+        std::cerr << "Detected OPB" << std::endl;
+    } else if (ext == ".qcnf" || ext == ".qdimacs") {
+        std::cerr << "Detected QBF" << std::endl;
+    } else if (ext == ".wcnf") {
+        std::cerr << "Detected WCNF" << std::endl;
+    }
+
     try {
-        if (toolname == "id" || toolname == "identify") {
-            std::string ext = std::filesystem::path(filename).extension();
-            if (ext == ".xz" || ext == ".lzma" || ext == ".bz2" || ext == ".gz") {
-                ext = std::filesystem::path(filename).stem().extension();
-            }
+        if (toolname == "id") {
             if (ext == ".cnf" || ext == ".wecnf") {
-                std::cerr << "Detected CNF, using CNF hash" << std::endl;
                 std::cout << CNF::gbdhash(filename.c_str()) << std::endl;
             }
             else if (ext == ".opb") {
-                std::cerr << "Detected OPB, using OPB hash" << std::endl;
                 std::cout << OPB::gbdhash(filename.c_str()) << std::endl;
             }
             else if (ext == ".qcnf" || ext == ".qdimacs") {
-                std::cerr << "Detected QBF, using QBF hash" << std::endl;
                 std::cout << PQBF::gbdhash(filename.c_str()) << std::endl;
             }
             else if (ext == ".wcnf") {
-                std::cerr << "Detected WCNF, using WCNF hash" << std::endl;
                 std::cout << WCNF::gbdhash(filename.c_str()) << std::endl;
             }
-        } else if (toolname == "gbdhash") {
-            std::cout << CNF::gbdhash(filename.c_str()) << std::endl;
         } else if (toolname == "isohash") {
-            std::string ext = std::filesystem::path(filename).extension();
-            if (ext == ".xz" || ext == ".lzma" || ext == ".bz2" || ext == ".gz") {
-                ext = std::filesystem::path(filename).stem().extension();
-            }
             if (ext == ".cnf") {
-                std::cerr << "Detected CNF, using CNF isohash" << std::endl;
                 std::cout << CNF::isohash(filename.c_str()) << std::endl;
-            } else if (ext == ".wcnf") {
-                std::cerr << "Detected WCNF, using WCNF isohash" << std::endl;
+            }
+            else if (ext == ".wcnf") {
                 std::cout << WCNF::isohash(filename.c_str()) << std::endl;
             }
-        } else if (toolname == "opbhash") {
-            std::cout << OPB::gbdhash(filename.c_str()) << std::endl;
-        } else if (toolname == "pqbfhash") {
-            std::cout << PQBF::gbdhash(filename.c_str()) << std::endl;
         } else if (toolname == "normalize") {
             std::cerr << "Normalizing " << filename << std::endl;
             normalize(filename.c_str());
@@ -128,62 +122,53 @@ int main(int argc, char** argv) {
             if (!check_sanitized(filename.c_str())) {
                 std::cerr << filename << " needs sanitization" << std::endl;
             }
-        } else if (toolname == "sanitize") {
+        }
+        else if (toolname == "sanitize") {
             sanitize(filename.c_str());
-        } else if (toolname == "cnf2kis") {
+        }
+        else if (toolname == "cnf2kis") {
             std::cerr << "Generating Independent Set Problem " << filename << std::endl;
             IndependentSetFromCNF gen(filename.c_str());
             gen.generate_independent_set_problem(output == "-" ? nullptr : output.c_str());
-        } else if (toolname == "cnf2bip") {
+        }
+        else if (toolname == "cnf2bip") {
             std::cerr << "Generating Bipartite Graph " << filename << std::endl;
-            BipartiteGraphFromCNF gen(filename.c_str());
-            gen.generate_bipartite_graph(output == "-" ? nullptr : output.c_str());
-        } else if (toolname == "extract") {
-            std::string ext = std::filesystem::path(filename).extension();
-            if (ext == ".xz" || ext == ".lzma" || ext == ".bz2" || ext == ".gz") {
-                ext = std::filesystem::path(filename).stem().extension();
-            }
-            if (ext == ".cnf") {
-                std::cerr << "Detected CNF, extracting CNF base features" << std::endl;
-                CNF::BaseFeatures stats(filename.c_str());
-                stats.extract();
-                std::vector<double> record = stats.getFeatures();
-                std::vector<std::string> names = stats.getNames();
-                for (unsigned i = 0; i < record.size(); i++) {
-                    std::cout << names[i] << "=" << record[i] << std::endl;
+            CNF::cnf2bip gen(filename.c_str(), output == "-" ? nullptr : output.c_str());
+            gen.run();
+        }
+        else if (toolname == "extract" || toolname == "gates") {
+            IExtractor *stats;
+            if (toolname == "extract") {
+                if (ext == ".cnf") {
+                    stats = new CNF::BaseFeatures(filename.c_str());
                 }
-            } else if (ext == ".wcnf") {
-                std::cerr << "Detected WCNF, extracting WCNF base features" << std::endl;
-                WCNF::BaseFeatures stats(filename.c_str());
-                stats.extract();
-                std::vector<double> record = stats.getFeatures();
-                std::vector<std::string> names = stats.getNames();
-                for (unsigned i = 0; i < record.size(); i++) {
-                    std::cout << names[i] << "=" << record[i] << std::endl;
+                else if (ext == ".wcnf") {
+                    stats = new WCNF::BaseFeatures(filename.c_str());
                 }
-            } else if (ext == ".opb") {
-                std::cerr << "Detected OPB, extracting OPB base features" << std::endl;
-                OPB::BaseFeatures stats(filename.c_str());
-                stats.extract();
-                std::vector<double> record = stats.getFeatures();
-                std::vector<std::string> names = stats.getNames();
-                for (unsigned i = 0; i < record.size(); i++) {
-                    std::cout << names[i] << "=" << record[i] << std::endl;
+                else if (ext == ".opb") {
+                    stats = new OPB::BaseFeatures(filename.c_str());
+                }
+                else {
+                    std::cerr << "Format " << ext << " not supported by extract" << std::endl;
+                    return 1;
                 }
             }
-        } else if (toolname == "gates") {
-            CNF::GateFeatures stats(filename.c_str());
-            stats.extract();
-            std::vector<double> record = stats.getFeatures();
-            std::vector<std::string> names = stats.getNames();
-            for (unsigned i = 0; i < record.size(); i++) {
-                std::cout << names[i] << "=" << record[i] << std::endl;
+            else if (toolname == "gates") {
+                stats = new CNF::GateFeatures(filename.c_str());
+                if (ext != ".cnf") {
+                    std::cerr << "Format " << ext << " not supported by extract" << std::endl;
+                    return 1;
+                }
             }
-        } else if (toolname == "test") {
-            std::cout << "Testing something ... " << std::endl;
-            StreamCompressor cmpr(filename.c_str(), 100);
-            for (int i = 0; i < 10; i++)
-                cmpr.write("0123456789", 10);
+            stats->run();
+            for (std::string name : stats->getNames()) {
+                std::cout << name << " ";
+            }
+            std::cout << std::endl;
+            for (double feature : stats->getFeatures()) {
+                std::cout << feature << " ";
+            }
+            std::cout << std::endl;
         }
     }
     catch (std::bad_alloc& e) {
