@@ -27,7 +27,7 @@ CNF::GateFeatures::GateFeatures(const char* filename) : filename_(filename), fea
 
 CNF::GateFeatures::~GateFeatures() { }
 
-void CNF::GateFeatures::extract() {
+void CNF::GateFeatures::run() {
     CNFFormula formula(filename_);
     GateAnalyzer analyzer(formula, true, true, formula.nVars() / 3, false);
     analyzer.analyze();
@@ -114,8 +114,4 @@ std::vector<double> CNF::GateFeatures::getFeatures() const {
 
 std::vector<std::string> CNF::GateFeatures::getNames() const {
     return names;
-}
-
-std::string CNF::GateFeatures::getRuntimeDesc() const {
-    return "gate_features_runtime";
 }

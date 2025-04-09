@@ -34,10 +34,9 @@ class GateFeatures : public IExtractor {
 public:
     GateFeatures(const char* filename);
     virtual ~GateFeatures();
-    virtual void extract();
+    virtual void run();
     virtual std::vector<double> getFeatures() const;
     virtual std::vector<std::string> getNames() const;
-    virtual std::string getRuntimeDesc() const;
 };
 
 } // namespace CNF

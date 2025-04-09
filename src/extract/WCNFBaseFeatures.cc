@@ -25,7 +25,7 @@ WCNF::BaseFeatures1::BaseFeatures1(const char* filename) : filename_(filename), 
 
 WCNF::BaseFeatures1::~BaseFeatures1() { }
 
-void WCNF::BaseFeatures1::extract() {
+void WCNF::BaseFeatures1::run() {
     StreamBuffer in(filename_);
 
     Cl clause;
@@ -170,7 +170,7 @@ WCNF::BaseFeatures2::BaseFeatures2(const char* filename) : filename_(filename), 
 
 WCNF::BaseFeatures2::~BaseFeatures2() { }
 
-void WCNF::BaseFeatures2::extract() {
+void WCNF::BaseFeatures2::run() {
     StreamBuffer in(filename_);
 
     Cl clause;
@@ -275,21 +275,21 @@ WCNF::BaseFeatures::BaseFeatures(const char* filename) : filename_(filename), fe
 
 WCNF::BaseFeatures::~BaseFeatures() { }
 
-void WCNF::BaseFeatures::extract() {
+void WCNF::BaseFeatures::run() {
     extractBaseFeatures1();
     extractBaseFeatures2();
 }
 
 void WCNF::BaseFeatures::extractBaseFeatures1() {
     BaseFeatures1 baseFeatures1(filename_);
-    baseFeatures1.extract();
+    baseFeatures1.run();
     auto feat = baseFeatures1.getFeatures();
     features.insert(features.end(), feat.begin(), feat.end());
 }
 
 void WCNF::BaseFeatures::extractBaseFeatures2() {
     BaseFeatures2 baseFeatures2(filename_);
-    baseFeatures2.extract();
+    baseFeatures2.run();
     auto feat = baseFeatures2.getFeatures();
     features.insert(features.end(), feat.begin(), feat.end());
 }

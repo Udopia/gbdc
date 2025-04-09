@@ -1,21 +1,7 @@
-/*************************************************************************************************
-CNFTools -- Copyright (c) 2021, Markus Iser, KIT - Karlsruhe Institute of Technology
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the "Software"), to deal in the Software without restriction,
-including without limitation the rights to use, copy, modify, merge, publish, distribute,
-sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or
-substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
-NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
-OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- **************************************************************************************************/
+/**
+ * MIT License
+ * Copyright (c) 2024 Markus Iser 
+ */
 
 #ifndef SRC_TRANSFORM_NORMALIZE_H_
 #define SRC_TRANSFORM_NORMALIZE_H_
@@ -85,7 +71,7 @@ void sanitize(const char* filename) {
     std::cout << "p cnf " << vars << " " << clauses << std::endl;
 
     // set mask[lit] to clause number if lit is present in clause
-    int* mask = (int*)calloc(2*vars + 2, sizeof(int));
+    unsigned* mask = (unsigned*)calloc(2*vars + 2, sizeof(unsigned));
     mask += vars + 1;
 
     std::vector<int> clause;
@@ -99,11 +85,11 @@ void sanitize(const char* filename) {
             int plit;
             while (in.readInteger(&plit)) {
                 if (plit == 0) break;
-                if (static_cast<unsigned>(mask[-plit]) == stamp) {
+                if (mask[-plit] == stamp) {
                     tautological = true;
                     break;
                 }
-                else if (static_cast<unsigned>(mask[plit]) != stamp) {
+                else if (mask[plit] != stamp) {
                     mask[plit] = stamp;
                     clause.push_back(plit);
                 }
@@ -113,6 +99,9 @@ void sanitize(const char* filename) {
                     std::cout << plit << " ";
                 }
                 std::cout << "0" << std::endl;
+            }
+            else {
+                in.skipLine();
             }
             clause.clear();
         }

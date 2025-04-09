@@ -24,7 +24,7 @@ CNF::BaseFeatures1::BaseFeatures1(const char* filename) : filename_(filename), f
 
 CNF::BaseFeatures1::~BaseFeatures1() { }
 
-void CNF::BaseFeatures1::extract() {
+void CNF::BaseFeatures1::run() {
     StreamBuffer in(filename_);
     UnionFind uf;
     Cl clause;
@@ -112,7 +112,7 @@ CNF::BaseFeatures2::BaseFeatures2(const char* filename) : filename_(filename), f
 
 CNF::BaseFeatures2::~BaseFeatures2() { }
 
-void CNF::BaseFeatures2::extract() {
+void CNF::BaseFeatures2::run() {
     StreamBuffer in(filename_);
 
     Cl clause;
@@ -170,21 +170,21 @@ CNF::BaseFeatures::BaseFeatures(const char* filename) : filename_(filename), fea
 
 CNF::BaseFeatures::~BaseFeatures() { }
 
-void CNF::BaseFeatures::extract() {
+void CNF::BaseFeatures::run() {
     extractBaseFeatures1();
     extractBaseFeatures2();
 }
 
 void CNF::BaseFeatures::extractBaseFeatures1() {
     BaseFeatures1 baseFeatures1(filename_);
-    baseFeatures1.extract();
+    baseFeatures1.run();
     auto feat = baseFeatures1.getFeatures();
     features.insert(features.end(), feat.begin(), feat.end());
 }
 
 void CNF::BaseFeatures::extractBaseFeatures2() {
     BaseFeatures2 baseFeatures2(filename_);
-    baseFeatures2.extract();
+    baseFeatures2.run();
     auto feat = baseFeatures2.getFeatures();
     features.insert(features.end(), feat.begin(), feat.end());
 }
