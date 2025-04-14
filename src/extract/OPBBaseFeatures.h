@@ -61,8 +61,6 @@ class Constr {
 
 class BaseFeatures : public IExtractor {
     const char* filename_;
-    std::vector<double> features;
-    std::vector<std::string> names;
 
     unsigned n_vars = 0, n_constraints = 0;
     unsigned n_pbs_ge = 0, n_pbs_eq = 0;
@@ -80,8 +78,6 @@ class BaseFeatures : public IExtractor {
     BaseFeatures(const char* filename);
     virtual ~BaseFeatures();
     virtual void run();
-    virtual std::vector<double> getFeatures() const;
-    virtual std::vector<std::string> getNames() const;
 };
 
 }; // namespace OPB

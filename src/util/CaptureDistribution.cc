@@ -8,8 +8,8 @@
 #include <algorithm>
 #include <cmath>
 
-template <typename Container>
-double Mean(Container&& distribution) {
+template <typename T>
+double Mean(std::vector<T> distribution) {
     double mean = 0.0;
     for (size_t i = 0; i < distribution.size(); i++) {
         mean += (distribution[i] - mean) / (i + 1);
@@ -17,8 +17,8 @@ double Mean(Container&& distribution) {
     return mean;
 }
 
-template <typename Container>
-double Variance(Container&& distribution, double mean) {
+template <typename T>
+double Variance(std::vector<T> distribution, double mean) {
     double vari = 0.0;
     for (size_t i = 0; i < distribution.size(); i++) {
         double diff = distribution[i] - mean;
@@ -59,8 +59,8 @@ double ScaledEntropy(std::vector<double> distribution) {
     return ScaledEntropyFromOccurenceCounts(occurence, distribution.size());
 }
 
-template <typename Container>
-double ScaledEntropy(Container&& distribution) {
+template <typename T>
+double ScaledEntropy(std::vector<T> distribution) {
     std::unordered_map<int64_t, int64_t> occurence;
     for (unsigned value : distribution) {
         if (occurence.count(value)) {
@@ -72,23 +72,23 @@ double ScaledEntropy(Container&& distribution) {
     return ScaledEntropyFromOccurenceCounts(occurence, distribution.size());
 }
 
-template <typename V, typename W>
-void push_distribution(V&& record, W&& distribution) {
+template <typename T>
+std::vector<double> getDistributionStats(std::vector<T> distribution) {
+    std::vector<double> stats;
     if (distribution.size() == 0) {
-        record.insert(record.end(), { 0, 0, 0, 0, 0 });
-        return;
+        stats.insert(stats.end(), { 0, 0, 0, 0, 0 });
+    } else {
+        std::sort(distribution.begin(), distribution.end());
+        double mean = Mean(distribution);
+        double variance = Variance(distribution, mean);
+        double min = distribution.front();
+        double max = distribution.back();
+        double entropy = ScaledEntropy(distribution);
+        stats.insert(stats.end(), { mean, variance, min, max, entropy });
     }
-    std::sort(distribution.begin(), distribution.end());
-    double mean = Mean(distribution);
-    double variance = Variance(distribution, mean);
-    double min = distribution.front();
-    double max = distribution.back();
-    double entropy = ScaledEntropy(distribution);
-    record.insert(record.end(), { mean, variance, min, max, entropy });
+    return stats;
 }
 
-// Explicit template instantiations
-template void push_distribution<std::vector<double, std::allocator<double> >&, std::vector<unsigned int, std::allocator<unsigned int> >&>(std::vector<double, std::allocator<double> >&, std::vector<unsigned int, std::allocator<unsigned int> >&);
-template void push_distribution<std::vector<double, std::allocator<double> >&, std::vector<double, std::allocator<double> >&>(std::vector<double, std::allocator<double> >&, std::vector<double, std::allocator<double> >&);
-template void push_distribution<std::vector<double, std::allocator<double> >&, std::vector<unsigned long, std::allocator<unsigned long> >&>(std::vector<double, std::allocator<double> >&, std::vector<unsigned long, std::allocator<unsigned long> >&);
-template void push_distribution<std::vector<double, std::allocator<double> >&, std::vector<unsigned long long, std::allocator<unsigned long long> >&>(std::vector<double, std::allocator<double> >&, std::vector<unsigned long long, std::allocator<unsigned long long> >&);
+template std::vector<double> getDistributionStats(std::vector<double> distribution);
+template std::vector<double> getDistributionStats(std::vector<unsigned int> distribution);
+template std::vector<double> getDistributionStats(std::vector<long unsigned int> distribution);

@@ -32,6 +32,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/identify/GBDHash.h"
 #include "src/identify/ISOHash.h"
 
+#include "src/extract/CNFSaniCheck.h"
 #include "src/extract/CNFBaseFeatures.h"
 #include "src/extract/CNFGateFeatures.h"
 #include "src/extract/WCNFBaseFeatures.h"
@@ -84,6 +85,49 @@ py::dict cnf2kis(const std::string filename, const std::string output) {
     return dict;
 }
 
+py::dict normalise(const std::string filename, const std::string output) {
+    py::dict dict;
+    CNF::Normaliser norm(filename.c_str(), output.c_str());
+    norm.run();
+    dict[py::str("local")] = output;
+    dict[py::str("hash")] = CNF::gbdhash(output.c_str());
+    return dict;
+}
+
+py::dict sanitise(const std::string filename, const std::string output) {
+    py::dict dict;
+    CNF::Sanitiser sani(filename.c_str(), output.c_str());
+    sani.run();
+    dict[py::str("local")] = output;
+    dict[py::str("hash")] = CNF::gbdhash(output.c_str());
+    return dict;
+}
+
+py::dict checksani(const std::string filename, const size_t rlim, const size_t mlim) {
+    py::dict dict;
+    CNF::SaniCheck ana(filename.c_str(), true);
+    ana.run();
+    // dict[py::str("hash")] = CNF::gbdhash(filename.c_str());
+    dict[py::str("header_consistent")] = (ana.getFeature("head_vars") == ana.getFeature("norm_vars") && ana.getFeature("head_clauses") == ana.getFeature("norm_clauses")) ? "yes" : "no";
+    dict[py::str("whitespace_normalised")] = (ana.getFeature("whitespace_normalised") == 1.0) ? "yes" : "no";
+    dict[py::str("no_comment")] = (ana.getFeature("has_comment") == 0.0) ? "yes" : "no";
+    dict[py::str("no_tautological_clause")] = (ana.getFeature("has_tautological_clause") == 0.0) ? "yes" : "no";
+    dict[py::str("no_duplicate_literals")] = (ana.getFeature("has_duplicate_literals") == 0.0) ? "yes" : "no";
+    dict[py::str("no_empty_clause")] = (ana.getFeature("has_empty_clause") == 0.0) ? "yes" : "no";
+    return dict;
+}
+
+std::vector<std::string> checksani_feature_names() {
+    return {
+        "header_consistent",
+        "whitespace_normalised",
+        "no_comment",
+        "no_tautological_clause",
+        "no_duplicate_literals",
+        "no_empty_clause"
+    };
+}
+
 template <typename Extractor>
 auto feature_names() {
     auto ex = Extractor("");
@@ -124,7 +168,10 @@ PYBIND11_MODULE(gbdc, m) {
     m.def("extract_opb_base_features", &extract_features<OPB::BaseFeatures>, "Extract opb base features", py::arg("filepath"), py::arg("rlim"), py::arg("mlim"));
     m.def("version", &version, "Return current version of gbdc.");
     m.def("cnf2kis", &cnf2kis, "Create k-ISP Instance from given CNF Instance.", py::arg("filename"), py::arg("output"));
-    m.def("sanitize", &sanitize, "Print sanitized, i.e., no duplicate literals in clauses and no tautologic clauses, CNF to stdout.", py::arg("filename"));
+    m.def("normalise", &normalise, "Print normalised CNF to output file: whitespace and header normalised, comments removed.", py::arg("filename"), py::arg("output"));
+    m.def("sanitise", &sanitise, "Print sanitised CNF to output file: no duplicate literals in clauses and no tautologic clauses.", py::arg("filename"), py::arg("output"));
+    m.def("checksani", &checksani, "Check normalisation and sanitation status of given cnf.", py::arg("filename"), py::arg("rlim"), py::arg("mlim"));
+    m.def("checksani_feature_names", &checksani_feature_names, "Get checksani feature names");
     m.def("base_feature_names", &feature_names<CNF::BaseFeatures>, "Get Base Feature Names");
     m.def("gate_feature_names", &feature_names<CNF::GateFeatures>, "Get Gate Feature Names");
     m.def("wcnf_base_feature_names", &feature_names<WCNF::BaseFeatures>, "Get WCNF Base Feature Names");

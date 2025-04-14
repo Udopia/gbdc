@@ -36,8 +36,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/transform/cnf2kis.h"
 #include "src/transform/cnf2cnf.h"
 
-#include "src/extract/CNFGateFeatures.h"
+#include "src/extract/CNFSaniCheck.h"
 #include "src/extract/CNFBaseFeatures.h"
+#include "src/extract/CNFGateFeatures.h"
 #include "src/extract/WCNFBaseFeatures.h"
 #include "src/extract/OPBBaseFeatures.h"
 
@@ -115,16 +116,34 @@ int main(int argc, char** argv) {
             else if (ext == ".wcnf") {
                 std::cout << WCNF::isohash(filename.c_str()) << std::endl;
             }
-        } else if (toolname == "normalize") {
+        } 
+        else if (toolname == "normalize") {
             std::cerr << "Normalizing " << filename << std::endl;
-            normalize(filename.c_str());
-        } else if (toolname == "checksani") {
-            if (!check_sanitized(filename.c_str())) {
-                std::cerr << filename << " needs sanitization" << std::endl;
-            }
-        }
+            CNF::Normaliser norm(filename.c_str(), output == "-" ? nullptr : output.c_str());
+            norm.run();
+        } 
         else if (toolname == "sanitize") {
-            sanitize(filename.c_str());
+            CNF::Sanitiser sani(filename.c_str(), output == "-" ? nullptr : output.c_str());
+            sani.run();
+        }
+        else if (toolname == "checksani") {
+            CNF::SaniCheck ana(filename.c_str(), true);
+            ana.run();
+            bool sani = true;
+            std::cout << "hash" << " " << CNF::gbdhash(filename.c_str()) << std::endl;
+            std::cout << "filename " << filename << std::endl;
+            sani = ana.getFeature("head_vars") == ana.getFeature("norm_vars") && ana.getFeature("head_clauses") == ana.getFeature("norm_clauses");
+            std::cout << "header_consistent " << (sani ? "yes" : "no") << std::endl;
+            sani = ana.getFeature("whitespace_normalised") == 1.0;
+            std::cout << "whitespace_normalised " << (sani ? "yes" : "no") << std::endl;
+            sani = ana.getFeature("has_comment") == 0.0;
+            std::cout << "no_comment " << (sani ? "yes" : "no") << std::endl;
+            sani = ana.getFeature("has_tautological_clause") == 0.0;
+            std::cout << "no_tautological_clause " << (sani ? "yes" : "no") << std::endl;
+            sani = ana.getFeature("has_duplicate_literals") == 0.0;
+            std::cout << "no_duplicate_literals " << (sani ? "yes" : "no") << std::endl;
+            sani = ana.getFeature("has_empty_clause") == 0.0;
+            std::cout << "no_empty_clause " << (sani ? "yes" : "no") << std::endl;
         }
         else if (toolname == "cnf2kis") {
             std::cerr << "Generating Independent Set Problem " << filename << std::endl;

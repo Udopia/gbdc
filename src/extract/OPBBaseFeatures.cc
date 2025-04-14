@@ -104,13 +104,12 @@ Var OPB::Constr::maxVar() {
     return terms.maxVar();
 }
 
-OPB::BaseFeatures::BaseFeatures(const char* filename) : filename_(filename), features(), names() { 
-    names.insert(names.end(), { "constraints", "variables" });
-    names.insert(names.end(), { "pbs_ge", "pbs_eq", "cards_ge", "cards_eq" });
-    names.insert(names.end(), { "clauses", "assignments", "trivially_unsat" });
-    names.insert(names.end(), { "obj_terms", "obj_max_val", "obj_min_val" });
-    names.insert(names.end(), { "obj_coeffs_mean", "obj_coeffs_variance" });
-    names.insert(names.end(), { "obj_coeffs_min", "obj_coeffs_max", "obj_coeffs_entropy" });
+OPB::BaseFeatures::BaseFeatures(const char* filename) : filename_(filename) {
+    initFeatures({ "constraints", "variables" });
+    initFeatures({ "pbs_ge", "pbs_eq", "cards_ge", "cards_eq" });
+    initFeatures({ "clauses", "assignments", "trivially_unsat" });
+    initFeatures({ "obj_terms", "obj_max_val", "obj_min_val" });
+    initFeatures({ "obj_coeffs_mean", "obj_coeffs_variance", "obj_coeffs_min", "obj_coeffs_max", "obj_coeffs_entropy" });
 }
 
 OPB::BaseFeatures::~BaseFeatures() { }
@@ -176,19 +175,18 @@ void OPB::BaseFeatures::run() {
 }
 
 void OPB::BaseFeatures::load_feature_record() {
-    features.insert(features.end(), { (double)n_constraints, (double)n_vars });
-    features.insert(features.end(), { (double)n_pbs_ge, (double)n_pbs_eq });
-    features.insert(features.end(), { (double)n_cards_ge, (double)n_cards_eq });
-    features.insert(features.end(), { (double)n_clauses, (double)n_assignments });
-    features.insert(features.end(), { (double)trivially_unsat });
-    features.insert(features.end(), { (double)obj_terms, (double)obj_max_val, (double)obj_min_val });
-    push_distribution(features, obj_coeffs);
-}
-
-std::vector<double> OPB::BaseFeatures::getFeatures() const {
-    return features;
-}
-
-std::vector<std::string> OPB::BaseFeatures::getNames() const {
-    return names;
+    setFeature("constraints", (double)n_constraints);
+    setFeature("variables", (double)n_vars);
+    setFeature("pbs_ge", (double)n_pbs_ge);
+    setFeature("pbs_eq", (double)n_pbs_eq);
+    setFeature("cards_ge", (double)n_cards_ge);
+    setFeature("cards_eq", (double)n_cards_eq);
+    setFeature("clauses", (double)n_clauses);
+    setFeature("assignments", (double)n_assignments);
+    setFeature("trivially_unsat", (double)trivially_unsat);
+    setFeature("obj_terms", (double)obj_terms);
+    setFeature("obj_max_val", (double)obj_max_val);
+    setFeature("obj_min_val", (double)obj_min_val);
+    std::vector<double> stats = getDistributionStats(obj_coeffs);
+    setFeatures({ "obj_coeffs_mean", "obj_coeffs_variance", "obj_coeffs_min", "obj_coeffs_max", "obj_coeffs_entropy" }, stats.begin(), stats.end());
 }
