@@ -10,17 +10,17 @@
 #include <cstdint>
 #include <cstddef>
 
-template <typename Container> 
-double Mean(Container&& distribution);
+template <typename T> 
+double Mean(std::vector<T> distribution);
 
-template <typename Container> 
-double Variance(Container&& distribution, double mean);
+template <typename T> 
+double Variance(std::vector<T> distribution, double mean);
 
 double ScaledEntropyFromOccurenceCounts(std::unordered_map<int64_t, int64_t> occurence, size_t total);
 double ScaledEntropy(std::vector<double> distribution);
 
-template <typename Container> 
-double ScaledEntropy(Container&& distribution);
+template <typename T> 
+double ScaledEntropy(std::vector<T> distribution);
 
-template <typename V, typename W> 
-void push_distribution(V&& record, W&& distribution);
+template <typename T>
+std::vector<double> getDistributionStats(std::vector<T> distribution);

@@ -200,6 +200,22 @@ public:
     }
 
     /**
+     * @brief skip whitespace, return false if eof reached
+     * @pre !eof()
+     * @return true if pos is valid, false otherwise (eof reached)
+     * @param count number of whitespace characters skipped
+     */
+    unsigned skipAndCountWhitespace() {
+        unsigned count = 0;
+        if (eof()) return count; // needed if last call to fill_buffer left pos == end == 0
+        while (isspace(buffer[pos])) {
+            if (!skip()) return count;
+            ++count;
+        }
+        return count;
+    }
+
+    /**
      * @brief skip given string
      * @param str the string to match
      * @throw if str could not be entirely matched
@@ -298,7 +314,7 @@ public:
             }
             else
             {
-                throw ParserException(std::string(filename_) + ": unexpected character: " + buffer[pos]);
+                throw ParserException(std::string(filename_) + ": unexpected character: " + std::to_string(buffer[pos]));
             }
         }
         else

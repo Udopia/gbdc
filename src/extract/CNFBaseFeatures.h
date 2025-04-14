@@ -12,8 +12,6 @@ namespace CNF {
 
 class BaseFeatures : public IExtractor {
     const char* filename_;
-    std::vector<double> features;
-    std::vector<std::string> names;
 
     void extractBaseFeatures1();
     void extractBaseFeatures2();
@@ -22,14 +20,11 @@ class BaseFeatures : public IExtractor {
     BaseFeatures(const char* filename);
     virtual ~BaseFeatures();
     virtual void run();
-    virtual std::vector<double> getFeatures() const;
-    virtual std::vector<std::string> getNames() const;
 };
 
 class BaseFeatures1 : public IExtractor {
     const char* filename_;
-    std::vector<double> features;
-    std::vector<std::string> names;
+
     unsigned n_vars = 0, n_clauses = 0, bytes = 0, ccs = 0;
     // count occurences of clauses of small size
     std::array<unsigned, 11> clause_sizes;
@@ -52,14 +47,11 @@ class BaseFeatures1 : public IExtractor {
     BaseFeatures1(const char* filename);
     virtual ~BaseFeatures1();
     virtual void run();
-    virtual std::vector<double> getFeatures() const;
-    virtual std::vector<std::string> getNames() const;
 };
 
 class BaseFeatures2 : public IExtractor {
     const char* filename_;
-    std::vector<double> features;
-    std::vector<std::string> names;
+
     unsigned n_vars = 0, n_clauses = 0;
     // VCG Degree Distribution:
     std::vector<unsigned> vcg_cdegree; // clause sizes
@@ -75,8 +67,6 @@ class BaseFeatures2 : public IExtractor {
     BaseFeatures2(const char* filename);
     virtual ~BaseFeatures2();
     virtual void run();
-    virtual std::vector<double> getFeatures() const;
-    virtual std::vector<std::string> getNames() const;
 };
 
 }; // namespace CNF

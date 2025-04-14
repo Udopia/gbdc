@@ -31,6 +31,8 @@ gbdhash
 cnftools
 
 build/
+debug/
+asan/
 .vscode/
 uninstall.info
 dist/

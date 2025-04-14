@@ -31,6 +31,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 class CNFFormula {
     For formula;
     unsigned variables;
+    unsigned total_literals;
 
  public:
     CNFFormula() : formula(), variables(0) { }
@@ -61,6 +62,10 @@ class CNFFormula {
 
     inline size_t nVars() const {
         return variables;
+    }
+
+    inline size_t nLits() const {
+        return total_literals;
     }
 
     inline size_t nClauses() const {
@@ -139,6 +144,7 @@ class CNFFormula {
             clause->resize(clause->size() - dup);
             clause->shrink_to_fit();
             variables = std::max(variables, (unsigned int)clause->back().var());
+            total_literals += clause->size();
         }
         formula.push_back(clause);
     }

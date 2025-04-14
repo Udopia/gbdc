@@ -18,8 +18,6 @@ namespace CNF {
 
 class GateFeatures : public IExtractor {
     const char *filename_;
-    std::vector<double> features;
-    std::vector<std::string> names;
 
     unsigned n_vars = 0, n_gates = 0, n_roots = 0;
     unsigned n_none = 0, n_generic = 0, n_mono = 0;
@@ -35,8 +33,6 @@ public:
     GateFeatures(const char* filename);
     virtual ~GateFeatures();
     virtual void run();
-    virtual std::vector<double> getFeatures() const;
-    virtual std::vector<std::string> getNames() const;
 };
 
 } // namespace CNF
