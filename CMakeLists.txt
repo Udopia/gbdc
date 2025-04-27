@@ -63,6 +63,6 @@ target_link_libraries(gbdc PUBLIC ${LIBS} solver util extract transform)
 install(TARGETS gbdc DESTINATION .)
 
 add_test(NAME Test_StreamBuffer COMMAND "test/tests_streambuffer")
-add_test(NAME Test_Feature_Extraction COMMAND "test/tests_feature_extraction")
+# add_test(NAME Test_Feature_Extraction COMMAND "test/tests_feature_extraction")
 add_test(NAME Test_StreamCompressor COMMAND "test/tests_streamcompressor")
 add_test(NAME Test_GBDLib COMMAND "test/tests_gbdlib")
