@@ -91,5 +91,4 @@ std::vector<double> getDistributionStats(std::vector<T> distribution) {
 
 template std::vector<double> getDistributionStats(std::vector<double> distribution);
 template std::vector<double> getDistributionStats(std::vector<unsigned int> distribution);
-template std::vector<double> getDistributionStats(std::vector<long unsigned int> distribution);
 template std::vector<double> getDistributionStats(std::vector<uint64_t> distribution);
