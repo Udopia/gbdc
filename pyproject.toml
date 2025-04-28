@@ -9,7 +9,7 @@ cmake.build-type = "Release"
 
 [project]
 name = "gbdc"
-version = "0.2.47"
+version = "0.3.0"
 description = "Extension Module for GBD"
 authors = [
   {name = "Markus Iser", email = "markus.iser@kit.edu"},
