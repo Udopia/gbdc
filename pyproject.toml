@@ -24,7 +24,7 @@ before-all = "yum install -y libarchive-devel make"
 
 [project]
 name = "gbdc"
-version = "0.2.48"
+version = "0.3.1"
 description = "Extension Module for GBD"
 
 authors = [

@@ -38,7 +38,8 @@ protected:
 
     template<typename Iterator>
     void setFeatures(std::initializer_list<std::string> featureNames, Iterator begin, Iterator end) {
-        for (auto it = begin, nameiter = featureNames.begin(); it != end; ++it, ++nameiter) {
+        const std::string* nameiter = featureNames.begin();
+        for (auto it = begin; it != end; ++it, ++nameiter) {
             setFeature(*nameiter, *it);
         }
     }

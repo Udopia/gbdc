@@ -150,13 +150,13 @@ namespace WCNF {
         char buffer[64];
         for (Node node : hard_degrees) {
             if (node.neg == 0 && node.pos == 0) continue;  // get invariant against variable gaps
-            int n = snprintf(buffer, sizeof(buffer), "%lu %lu ", node.neg, node.pos);
+            int n = snprintf(buffer, sizeof(buffer), "%" PRIu64 " %" PRIu64 " ", node.neg, node.pos);
             md5.consume(buffer, n);
         }
         md5.consume("softs ", 6);
         for (Node node : soft_degrees) {
             if (node.neg == 0 && node.pos == 0) continue;  // get invariant against variable gaps
-            int n = snprintf(buffer, sizeof(buffer), "%lu %lu ", node.neg, node.pos);
+            int n = snprintf(buffer, sizeof(buffer), "%" PRIu64 " %" PRIu64 " ", node.neg, node.pos);
             md5.consume(buffer, n);
         }
         return md5.produce();
