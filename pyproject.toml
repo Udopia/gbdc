@@ -17,7 +17,6 @@ build   = "cp3{10,11,12}-*"
 skip    = "*musllinux* *pp* *i686*"
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"
-archs-linux = "x86_64 aarch64"
 
 [tool.cibuildwheel.linux]
 before-all = "yum install -y libarchive-devel make"
