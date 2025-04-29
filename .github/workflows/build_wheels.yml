@@ -51,7 +51,7 @@ jobs:
     - name: Validate wheels
       shell: bash
       run: |
-        python -m pip install --upgrade -q pip twine
+        python3 -m pip install --upgrade -q pip twine
         twine check wheelhouse/*.whl
         for w in wheelhouse/*.whl; do zip -T "$w" >/dev/null; done
 
