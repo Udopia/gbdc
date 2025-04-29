@@ -1,5 +1,10 @@
 [build-system]
-requires = ["scikit-build-core", "pybind11"]
+requires = [
+    "scikit-build-core>=0.11",
+    "cmake>=3.28",
+    "ninja",
+    "pybind11",
+]
 build-backend = "scikit_build_core.build"
 
 [tool.scikit-build]
@@ -7,17 +12,30 @@ sdist.cmake = true
 cmake.version = ">=3.15"
 cmake.build-type = "Release"
 
+[tool.cibuildwheel]
+build   = "cp3{10,11,12}-*"
+skip    = "*musllinux* *pp* *i686*"
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+archs-linux = "x86_64 aarch64"
+
+[tool.cibuildwheel.linux]
+before-all = "yum install -y libarchive-devel make"
+
 [project]
 name = "gbdc"
-version = "0.3.0"
+version = "0.3.1"
 description = "Extension Module for GBD"
+
 authors = [
   {name = "Markus Iser", email = "markus.iser@kit.edu"},
   {name = "Christoph Jabs", email = "christoph.jabs@helsinki.fi"},
 ]
+
 maintainers = [
   {name = "Markus Iser", email = "markus.iser@kit.edu"},
 ]
+
 readme = "README.md"
 classifiers = [
     "License :: OSI Approved :: MIT License",
