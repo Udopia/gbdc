@@ -44,14 +44,14 @@ jobs:
       uses: pypa/cibuildwheel@v2.23
       env:
         CIBW_BEFORE_ALL_MACOS: |
-          brew install libarchive pybind11 make
+          brew install libarchive pybind11 make python
           ln -sf "$(brew --prefix make)/libexec/gnubin/make" /usr/local/bin/make
       with: { output-dir: wheelhouse }
 
     - name: Validate wheels
       shell: bash
       run: |
-        pip install twine
+        python -m pip install --upgrade -q twine
         twine check wheelhouse/*.whl
         for w in wheelhouse/*.whl; do zip -T "$w" >/dev/null; done
 
