@@ -53,16 +53,16 @@ void CNF::BaseFeatures1::run() {
         unsigned n_pos = clause.size() - n_neg;
         if (n_neg <= 1) {
             if (n_neg == 0) ++positive;
-            ++horn;
+            ++inv_horn;
             for (Lit lit : clause) {
-                ++variable_horn[lit.var()];
+                ++variable_inv_horn[lit.var()];
             }
         }
         if (n_pos <= 1) {
             if (n_pos == 0) ++negative;
-            ++inv_horn;
+            ++horn;
             for (Lit lit : clause) {
-                ++variable_inv_horn[lit.var()];
+                ++variable_horn[lit.var()];
             }
         }
         // balance of positive and negative literals per clause
