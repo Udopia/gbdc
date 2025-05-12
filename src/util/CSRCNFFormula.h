@@ -15,6 +15,7 @@ class CSRCNFFormula {
     explicit CSRCNFFormula(const char* filename) {
         readDimacsFromFile(filename);
         normalizeVariableNames();
+        canonicalise();
     }
 
     struct Clause {
@@ -76,18 +77,6 @@ class CSRCNFFormula {
         return nLits_;
     }
 
-    // create gapless representation of variables
-    void normalizeVariableNames() {
-        std::vector<unsigned> map(nVars_+1, UINT32_MAX);
-        unsigned next = 0;
-        for (Lit& lit : lits_) {
-            unsigned v = lit.var().id;
-            if (map[v] == UINT32_MAX) map[v] = next++;
-            lit = Lit(map[v], lit.sign());
-        }
-        nVars_ = next;
-    }
-
     void readDimacsFromFile(const char* filename)
     {
         StreamBuffer in(filename);
@@ -114,10 +103,86 @@ class CSRCNFFormula {
             // store clause
             lits_.insert(lits_.end(), clause.begin(), clause.end());
             nLits_ += clause.size();
-            start_.push_back(lits_.size());   // begin index of the next clause
+            start_.push_back(lits_.size());
 
             clause.clear();
         }
+    }
+
+    // create gapless representation of variables
+    void normalizeVariableNames() {
+        std::vector<unsigned> map(nVars_+1, UINT32_MAX);
+        unsigned next = 0;
+        for (Lit& lit : lits_) {
+            unsigned v = lit.var().id;
+            if (map[v] == UINT32_MAX) map[v] = next++;
+            lit = Lit(map[v], lit.sign());
+        }
+        nVars_ = next;
+    }
+
+    void canonicalise()
+    {
+        // setup
+        std::vector<Lit>&  L = lits_;
+        std::vector<uint32_t>& S = start_;
+
+        // prepare
+        uint32_t out = 0;
+        std::vector<uint32_t> newStart; // fresh CSR index array
+        newStart.reserve(S.size());
+        newStart.push_back(0);
+
+        // temporary container for one clause at a time
+        std::vector<Lit> buf;
+        // find largest clause size to reserve capacity
+        uint32_t maxClauseLen = 0;
+        for (uint32_t i = 0; i + 1 < S.size(); ++i)
+            maxClauseLen = std::max(maxClauseLen, S[i+1] - S[i]);
+        buf.reserve(maxClauseLen);
+
+        // custom comparator
+        auto litLess = [](const Lit& a, const Lit& b) {
+            return (a.var().id < b.var().id) || 
+                (a.var().id == b.var().id && a.sign() < b.sign());
+        };
+
+        // main loop
+        for (uint32_t c = 0; c + 1 < S.size(); ++c) {
+            const uint32_t begin = S[c], end = S[c+1];
+
+            // sort
+            buf.assign(L.begin() + begin, L.begin() + end);
+            std::sort(buf.begin(), buf.end(), litLess);
+
+            // tautology
+            bool taut = false;
+            uint32_t w = 0;
+            for (uint32_t r = 0; r < buf.size(); ++r) {
+                if (w && buf[r] == buf[w-1])
+                    continue;
+                if (w && buf[r].var() == buf[w-1].var()) {
+                    taut = true;
+                    break;
+                }
+                buf[w++] = buf[r];
+            }
+            buf.resize(w);
+
+            // drop the whole clause
+            if (taut || buf.empty())
+                continue;
+
+            // copy cleaned clause back into L
+            std::copy(buf.begin(), buf.end(), L.begin() + out);
+            out += static_cast<uint32_t>(buf.size());
+            newStart.push_back(out);
+        }
+
+        // finalize
+        L.resize(out);
+        S.swap(newStart);
+        nLits_ = out;
     }
 };
 
