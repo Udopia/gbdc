@@ -326,17 +326,17 @@
             const bool sort_for_clause_hash = false
         ) {
             constexpr std::string (*generic_functions[8])(const char* filename, const WLHRuntimeConfig cfg) = {
-                weisfeiler_leman_hash_generic<CSRCNFFormula, false,false,false>,
-                weisfeiler_leman_hash_generic<CSRCNFFormula, false,false,true>,
-                weisfeiler_leman_hash_generic<CSRCNFFormula, false,true,false>,
-                weisfeiler_leman_hash_generic<CSRCNFFormula, false,true,true>,
+                // weisfeiler_leman_hash_generic<CSRCNFFormula, false,false,false>,
+                // weisfeiler_leman_hash_generic<CSRCNFFormula, false,false,true>,
+                // weisfeiler_leman_hash_generic<CSRCNFFormula, false,true,false>,
+                // weisfeiler_leman_hash_generic<CSRCNFFormula, false,true,true>,
                 weisfeiler_leman_hash_generic<CSRCNFFormula, true,false,false>,
                 weisfeiler_leman_hash_generic<CSRCNFFormula, true,false,true>,
                 weisfeiler_leman_hash_generic<CSRCNFFormula, true,true,false>,
                 weisfeiler_leman_hash_generic<CSRCNFFormula, true,true,true>
             };
             unsigned i =
-                (use_xxh3 << 2) |
+                // (use_xxh3 << 2) | (always using xxhash now)
                 (use_half_word_hash << 1) |
                 (use_prime_ring << 0);
             return generic_functions[i](filename, 
