@@ -10,12 +10,18 @@ class CSRCNFFormula {
     std::vector<uint32_t> start_;
     uint32_t nVars_ = 0;
     uint32_t nLits_ = 0;
+    uint32_t maxClauseLen_ = 0;
 
  public:
-    explicit CSRCNFFormula(const char* filename) {
+    // constructor
+    explicit CSRCNFFormula(const char* filename, bool shrink_to_fit = false) {
         readDimacsFromFile(filename);
         normalizeVariableNames();
         canonicalise();
+        if (shrink_to_fit) {
+            lits_.shrink_to_fit();
+            start_.shrink_to_fit();
+        }
     }
 
     struct Clause {
@@ -76,6 +82,9 @@ class CSRCNFFormula {
     uint32_t nLiterals() const {
         return nLits_;
     }
+    uint32_t maxClauseLength() const { 
+        return maxClauseLen_; 
+    }
 
     void readDimacsFromFile(const char* filename)
     {
@@ -100,9 +109,10 @@ class CSRCNFFormula {
                 nVars_ = std::max(nVars_, absID);
             }
 
-            // store clause
+            // store clause and modify stats
             lits_.insert(lits_.end(), clause.begin(), clause.end());
             nLits_ += clause.size();
+            maxClauseLen_  = std::max<uint32_t>(maxClauseLen_, clause.size());
             start_.push_back(lits_.size());
 
             clause.clear();
