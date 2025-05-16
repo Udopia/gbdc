@@ -133,6 +133,8 @@ int main(int argc, char** argv) {
             std::cout << "hash" << " " << CNF::gbdhash(filename.c_str()) << std::endl;
             std::cout << "filename " << filename << std::endl;
             sani = ana.getFeature("head_vars") == ana.getFeature("norm_vars") && ana.getFeature("head_clauses") == ana.getFeature("norm_clauses");
+            // std::cout << ana.getFeature("head_vars") << " " << ana.getFeature("norm_vars") << std::endl;
+            // std::cout << ana.getFeature("head_clauses") << " " << ana.getFeature("norm_clauses") << std::endl;
             std::cout << "header_consistent " << (sani ? "yes" : "no") << std::endl;
             sani = ana.getFeature("whitespace_normalised") == 1.0;
             std::cout << "whitespace_normalised " << (sani ? "yes" : "no") << std::endl;

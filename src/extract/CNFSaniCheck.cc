@@ -47,12 +47,14 @@ void CNF::SaniCheck::checkNormalised() {
         } else {
             normalised &= isdigit(*in) || *in == '-';
             int plit;
+            int len = 0;
             while (in.readInteger(&plit)) {
                 if (plit == 0) break;
+                ++len;
                 norm_vars = std::max(abs(plit), norm_vars);
                 normalised &= (*in == ' ' && 1 == in.skipAndCountWhitespace());
             }
-            norm_clauses++;
+            if (len > 0) norm_clauses++;
             normalised &= (*in == '\n');
         }
     }
