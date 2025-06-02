@@ -61,7 +61,6 @@ struct WLHRuntimeConfig {
 
 class WeisfeilerLemanHasher {
 public:
-    using Clock = std::chrono::high_resolution_clock;
     using Clause = ::Cl;
     using ClausePtr = const ::Cl*;
     using Lit = ::Lit;
@@ -91,25 +90,20 @@ public:
         Hash operator()(const ::Lit& lit) const { return const_cast<ColorFunction*>(this)->operator()(lit); }
         Hash& operator()(const ::Lit& lit) { 
             unsigned var_id = lit.var().id;
-            if (var_id >= colors.size()) { // Check if var_id is too high
+            if (var_id >= colors.size()) {
                 throw std::out_of_range("Variable ID " + std::to_string(var_id) + " is out of range for color access.");
             }
-            if (lit.sign()) { // true if negative
+            if (lit.sign()) { // true if n
                 return colors[var_id].n;
-            } else { // false if positive
+            } else { // false if p
                 return colors[var_id].p;
             }
-            // return reinterpret_cast<Hash*>(&colors[0])[lit]; 
         }
     };
 
     WeisfeilerLemanHasher(const char* filename, const WLHRuntimeConfig& cfg)
         : cfg(cfg),
-          parsing_start_mem(get_mem_usage()),
-          parsing_start_time(Clock::now()),
           cnf(filename),
-          start_mem(get_mem_usage()),
-          start_time(Clock::now()),
           color_functions{ColorFunction(cnf.nVars()), ColorFunction(cnf.nVars())}
     {
         if (cfg.prime_ring_modulus && *cfg.prime_ring_modulus < 2) {
@@ -124,23 +118,8 @@ public:
     std::string operator()() {
         std::string result = std::to_string(run());
         if (cfg.return_measurements) {
-            const auto calculation_time = std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count();
-            const auto parsing_time = std::chrono::duration_cast<std::chrono::nanoseconds>(start_time - parsing_start_time).count();
-            long parsing_mem_usage = start_mem;
-            long mem_usage = get_mem_usage();
-            if (parsing_start_mem == -1 || parsing_mem_usage == -1 || mem_usage == -1) {
-                mem_usage = -1;
-                parsing_mem_usage = -1;
-            } else {
-                mem_usage -= start_mem;
-                parsing_mem_usage -= parsing_start_mem;
-            }
             const double iteration_count = std::min<double>(iteration, cfg.depth / 2.);
             result +=
-                "," + std::to_string(parsing_time) +
-                "," + std::to_string(calculation_time) +
-                "," + std::to_string(parsing_mem_usage) +
-                "," + std::to_string(mem_usage) +
                 "," + std::to_string(iteration_count) +
                 "," + std::to_string(cnf.nVars()) +
                 "," + std::to_string(cnf.nClauses()) +
@@ -152,11 +131,7 @@ public:
 
 private:
     const WLHRuntimeConfig cfg;
-    long parsing_start_mem;
-    Clock::time_point parsing_start_time;
     CNFFormula cnf;
-    long start_mem;
-    Clock::time_point start_time;
     ColorFunction color_functions[2];
     unsigned iteration = 0;
     std::unordered_set<Hash> unique_hashes;
@@ -317,7 +292,7 @@ inline std::string weisfeiler_leman_hash(
     bool optimize_first_iteration = true,
     unsigned progress_check_iteration = 6,
     // bool shrink_to_fit = false,
-    bool return_measurements = false,
+    bool return_measurements = true,
     bool sort_for_clause_hash = false,
     bool use_xxh3 = true,
     std::optional<unsigned> prime_ring_modulus = std::nullopt
