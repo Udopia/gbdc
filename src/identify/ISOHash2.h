@@ -1,6 +1,6 @@
 /*************************************************************************************************
 CNFTools -- Copyright (c) 2021, Markus Iser, KIT - Karlsruhe Institute of Technology
-ISOHash2 -- Copyright (c) 2025, Timon Passlick, KIT - Karlsruhe Institute of Technology
+ISOHash2 -- Copyright (c) 2025, Timon Passlick, KIT - Karlsruhe Institute of Technology (https://github.com/TimonPasslick/gbdc/blob/master/src/identify/ISOHash2.h)
 ISOHash2 -- Copyright (c) 2025, Frederick Gehm, KIT - Karlsruhe Institute of Technology
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -58,8 +58,7 @@ struct WLHRuntimeConfig {
     bool return_measurements;
     bool sort_for_clause_hash;
     bool use_xxh3;
-    bool use_half_word_hash;
-    bool use_prime_ring;
+    std::optional<unsigned> prime_ring_modulus;
 };
 
 class WeisfeilerLemanHasher {
@@ -101,7 +100,10 @@ public:
           start_mem(get_mem_usage()),
           start_time(Clock::now()),
           color_functions{ColorFunction(cnf.nVars()), ColorFunction(cnf.nVars())}
-    {}
+    {
+        if (this->cfg.prime_ring_modulus.has_value() && this->cfg.prime_ring_modulus.value() < 2) {
+            throw std::invalid_argument("prime_ring_modulus must be >= 2 if specified.");
+    }
 
     std::string operator()() {
         std::string result = std::to_string(run());
@@ -149,7 +151,7 @@ private:
 
     template <typename T>
     Hash hash(const T& t) const {
-        if (!cfg.use_prime_ring) {
+        if (!cfg.prime_ring_modulus.has_value()) {
             if (cfg.use_xxh3)
                 return XXH3_64bits(&t, sizeof(t));
             MD5 md5;
@@ -157,9 +159,9 @@ private:
             return md5.finish();
         }
         constexpr std::uint64_t max = std::numeric_limits<std::uint64_t>::max();
+        const std::uint64_t mod = cfg.prime_ring_modulus.value();
         std::uint64_t hash = max;
-        const std::uint64_t ring_size = cfg.use_half_word_hash ? 5 : 59;
-        const std::uint64_t first_problem = max - (max % ring_size);
+        const std::uint64_t first_problem = max - (max % mod);
         for (std::uint16_t seed = 0; hash >= first_problem; ++seed) {
             if (cfg.use_xxh3)
                 hash = XXH3_64bits_withSecret(&t, sizeof(t), &seed, sizeof(seed));
@@ -170,30 +172,52 @@ private:
                 hash = md5.finish();
             }
         }
-        return hash % ring_size;
+        return hash % mod;
     }
 
-    static void combine(Hash* acc, Hash in, bool use_prime_ring, std::uint64_t ring_size) {
-        if (use_prime_ring) {
-            const Hash first_overflow_acc = ring_size - in;
-            if (*acc >= first_overflow_acc) {
-                *acc -= first_overflow_acc;
-                return;
-            }
+    static void combine(Hash* acc, Hash in, std::optional<unsigned> prime_ring_modulus) {
+        if (prime_ring_modulus.has_value()) {
+            const std::uint64_t mod = prime_ring_modulus.value();
+            const Hash first_overflow_acc = mod - in;
+            *acc= (*acc + (in % mod)) % mod;
+        } else {
+            *acc += in;
         }
-        *acc += in;
     }
 
     template <typename T, typename C>
     Hash hash_sum(const C& c, const std::function<Hash(const T&)>& f) const {
         Hash h = 0;
         for (const T& t : c)
-            combine(&h, f(t), cfg.use_prime_ring, cfg.use_half_word_hash ? 5 : 59);
+            combine(&h, f(t), cfg.prime_ring_modulus);
         return h;
     }
 
     bool in_optimized_iteration() const {
         return iteration == 0 && cfg.optimize_first_iteration;
+    }
+
+    Hash variable_hash() {
+        if (cfg.cross_reference_literals)
+            return hash_sum<LitColors>(old_color().colors, [this](const LitColors& lc) { return lc.variable_hash(this); });
+
+        Hash h = 0;
+        for (Lit lit {}; lit != cnf.nVars() * 2; ++lit)
+            combine(&h, old_color()(lit), cfg.prime_ring_modulus);
+        return h;
+    }
+
+    void iteration_step() {
+        // maybe necessary to reset new colors
+        cross_reference();
+        for (const Clause& cl : cnf.clauses()) {
+            const Hash clh = (!in_optimized_iteration()) ?
+                clause_hash(cl) : cfg.rehash_clauses ? 
+                    hash(cl.size()) : cl.size();
+            for (const auto& lit : cl)
+                combine(&new_color()(lit), clh, cfg.prime_ring_modulus);
+        }
+        ++iteration;
     }
 
     void cross_reference() {
@@ -218,33 +242,6 @@ private:
         }
     }
 
-    void iteration_step() {
-        cross_reference();
-        for (const Clause& cl : cnf.clauses()) {
-            const Hash clh = (!in_optimized_iteration()) ?
-                clause_hash(cl)
-                : cfg.rehash_clauses ? hash(cl.size()) : cl.size();
-            for (const auto& lit : cl)
-                combine(&new_color()(lit), clh, cfg.use_prime_ring, cfg.use_half_word_hash ? 5 : 59);
-        }
-        ++iteration;
-    }
-
-    Hash variable_hash() {
-        if (cfg.cross_reference_literals)
-            return hash_sum<LitColors>(old_color().colors, [this](const LitColors& lc) { return lc.variable_hash(this); });
-
-        Hash h = 0;
-        for (Lit lit {}; lit != cnf.nVars() * 2; ++lit)
-            combine(&h, old_color()(lit), cfg.use_prime_ring, cfg.use_half_word_hash ? 5 : 59);
-        return h;
-    }
-
-    Hash cnf_hash() {
-        cross_reference();
-        return hash_sum<Clause>(cnf.clauses(), [this](const Clause& cl) { return clause_hash(cl); });
-    }
-
     std::optional<Hash> check_progress() {
         if ((iteration != cfg.progress_check_iteration && iteration != cfg.progress_check_iteration + 1 && iteration < 6) || iteration == 0)
             return std::nullopt;
@@ -260,6 +257,11 @@ private:
         previous_unique_hashes = unique_hashes.size();
         unique_hashes.clear();
         return std::nullopt;
+    }
+
+    Hash cnf_hash() {
+        cross_reference();
+        return hash_sum<Clause>(cnf.clauses(), [this](const Clause& cl) { return clause_hash(cl); });
     }
 
     Hash run() {
@@ -283,8 +285,9 @@ inline std::string weisfeiler_leman_hash(
     bool return_measurements = true,
     bool sort_for_clause_hash = false,
     bool use_xxh3 = true,
-    bool use_half_word_hash = true,
-    bool use_prime_ring = false
+    std::optional<unsigned> prime_ring_modulus = std::nullopt;
+    // bool use_half_word_hash = true,
+    // bool use_prime_ring = false
 ) {
     WLHRuntimeConfig cfg{
         depth,
@@ -296,8 +299,9 @@ inline std::string weisfeiler_leman_hash(
         return_measurements,
         sort_for_clause_hash,
         use_xxh3,
-        use_half_word_hash,
-        use_prime_ring
+        prime_ring_modulus // instead of use_half_word_hash and use_prime_ring
+        // use_half_word_hash,
+        // use_prime_ring
     };
     WeisfeilerLemanHasher hasher(filename, cfg);
     return hasher();
