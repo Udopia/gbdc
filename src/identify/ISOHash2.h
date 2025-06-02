@@ -44,16 +44,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
   #define ISOH_LOG(MSG)  do {} while (0)
 #endif
 
-//in KB
-inline long get_mem_usage()
-{
-    std::ifstream statm("/proc/self/statm");
-    if (!statm.is_open()) return -1;
-    long size, resident, share, text, lib, data, dt;
-    statm >> size >> resident >> share >> text >> lib >> data >> dt;
-    return resident * sysconf(_SC_PAGE_SIZE);
-}
-
 namespace CNF {
 
 struct WLHRuntimeConfig {
