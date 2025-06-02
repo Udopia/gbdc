@@ -45,11 +45,26 @@ struct WLHRuntimeConfig {
     bool optimize_first_iteration;
     unsigned progress_check_iteration;
     // bool shrink_to_fit;
-    bool return_measurements;
+    bool no_measurements;
     bool sort_for_clause_hash;
     bool use_xxh3;
     std::optional<unsigned> prime_ring_modulus;
 };
+
+struct WLHResult {
+    std::string filename;
+    uint64_t hash;
+    unsigned iterations;
+    std::string status;
+    long total_runtime;
+    std::vector<long> iterations_time;
+    std::vector<unsigned> unique_variables;
+
+    unsigned nVars, nClauses, nLits, maxClauseLen;
+
+    WLHRuntimeConfig cfg;
+};
+
 
 class WeisfeilerLemanHasher {
 public:
@@ -103,41 +118,35 @@ public:
     }
     }
 
+    WLHResult collect_measurements(const std::string& original_filename) {
+        iter_us.clear();
+        uniq_cnt.clear();
+        unique_hashes.clear();
+        iteration = 0;
+        previous_unique_hashes = 1;
+        status = "running";
+
+        uint64_t final_hash = run();
+
+        WLHResult r{};
+
+        r.filename = original_filename;
+        r.hash = final_hash;
+        r.iterations = iteration;
+        r.status = status;
+        r.iterations_time = iter_us;
+        r.unique_variables = uniq_cnt;
+        r.nVars = cnf.nVars();
+        r.nClauses = cnf.nClauses();
+        r.nLits = cnf.nLits();
+        r.maxClauseLen = cnf.maxClauseLength();
+        r.cfg = cfg;
+
+        return r;
+    }
+
     std::string operator()() {
-        Hash h = run();
-        if (!cfg.return_measurements)
-            return std::to_string(h);
-
-        std::ostringstream out;
-        out << h << std::endl;
-
-        out << iteration << ',' << status << std::endl;
-
-        for (long us : iter_us) {
-            out << us << ',';
-        }
-
-        out << std::endl;
-
-        for (unsigned u : uniq_cnt) {
-            out << u << ',';
-        }
-
-        out << std::endl << "DATA:" << cnf.nVars()
-            << ',' << cnf.nClauses()
-            << ',' << cnf.nLits()
-            << ',' << cnf.maxClauseLength();
-
-        out << std::endl << "CONFIG:"
-                << cfg.depth << ','
-                << (cfg.cross_reference_literals ? "yes" : "no") << ','
-                << (cfg.rehash_clauses ? "yes" : "no") << ','
-                << (cfg.optimize_first_iteration ? "yes" : "no") << ','
-                << cfg.progress_check_iteration << ','
-                << (cfg.sort_for_clause_hash ? "yes" : "no") << ','
-                << (cfg.use_xxh3 ? "yes" : "no") << ','
-                << (cfg.prime_ring_modulus.has_value() ? std::to_string(*cfg.prime_ring_modulus) : "none");
-        return out.str();
+        return std::to_string(run());
     }
 
 private:
@@ -217,7 +226,7 @@ private:
     // Main iteration step
     void iteration_step() {
         // measurements
-        auto t0 = cfg.return_measurements
+        auto t0 = !cfg.no_measurements
               ? std::chrono::high_resolution_clock::now()
               : std::chrono::high_resolution_clock::time_point{};
         // measurements
@@ -241,7 +250,7 @@ private:
         }
 
         // measurements
-        if (cfg.return_measurements) {
+        if (!cfg.no_measurements) {
             auto t1 = std::chrono::high_resolution_clock::now();
             long dt = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
             iter_us.push_back(dt);
@@ -285,13 +294,11 @@ private:
             return vh;
         });
         if (unique_hashes.size() <= previous_unique_hashes) {
-            if (cfg.return_measurements) {
-                status = "stabilized";
-            }
+            status = "stabilized";
             return vh;
         }
         previous_unique_hashes = unique_hashes.size();
-        if (cfg.return_measurements)
+        if (!cfg.no_measurements)
             uniq_cnt.push_back(previous_unique_hashes -1);
         unique_hashes.clear();
         return std::nullopt;
@@ -313,15 +320,14 @@ private:
             iteration_step();
         }
         if (iteration >= cfg.depth / 2) {
-            if (cfg.return_measurements) {
-                status = "depth_reached";
-            }
+            status = "depth_reached";
         }
         Hash final = cfg.depth % 2 == 0 ? variable_hash() : cnf_hash();
         return final;
     }
 };
 
+// could be deleted => keeping it for now as backup
 inline std::string weisfeiler_leman_hash(
     const char* filename,
     unsigned depth = 100,
@@ -330,7 +336,7 @@ inline std::string weisfeiler_leman_hash(
     bool optimize_first_iteration = true,
     unsigned progress_check_iteration = 1,
     // bool shrink_to_fit = false,
-    bool return_measurements = true,
+    bool no_measurements = false,
     bool sort_for_clause_hash = false,
     bool use_xxh3 = true,
     std::optional<unsigned> prime_ring_modulus = std::nullopt //std::nullopt
@@ -345,7 +351,7 @@ inline std::string weisfeiler_leman_hash(
         optimize_first_iteration,
         progress_check_iteration,
         // shrink_to_fit,
-        return_measurements,
+        no_measurements,
         sort_for_clause_hash,
         use_xxh3,
         prime_ring_modulus // instead of use_half_word_hash and use_prime_ring

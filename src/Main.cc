@@ -29,6 +29,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/identify/GBDHash.h"
 #include "src/identify/ISOHash.h"
 #include "src/identify/ISOHash2.h"
+#include "src/identify/ISOHash2Output.cpp"
+
 
 #include "src/util/SolverTypes.h"
 
@@ -64,6 +66,18 @@ int main(int argc, char** argv) {
     argparse.add_argument("-m", "--memout").default_value(0).scan<'i', int>().help("Memory limit in MB");
     argparse.add_argument("-f", "--fileout").default_value(0).scan<'i', int>().help("File size limit in MB"); 
 
+    // ISOHASH2 SPECIFIC
+    argparse.add_argument("--depth").default_value(100u).scan<'i', unsigned>().help("WL‐refinement depth (half steps)");
+    argparse.add_argument("--no-cross-ref").implicit_value(true).default_value(false).help("Disable cross‐referencing of positive/negative literals");
+    argparse.add_argument("--no-rehash-clauses").implicit_value(true).default_value(false).help("Disable re‐hashing of the sum of literals of a clause");
+    argparse.add_argument("--no-opt-first").implicit_value(true).default_value(false).help("Disable optimized first iteration");
+    argparse.add_argument("--progress-iter").default_value(6u).scan<'i', unsigned>().help("From which iteration on a early stabilization check will be done");
+    argparse.add_argument("--no-measurements").implicit_value(true).default_value(false).help("Don't collect measurements on individual iterations");
+    argparse.add_argument("--sort-for-clause-hash").implicit_value(true).default_value(false).help("Sort literal colors instead of summing");
+    argparse.add_argument("--use-md5").implicit_value(true).default_value(false).help("Use MD5 instead of XXH3 for hashing");
+    argparse.add_argument("--prime-ring-mod").default_value(0u).scan<'i', unsigned>().help("If >0, do all calculations modulo this prime");
+    argparse.add_argument("--csv-output").default_value(std::string("")).help("Append results to the given CSV file");
+
     try {
         argparse.parse_args(argc, argv);
     }
@@ -96,6 +110,21 @@ int main(int argc, char** argv) {
         std::cerr << "Detected WCNF" << std::endl;
     }
 
+    // BUILDING ISOHASH2 CONFIG
+    CNF::WLHRuntimeConfig cfg{
+        argparse.get<unsigned>("depth"),
+        !argparse.get<bool>("no-cross-ref"),
+        !argparse.get<bool>("no-rehash-clauses"),
+        !argparse.get<bool>("no-opt-first"),
+        argparse.get<unsigned>("progress-iter"),
+        argparse.get<bool>("no-measurements"),
+        argparse.get<bool>("sort-for-clause-hash"),
+        !argparse.get<bool>("use-md5"),
+        (argparse.get<unsigned>("prime-ring-mod") > 0
+             ? std::optional<unsigned>(argparse.get<unsigned>("prime-ring-mod"))
+             : std::nullopt)
+    };
+
     try {
         if (toolname == "id") {
             if (ext == ".cnf" || ext == ".wecnf") {
@@ -121,7 +150,22 @@ int main(int argc, char** argv) {
         }
         else if (toolname == "isohash2") {
             if (ext == ".cnf") {
-                std::cout << CNF::weisfeiler_leman_hash(filename.c_str()) << std::endl;
+                auto t_start = std::chrono::high_resolution_clock::now();
+
+                CNF::WeisfeilerLemanHasher h(filename.c_str(), cfg);
+                auto result  = h.collect_measurements(filename);
+
+                auto t_end   = std::chrono::high_resolution_clock::now();
+                result.total_runtime = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
+
+                std::string csv_path = argparse.get("csv-output");
+                if (!csv_path.empty()) {
+                    std::ofstream fout(csv_path, std::ios::app);
+                    CNF::write_csv(result, fout);
+                }
+                else {
+                    std::cout << result.hash << std::endl;
+                }
             }
         } 
         else if (toolname == "normalize") {
