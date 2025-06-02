@@ -54,7 +54,7 @@ struct WLHRuntimeConfig {
     bool rehash_clauses;
     bool optimize_first_iteration;
     unsigned progress_check_iteration;
-    bool shrink_to_fit;
+    // bool shrink_to_fit;
     bool return_measurements;
     bool sort_for_clause_hash;
     bool use_xxh3;
@@ -64,8 +64,8 @@ struct WLHRuntimeConfig {
 class WeisfeilerLemanHasher {
 public:
     using Clock = std::chrono::high_resolution_clock;
-    using Clause = typename CNFFormula::Clause;
-    using Lit = typename CNFFormula::Lit;
+    using Clause = ::Cl;
+    using Lit = ::Lit;
     using Hash = std::uint64_t;
 
     struct LitColors {
@@ -88,15 +88,27 @@ public:
 
     struct ColorFunction {
         std::vector<LitColors> colors;
-        explicit ColorFunction(std::size_t n) : colors(n, {1, 1}) {}
-        Hash& operator()(Lit lit) { return reinterpret_cast<Hash*>(&colors[0])[lit]; }
+        explicit ColorFunction(std::size_t n) : colors(n+1, {1, 1}) {}
+        Hash operator()(const ::Lit& lit) const { return const_cast<ColorFunction*>(this)->operator()(lit); }
+        Hash& operator()(const ::Lit& lit) { 
+            unsigned var_id = lit.var().id;
+            if (var_id >= colors.size()) { // Check if var_id is too high
+                throw std::out_of_range("Variable ID " + std::to_string(var_id) + " is out of range for color access.");
+            }
+            if (lit.sign()) { // true if negative
+                return colors[var_id].n;
+            } else { // false if positive
+                return colors[var_id].p;
+            }
+            // return reinterpret_cast<Hash*>(&colors[0])[lit]; 
+        }
     };
 
     WeisfeilerLemanHasher(const char* filename, const WLHRuntimeConfig& cfg)
         : cfg(cfg),
           parsing_start_mem(get_mem_usage()),
           parsing_start_time(Clock::now()),
-          cnf(filename, cfg.shrink_to_fit),
+          cnf(filename),
           start_mem(get_mem_usage()),
           start_time(Clock::now()),
           color_functions{ColorFunction(cnf.nVars()), ColorFunction(cnf.nVars())}
@@ -128,7 +140,7 @@ public:
                 "," + std::to_string(iteration_count) +
                 "," + std::to_string(cnf.nVars()) +
                 "," + std::to_string(cnf.nClauses()) +
-                "," + std::to_string(cnf.nLiterals()) +
+                "," + std::to_string(cnf.nLits()) +
                 "," + std::to_string(cnf.maxClauseLength());
         }
         return result;
@@ -175,11 +187,9 @@ private:
         return hash % mod;
     }
 
-    static void combine(Hash* acc, Hash in, std::optional<unsigned> prime_ring_modulus) {
-        if (prime_ring_modulus.has_value()) {
-            const std::uint64_t mod = prime_ring_modulus.value();
-            const Hash first_overflow_acc = mod - in;
-            *acc= (*acc + (in % mod)) % mod;
+    static void combine(Hash* acc, Hash in, std::optional<unsigned> mod) {
+        if (mod.has_value()) {
+            *acc= (*acc + (in % *mod)) % *mod;
         } else {
             *acc += in;
         }
@@ -198,22 +208,29 @@ private:
     }
 
     Hash variable_hash() {
-        if (cfg.cross_reference_literals)
-            return hash_sum<LitColors>(old_color().colors, [this](const LitColors& lc) { return lc.variable_hash(this); });
-
+        if (cfg.cross_reference_literals) {
+            return hash_sum<LitColors>(old_color().colors, 
+                [this](const LitColors& lc) { return lc.variable_hash(this); });
+        }
         Hash h = 0;
-        for (Lit lit {}; lit != cnf.nVars() * 2; ++lit)
-            combine(&h, old_color()(lit), cfg.prime_ring_modulus);
+        for (unsigned var = 1; var <= cnf.nVars(); ++var) {
+            combine(&h, old_color()(Lit(var, false)), cfg.prime_ring_modulus); // p
+            combine(&h, old_color()(Lit(var, true )), cfg.prime_ring_modulus); // n
+        }
         return h;
     }
 
+    // Main iteration step
     void iteration_step() {
-        // maybe necessary to reset new colors
+        std::fill(new_color().colors.begin(), new_color().colors.end(), LitColors{0,0});
+
         cross_reference();
+
         for (const Clause& cl : cnf.clauses()) {
-            const Hash clh = (!in_optimized_iteration()) ?
-                clause_hash(cl) : cfg.rehash_clauses ? 
-                    hash(cl.size()) : cl.size();
+            const Hash clh = (!in_optimized_iteration()) 
+                ? clause_hash(cl) 
+                : cfg.rehash_clauses ? hash(cl.size()) : cl.size();
+
             for (const auto& lit : cl)
                 combine(&new_color()(lit), clh, cfg.prime_ring_modulus);
         }
@@ -281,11 +298,11 @@ inline std::string weisfeiler_leman_hash(
     bool rehash_clauses = true,
     bool optimize_first_iteration = true,
     unsigned progress_check_iteration = 6,
-    bool shrink_to_fit = false,
+    // bool shrink_to_fit = false,
     bool return_measurements = true,
     bool sort_for_clause_hash = false,
     bool use_xxh3 = true,
-    std::optional<unsigned> prime_ring_modulus = std::nullopt;
+    std::optional<unsigned> prime_ring_modulus = std::nullopt,
     // bool use_half_word_hash = true,
     // bool use_prime_ring = false
 ) {
@@ -295,7 +312,7 @@ inline std::string weisfeiler_leman_hash(
         rehash_clauses,
         optimize_first_iteration,
         progress_check_iteration,
-        shrink_to_fit,
+        // shrink_to_fit,
         return_measurements,
         sort_for_clause_hash,
         use_xxh3,
