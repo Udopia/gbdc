@@ -312,6 +312,11 @@ private:
                 return *result;
             iteration_step();
         }
+        if (iteration >= cfg.depth / 2) {
+            if (cfg.return_measurements) {
+                status = "depth_reached";
+            }
+        }
         Hash final = cfg.depth % 2 == 0 ? variable_hash() : cnf_hash();
         return final;
     }
