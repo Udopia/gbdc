@@ -31,6 +31,9 @@ gbdhash
 cnftools
 
 build/
+build_dbg/
+CMakeFiles/
+CMakeCache.txt
 debug/
 asan/
 .vscode/

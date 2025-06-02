@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.15)
 project(gbdc VERSION 1.0 LANGUAGES CXX)
 
+option(ISOHASH2_DEBUG "Compile ISOHash2.h with debug logging enabled" OFF)
+
+if (ISOHASH2_DEBUG)
+    message(STATUS "-> Building with ISOHASH2_DEBUG (detailed isohash2 logs ON)")
+    add_compile_definitions(ISOHASH2_DEBUG)
+endif()
+
 set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
 
