@@ -101,35 +101,43 @@ public:
         if (cfg.prime_ring_modulus && *cfg.prime_ring_modulus < 2) {
             throw std::invalid_argument("prime_ring_modulus must be >= 2 if specified.");
     }
-    if (cfg.return_measurements) {
-        std::cerr << "Loaded CNF vars=" << cnf.nVars()
-                << " clauses=" << cnf.nClauses()
-                << " lits=" << cnf.nLits()
-                << " maxClauseLen=" << cnf.maxClauseLength()
-                << " depth=" << cfg.depth
-                << " crossRef=" << (cfg.cross_reference_literals ? "yes" : "no")
-                << " rehash=" << (cfg.rehash_clauses ? "yes" : "no")
-                << " optimizeFirst=" << (cfg.optimize_first_iteration ? "yes" : "no")
-                << " progressCheck=" << cfg.progress_check_iteration
-                << " sortForClauseHash=" << (cfg.sort_for_clause_hash ? "yes" : "no")
-                << " useXXH3=" << (cfg.use_xxh3 ? "yes" : "no")
-                << " primeRingModulus=" << (cfg.prime_ring_modulus.has_value() ? std::to_string(*cfg.prime_ring_modulus) : "none")
-                << std::endl;
-    }
     }
 
     std::string operator()() {
-        std::string result = std::to_string(run());
-        if (cfg.return_measurements) {
-            const double iteration_count = std::min<double>(iteration, cfg.depth / 2.);
-            result +=
-                "," + std::to_string(iteration_count) +
-                "," + std::to_string(cnf.nVars()) +
-                "," + std::to_string(cnf.nClauses()) +
-                "," + std::to_string(cnf.nLits()) +
-                "," + std::to_string(cnf.maxClauseLength());
+        Hash h = run();
+        if (!cfg.return_measurements)
+            return std::to_string(h);
+
+        std::ostringstream out;
+        out << h << std::endl;
+
+        out << iteration << ',' << status << std::endl;
+
+        for (long us : iter_us) {
+            out << us << ',';
         }
-        return result;
+
+        out << std::endl;
+
+        for (unsigned u : uniq_cnt) {
+            out << u << ',';
+        }
+
+        out << std::endl << "DATA:" << cnf.nVars()
+            << ',' << cnf.nClauses()
+            << ',' << cnf.nLits()
+            << ',' << cnf.maxClauseLength();
+
+        out << std::endl << "CONFIG:"
+                << cfg.depth << ','
+                << (cfg.cross_reference_literals ? "yes" : "no") << ','
+                << (cfg.rehash_clauses ? "yes" : "no") << ','
+                << (cfg.optimize_first_iteration ? "yes" : "no") << ','
+                << cfg.progress_check_iteration << ','
+                << (cfg.sort_for_clause_hash ? "yes" : "no") << ','
+                << (cfg.use_xxh3 ? "yes" : "no") << ','
+                << (cfg.prime_ring_modulus.has_value() ? std::to_string(*cfg.prime_ring_modulus) : "none");
+        return out.str();
     }
 
 private:
@@ -139,6 +147,10 @@ private:
     unsigned iteration = 0;
     std::unordered_set<Hash> unique_hashes;
     unsigned previous_unique_hashes = 1;
+
+    std::vector<long> iter_us;
+    std::vector<unsigned> uniq_cnt;
+    std::string status = "running";
 
     ColorFunction& old_color() { return color_functions[iteration % 2]; }
     ColorFunction& new_color() { return color_functions[(iteration + 1) % 2]; }
@@ -204,24 +216,38 @@ private:
 
     // Main iteration step
     void iteration_step() {
-        auto start = std::chrono::high_resolution_clock::now();
+        // measurements
+        auto t0 = cfg.return_measurements
+              ? std::chrono::high_resolution_clock::now()
+              : std::chrono::high_resolution_clock::time_point{};
+        // measurements
 
+        // reset new color function
         std::fill(new_color().colors.begin(), new_color().colors.end(), LitColors{0,0});
 
+        // cross reference positive and negative literals
         cross_reference();
 
+        // clause processing
         for (ClausePtr clp : cnf.clauses()) {
             const Clause& cl = *clp;
             const Hash clh = (!in_optimized_iteration()) 
                 ? clause_hash(cl) 
                 : cfg.rehash_clauses ? hash(cl.size()) : cl.size();
 
+            // accumulate new lit color hash
             for (const auto& lit : cl)
                 combine(&new_color()(lit), clh, cfg.prime_ring_modulus);
         }
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-        std::cerr << "c Iteration " << iteration << " took " << duration << " microseconds and processed";
+
+        // measurements
+        if (cfg.return_measurements) {
+            auto t1 = std::chrono::high_resolution_clock::now();
+            long dt = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
+            iter_us.push_back(dt);
+        }
+        // measurements
+
         ++iteration;
     }
 
@@ -248,11 +274,6 @@ private:
     }
 
     std::optional<Hash> check_progress() {
-        int last_reported_iteration;
-        if (iteration != last_reported_iteration) {
-            std::cerr << " uniqueVars=" << previous_unique_hashes-1 << std::endl;
-            last_reported_iteration = iteration;
-        }
         if ((iteration != cfg.progress_check_iteration && iteration != cfg.progress_check_iteration + 1 && iteration < 6) || iteration == 0)
             return std::nullopt;
 
@@ -265,11 +286,13 @@ private:
         });
         if (unique_hashes.size() <= previous_unique_hashes) {
             if (cfg.return_measurements) {
-                std::cerr << "c Stabilised" << std::endl;
+                status = "stabilized";
             }
             return vh;
         }
         previous_unique_hashes = unique_hashes.size();
+        if (cfg.return_measurements)
+            uniq_cnt.push_back(previous_unique_hashes -1);
         unique_hashes.clear();
         return std::nullopt;
     }
