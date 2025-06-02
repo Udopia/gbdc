@@ -33,8 +33,16 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <fstream>
 #include "src/external/md5/md5.h"
 #define XXH_INLINE_ALL
-#include "xxhash.h"
+#include "src/external/xxhash/xxhash.h"
 #include "src/util/CNFFormula.h"
+
+// debugging
+#ifdef ISOHASH2_DEBUG
+  #include <iostream>
+  #define ISOH_LOG(MSG)  do { std::cerr << MSG << '\n'; } while (0)
+#else
+  #define ISOH_LOG(MSG)  do {} while (0)
+#endif
 
 //in KB
 inline long get_mem_usage()
@@ -65,6 +73,7 @@ class WeisfeilerLemanHasher {
 public:
     using Clock = std::chrono::high_resolution_clock;
     using Clause = ::Cl;
+    using ClausePtr = const ::Cl*;
     using Lit = ::Lit;
     using Hash = std::uint64_t;
 
@@ -113,8 +122,13 @@ public:
           start_time(Clock::now()),
           color_functions{ColorFunction(cnf.nVars()), ColorFunction(cnf.nVars())}
     {
-        if (this->cfg.prime_ring_modulus.has_value() && this->cfg.prime_ring_modulus.value() < 2) {
+        if (cfg.prime_ring_modulus && *cfg.prime_ring_modulus < 2) {
             throw std::invalid_argument("prime_ring_modulus must be >= 2 if specified.");
+    }
+    ISOH_LOG("Loaded CNF  vars=" << cnf.nVars()
+                << " clauses=" << cnf.nClauses()
+                << " lits=" << cnf.nLits()
+                << " maxClauseLen=" << cnf.maxClauseLength());
     }
 
     std::string operator()() {
@@ -222,11 +236,14 @@ private:
 
     // Main iteration step
     void iteration_step() {
+        ISOH_LOG("Iteration " << iteration);
+
         std::fill(new_color().colors.begin(), new_color().colors.end(), LitColors{0,0});
 
         cross_reference();
 
-        for (const Clause& cl : cnf.clauses()) {
+        for (ClausePtr clp : cnf.clauses()) {
+            const Clause& cl = *clp;
             const Hash clh = (!in_optimized_iteration()) 
                 ? clause_hash(cl) 
                 : cfg.rehash_clauses ? hash(cl.size()) : cl.size();
@@ -269,8 +286,12 @@ private:
             unique_hashes.insert(vh);
             return vh;
         });
-        if (unique_hashes.size() <= previous_unique_hashes)
+        if (unique_hashes.size() <= previous_unique_hashes) {
+            ISOH_LOG("Stabilised at iter=" << iteration
+                    << " uniqueVars=" << unique_hashes.size()
+                    << "  early hash=" << vh);
             return vh;
+        }
         previous_unique_hashes = unique_hashes.size();
         unique_hashes.clear();
         return std::nullopt;
@@ -278,34 +299,42 @@ private:
 
     Hash cnf_hash() {
         cross_reference();
-        return hash_sum<Clause>(cnf.clauses(), [this](const Clause& cl) { return clause_hash(cl); });
+        Hash h = 0;
+        for (ClausePtr clp : cnf.clauses()) {
+            combine(&h, clause_hash(*clp), cfg.prime_ring_modulus);
+        }
+        return h;
     }
 
     Hash run() {
+        ISOH_LOG("Start hashing, maxDepth=" << cfg.depth);
         while (iteration < cfg.depth / 2) {
             if (const auto result = check_progress())
                 return *result;
             iteration_step();
         }
-        return cfg.depth % 2 == 0 ? variable_hash() : cnf_hash();
+        Hash final = cfg.depth % 2 == 0 ? variable_hash() : cnf_hash();
+        ISOH_LOG("Finished at iter=" << iteration << "  finalHash=" << final);
+        return final;
     }
 };
 
 inline std::string weisfeiler_leman_hash(
     const char* filename,
-    unsigned depth = 13,
+    unsigned depth = 100,
     bool cross_reference_literals = true,
     bool rehash_clauses = true,
     bool optimize_first_iteration = true,
     unsigned progress_check_iteration = 6,
     // bool shrink_to_fit = false,
-    bool return_measurements = true,
+    bool return_measurements = false,
     bool sort_for_clause_hash = false,
     bool use_xxh3 = true,
-    std::optional<unsigned> prime_ring_modulus = std::nullopt,
+    std::optional<unsigned> prime_ring_modulus = std::nullopt
     // bool use_half_word_hash = true,
-    // bool use_prime_ring = false
-) {
+    // bool use_prime_ring = false 
+    )
+    {
     WLHRuntimeConfig cfg{
         depth,
         cross_reference_literals,

@@ -28,6 +28,10 @@
 #ifndef LIB_MD5_MD5_H_
 #define LIB_MD5_MD5_H_
 
+#include <cstdint>
+#include <limits>
+#include <string>
+
 /*
  * Size of a standard MD5 signature in bytes.  This definition is for
  * external programs only.  The MD5 routines themselves reference the
@@ -192,6 +196,11 @@ class MD5 {
         hasher.process(str, length);
     }
 
+    template <typename T> // needs to be flat, no pointers or heap data
+    void consume_binary(const T& x) {
+        consume(reinterpret_cast<const char*>(&x), sizeof(T));
+    }
+
     std::string produce() {
         unsigned char sig[MD5_SIZE];
         char str[MD5_STRING_SIZE];
@@ -199,7 +208,71 @@ class MD5 {
         md5::sig_to_string(sig, str, sizeof(str));
         return std::string(str);
     }
+
+    struct Signature {
+        unsigned char data[MD5_SIZE] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
+        Signature() {}
+        Signature(const std::uint64_t x) {
+            lower() = x;
+        }
+        static_assert(MD5_SIZE == 2 * sizeof(std::uint64_t));
+        std::uint64_t& lower() {
+            return *reinterpret_cast<std::uint64_t*>(data);
+        }
+        std::uint64_t lower() const {
+            return *reinterpret_cast<const std::uint64_t*>(data);
+        }
+        std::uint64_t& upper() {
+            return *(reinterpret_cast<std::uint64_t*>(data) + 1);
+        }
+        std::uint64_t upper() const {
+            return *(reinterpret_cast<const std::uint64_t*>(data) + 1);
+        }
+        operator std::uint64_t () { return lower(); }
+        static bool ckd_add_to(std::uint64_t* acc, const std::uint64_t x) {
+            const bool carry = *acc > std::numeric_limits<std::uint64_t>::max() - x;
+            *acc += x;
+            return carry;
+        }
+        // commutative hash combination
+        // The idea behind using + instead of ^ is that combining identical hashes leads to a left shift and not 0 (the neutral element).
+        // By carrying down instead of wrapping on overflow, I make this shift cyclical and the only way to reach 0 becomes 0+0.
+        // The existence of a 0 is unavoidable: https://kevinventullo.com/2018/12/24/hashing-unordered-sets-how-far-will-cleverness-take-you/
+        void operator += (Signature o) {
+            const bool carry_up = ckd_add_to(&lower(), o.lower());
+            bool carry_down = ckd_add_to(&upper(), o.upper());
+            carry_down = ckd_add_to(&upper(), carry_up) || carry_down;
+            const bool carry_up_again = ckd_add_to(&lower(), carry_down);
+            upper() += carry_up_again;
+        }
+        bool operator == (Signature o) const {
+            return lower() == o.lower() && upper() == o.upper();
+        }
+        bool operator > (Signature o) const {
+            return upper() != o.upper() ? upper() > o.upper() : lower() > o.lower();
+        }
+    };
+    Signature finish() {
+        Signature result;
+        hasher.finish(result.data);
+        return result;
+    }
 };
+
+namespace std {
+    inline string to_string(const MD5::Signature sig) {
+        char str[MD5_STRING_SIZE];
+        md5::sig_to_string(sig.data, str, sizeof(str));
+        return string(str);
+    }
+    template <>
+    struct hash<MD5::Signature> {
+        inline size_t operator () (const MD5::Signature signature) const noexcept {
+            return signature.lower();
+        }
+    };
+} // namespace std
 
 
 #endif  // LIB_MD5_MD5_H_
