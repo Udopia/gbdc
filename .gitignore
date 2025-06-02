@@ -61,3 +61,6 @@ makefile
 config.*
 autom4te.cache
 conf.*
+
+# test outputs
+massif.out.*

@@ -36,14 +36,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/external/xxhash/xxhash.h"
 #include "src/util/CNFFormula.h"
 
-// debugging
-#ifdef ISOHASH2_DEBUG
-  #include <iostream>
-  #define ISOH_LOG(MSG)  do { std::cerr << MSG << '\n'; } while (0)
-#else
-  #define ISOH_LOG(MSG)  do {} while (0)
-#endif
-
 namespace CNF {
 
 struct WLHRuntimeConfig {
@@ -109,10 +101,21 @@ public:
         if (cfg.prime_ring_modulus && *cfg.prime_ring_modulus < 2) {
             throw std::invalid_argument("prime_ring_modulus must be >= 2 if specified.");
     }
-    ISOH_LOG("Loaded CNF  vars=" << cnf.nVars()
+    if (cfg.return_measurements) {
+        std::cerr << "Loaded CNF vars=" << cnf.nVars()
                 << " clauses=" << cnf.nClauses()
                 << " lits=" << cnf.nLits()
-                << " maxClauseLen=" << cnf.maxClauseLength());
+                << " maxClauseLen=" << cnf.maxClauseLength()
+                << " depth=" << cfg.depth
+                << " crossRef=" << (cfg.cross_reference_literals ? "yes" : "no")
+                << " rehash=" << (cfg.rehash_clauses ? "yes" : "no")
+                << " optimizeFirst=" << (cfg.optimize_first_iteration ? "yes" : "no")
+                << " progressCheck=" << cfg.progress_check_iteration
+                << " sortForClauseHash=" << (cfg.sort_for_clause_hash ? "yes" : "no")
+                << " useXXH3=" << (cfg.use_xxh3 ? "yes" : "no")
+                << " primeRingModulus=" << (cfg.prime_ring_modulus.has_value() ? std::to_string(*cfg.prime_ring_modulus) : "none")
+                << std::endl;
+    }
     }
 
     std::string operator()() {
@@ -201,7 +204,7 @@ private:
 
     // Main iteration step
     void iteration_step() {
-        ISOH_LOG("Iteration " << iteration);
+        auto start = std::chrono::high_resolution_clock::now();
 
         std::fill(new_color().colors.begin(), new_color().colors.end(), LitColors{0,0});
 
@@ -216,6 +219,9 @@ private:
             for (const auto& lit : cl)
                 combine(&new_color()(lit), clh, cfg.prime_ring_modulus);
         }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        std::cerr << "c Iteration " << iteration << " took " << duration << " microseconds and processed";
         ++iteration;
     }
 
@@ -242,19 +248,25 @@ private:
     }
 
     std::optional<Hash> check_progress() {
+        int last_reported_iteration;
+        if (iteration != last_reported_iteration) {
+            std::cerr << " uniqueVars=" << previous_unique_hashes-1 << std::endl;
+            last_reported_iteration = iteration;
+        }
         if ((iteration != cfg.progress_check_iteration && iteration != cfg.progress_check_iteration + 1 && iteration < 6) || iteration == 0)
             return std::nullopt;
 
         unique_hashes.reserve(previous_unique_hashes);
+
         const Hash vh = hash_sum<LitColors>(old_color().colors, [this](const LitColors& lc) {
             const Hash vh = lc.variable_hash(this);
             unique_hashes.insert(vh);
             return vh;
         });
         if (unique_hashes.size() <= previous_unique_hashes) {
-            ISOH_LOG("Stabilised at iter=" << iteration
-                    << " uniqueVars=" << unique_hashes.size()
-                    << "  early hash=" << vh);
+            if (cfg.return_measurements) {
+                std::cerr << "c Stabilised" << std::endl;
+            }
             return vh;
         }
         previous_unique_hashes = unique_hashes.size();
@@ -272,14 +284,12 @@ private:
     }
 
     Hash run() {
-        ISOH_LOG("Start hashing, maxDepth=" << cfg.depth);
         while (iteration < cfg.depth / 2) {
             if (const auto result = check_progress())
                 return *result;
             iteration_step();
         }
         Hash final = cfg.depth % 2 == 0 ? variable_hash() : cnf_hash();
-        ISOH_LOG("Finished at iter=" << iteration << "  finalHash=" << final);
         return final;
     }
 };
@@ -290,12 +300,12 @@ inline std::string weisfeiler_leman_hash(
     bool cross_reference_literals = true,
     bool rehash_clauses = true,
     bool optimize_first_iteration = true,
-    unsigned progress_check_iteration = 6,
+    unsigned progress_check_iteration = 1,
     // bool shrink_to_fit = false,
     bool return_measurements = true,
     bool sort_for_clause_hash = false,
     bool use_xxh3 = true,
-    std::optional<unsigned> prime_ring_modulus = std::nullopt
+    std::optional<unsigned> prime_ring_modulus = std::nullopt //std::nullopt
     // bool use_half_word_hash = true,
     // bool use_prime_ring = false 
     )
