@@ -54,6 +54,7 @@ struct WLHRuntimeConfig {
 struct WLHResult {
     std::string filename;
     uint64_t hash;
+    std::string hexhash;
     unsigned iterations;
     std::string status;
     long total_runtime;
@@ -125,13 +126,15 @@ public:
         iteration = 0;
         previous_unique_hashes = 1;
         status = "running";
-
         uint64_t final_hash = run();
+        std::ostringstream hexhash;
+        hexhash << std::hex << std::setw(16) << std::setfill('0') << final_hash;
 
         WLHResult r{};
 
         r.filename = original_filename;
         r.hash = final_hash;
+        r.hexhash = hexhash.str();
         r.iterations = iteration;
         r.status = status;
         r.iterations_time = iter_us;
@@ -323,6 +326,8 @@ private:
             status = "depth_reached";
         }
         Hash final = cfg.depth % 2 == 0 ? variable_hash() : cnf_hash();
+
+
         return final;
     }
 };

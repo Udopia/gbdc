@@ -71,8 +71,8 @@ int main(int argc, char** argv) {
     argparse.add_argument("--no-cross-ref").implicit_value(true).default_value(false).help("Disable cross‐referencing of positive/negative literals");
     argparse.add_argument("--no-rehash-clauses").implicit_value(true).default_value(false).help("Disable re‐hashing of the sum of literals of a clause");
     argparse.add_argument("--no-opt-first").implicit_value(true).default_value(false).help("Disable optimized first iteration");
-    argparse.add_argument("--progress-iter").default_value(6u).scan<'i', unsigned>().help("From which iteration on a early stabilization check will be done");
-    argparse.add_argument("--no-measurements").implicit_value(true).default_value(false).help("Don't collect measurements on individual iterations");
+    argparse.add_argument("--progress-iter").default_value(1u).scan<'i', unsigned>().help("From which iteration on a early stabilization check will be done");
+    argparse.add_argument("--no-measurements").implicit_value(true).default_value(false).help("Disable collecting measurements on individual iterations");
     argparse.add_argument("--sort-for-clause-hash").implicit_value(true).default_value(false).help("Sort literal colors instead of summing");
     argparse.add_argument("--use-md5").implicit_value(true).default_value(false).help("Use MD5 instead of XXH3 for hashing");
     argparse.add_argument("--prime-ring-mod").default_value(0u).scan<'i', unsigned>().help("If >0, do all calculations modulo this prime");

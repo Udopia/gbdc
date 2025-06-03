@@ -8,7 +8,7 @@ namespace CNF {
 void write_csv(const WLHResult& r, std::ostream& out) {
     static bool wrote_header = false;
     if (!wrote_header) {
-        out << "filename,hash,iterations,total_runtime,status,"
+        out << "filename,hash,hexhash,iterations,total_runtime,status,"
                "iterations_time,unique_variables,"
                "nVars,nClauses,nLits,maxClauseLen,"
                "depth,cross_ref,rehash,opt_first,"
@@ -25,7 +25,7 @@ void write_csv(const WLHResult& r, std::ostream& out) {
         return s.str();
     };
 
-    out  << r.filename << ',' << r.hash << ',' << r.iterations << ',' << r.total_runtime << ',' << r.status << ','
+    out  << r.filename << ',' << r.hash << ',' << r.hexhash << ',' << r.iterations << ',' << r.total_runtime << ',' << r.status << ','
          << '"' << join(r.iterations_time) << '"' << ','
          << '"' << join(r.unique_variables) << '"' << ','
          << r.nVars << ',' << r.nClauses << ',' << r.nLits << ',' << r.maxClauseLen << ','
