@@ -51,20 +51,21 @@ void CNF::BaseFeatures1::run() {
         }
         // horn statistics
         unsigned n_pos = clause.size() - n_neg;
-        if (n_neg <= 1) {
-            if (n_neg == 0) ++positive;
+        if (n_pos <= 1) {
+            if (n_pos == 0) ++negative;
             ++horn;
             for (Lit lit : clause) {
                 ++variable_horn[lit.var()];
             }
         }
-        if (n_pos <= 1) {
-            if (n_pos == 0) ++negative;
+        if (n_neg <= 1) {
+            if (n_neg == 0) ++positive;
             ++inv_horn;
             for (Lit lit : clause) {
                 ++variable_inv_horn[lit.var()];
             }
         }
+        
         // balance of positive and negative literals per clause
         if (clause.size() > 0) {
             balance_clause.push_back((double)std::min(n_pos, n_neg) / (double)std::max(n_pos, n_neg));
