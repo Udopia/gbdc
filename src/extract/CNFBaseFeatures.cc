@@ -88,7 +88,8 @@ void CNF::BaseFeatures1::load_feature_record() {
     setFeature("variables", (double)n_vars);
     setFeature("bytes", (double)bytes);
     setFeature("ccs", (double)ccs);
-    setFeatures({ "cls1", "cls2", "cls3", "cls4", "cls5", "cls6", "cls7", "cls8", "cls9", "cls10p" }, clause_sizes.begin(), clause_sizes.end());
+    std::vector<double> clause_sizes_double(clause_sizes.begin(), clause_sizes.end());
+    setFeatures({ "cls1", "cls2", "cls3", "cls4", "cls5", "cls6", "cls7", "cls8", "cls9", "cls10p" }, clause_sizes_double.begin()+1, clause_sizes_double.end());
     setFeature("horn", (double)horn);
     setFeature("invhorn", (double)inv_horn);
     setFeature("positive", (double)positive);
