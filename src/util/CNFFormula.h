@@ -30,11 +30,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 class CNFFormula {
     For formula;
-    unsigned variables;
-    unsigned total_literals;
+    unsigned variables = 0;
+    unsigned total_literals = 0;
+    unsigned max_clause_len = 0;
 
  public:
-    CNFFormula() : formula(), variables(0) { }
+    CNFFormula() = default;
 
     explicit CNFFormula(const char* filename) : CNFFormula() {
         readDimacsFromFile(filename);
@@ -74,6 +75,14 @@ class CNFFormula {
 
     inline int newVar() {
         return ++variables;
+    }
+
+    inline size_t maxClauseLength() const { 
+        return max_clause_len; 
+    }
+
+    inline const For& clauses() const { 
+        return formula; 
     }
 
     inline void clear() {
@@ -142,6 +151,7 @@ class CNFFormula {
                 }
             }
             clause->resize(clause->size() - dup);
+            max_clause_len = std::max(max_clause_len, static_cast<unsigned>(clause->size()));
             clause->shrink_to_fit();
             variables = std::max(variables, (unsigned int)clause->back().var());
             total_literals += clause->size();
@@ -151,4 +161,3 @@ class CNFFormula {
 };
 
 #endif  // SRC_UTIL_CNFFORMULA_H_
-
