@@ -139,7 +139,8 @@ void WCNF::BaseFeatures1::run() {
 void WCNF::BaseFeatures1::load_feature_record() {
     setFeature("h_clauses", (double)n_hard_clauses);
     setFeature("variables", (double)n_vars);
-    setFeatures({ "h_cls1", "h_cls2", "h_cls3", "h_cls4", "h_cls5", "h_cls6", "h_cls7", "h_cls8", "h_cls9", "h_cls10p" }, hard_clause_sizes.begin(), hard_clause_sizes.end());
+    std::vector<double> clause_sizes_double(hard_clause_sizes.begin()+1, hard_clause_sizes.end());
+    setFeatures({ "h_cls1", "h_cls2", "h_cls3", "h_cls4", "h_cls5", "h_cls6", "h_cls7", "h_cls8", "h_cls9", "h_cls10p" }, clause_sizes_double.begin(), clause_sizes_double.end());
     setFeature("h_horn", (double)horn);
     setFeature("h_invhorn", (double)inv_horn);
     setFeature("h_positive", (double)positive);
@@ -154,7 +155,9 @@ void WCNF::BaseFeatures1::load_feature_record() {
     setFeatures({ "h_balancevars_mean", "h_balancevars_variance", "h_balancevars_min", "h_balancevars_max", "h_balancevars_entropy" }, stats.begin(), stats.end());
     setFeature("s_clauses", (double)n_soft_clauses);
     setFeature("s_weight_sum", (double)weight_sum);
-    setFeatures({ "s_cls1", "s_cls2", "s_cls3", "s_cls4", "s_cls5", "s_cls6", "s_cls7", "s_cls8", "s_cls9", "s_cls10p" }, soft_clause_sizes.begin(), soft_clause_sizes.end());
+    clause_sizes_double.clear();
+    std::copy(soft_clause_sizes.begin()+1, soft_clause_sizes.end(), std::back_inserter(clause_sizes_double));
+    setFeatures({ "s_cls1", "s_cls2", "s_cls3", "s_cls4", "s_cls5", "s_cls6", "s_cls7", "s_cls8", "s_cls9", "s_cls10p" }, clause_sizes_double.begin(), clause_sizes_double.end());
     stats = getDistributionStats(weights);
     setFeatures({ "s_weight_mean", "s_weight_variance", "s_weight_min", "s_weight_max", "s_weight_entropy" }, stats.begin(), stats.end());
 }
