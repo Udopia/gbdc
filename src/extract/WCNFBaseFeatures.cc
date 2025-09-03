@@ -144,8 +144,14 @@ void WCNF::BaseFeatures1::load_feature_record() {
     setFeature("h_invhorn", (double)inv_horn);
     setFeature("h_positive", (double)positive);
     setFeature("h_negative", (double)negative);
+    // remove the first dummy element before computing statistics
+    std::swap(variable_horn.front(), variable_horn.back());
+    variable_horn.pop_back();
     std::vector<double> stats = getDistributionStats(variable_horn);
     setFeatures({ "h_hornvars_mean", "h_hornvars_variance", "h_hornvars_min", "h_hornvars_max", "h_hornvars_entropy" }, stats.begin(), stats.end());
+    // remove the first dummy element before computing statistics
+    std::swap(variable_inv_horn.front(), variable_inv_horn.back());
+    variable_inv_horn.pop_back();
     stats = getDistributionStats(variable_inv_horn);
     setFeatures({ "h_invhornvars_mean", "h_invhornvars_variance", "h_invhornvars_min", "h_invhornvars_max", "h_invhornvars_entropy" }, stats.begin(), stats.end());
     stats = getDistributionStats(balance_clause);
@@ -250,8 +256,14 @@ void WCNF::BaseFeatures2::run() {
 void WCNF::BaseFeatures2::load_feature_records() {
     std::vector<double> stats = getDistributionStats(vcg_cdegree);
     setFeatures({ "h_vcg_cdegree_mean", "h_vcg_cdegree_variance", "h_vcg_cdegree_min", "h_vcg_cdegree_max", "h_vcg_cdegree_entropy" }, stats.begin(), stats.end());
+    // remove the first dummy element before computing statistics
+    std::swap(vcg_vdegree.front(), vcg_vdegree.back());
+    vcg_vdegree.pop_back();
     stats = getDistributionStats(vcg_vdegree);
     setFeatures({ "h_vcg_vdegree_mean", "h_vcg_vdegree_variance", "h_vcg_vdegree_min", "h_vcg_vdegree_max", "h_vcg_vdegree_entropy" }, stats.begin(), stats.end());
+    // remove the first dummy element before computing statistics
+    std::swap(vg_degree.front(), vg_degree.back());
+    vg_degree.pop_back();
     stats = getDistributionStats(vg_degree);
     setFeatures({ "h_vg_degree_mean", "h_vg_degree_variance", "h_vg_degree_min", "h_vg_degree_max", "h_vg_degree_entropy" }, stats.begin(), stats.end());
     stats = getDistributionStats(clause_degree);
