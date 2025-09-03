@@ -1,5 +1,5 @@
 /** 
- * Markus Iser (KIT): Got this from https://github.com/CommanderBubble/MD5
+ * Ashlin Iser (KIT): Got this from https://github.com/CommanderBubble/MD5
  * Many Thanks to Michael Lloyd for this neat implemenation of the md5 algorithm.
  * Made some tiny adaptions, wrote a little wrapper (see eof), and copied this from LICENCE:
  * 
@@ -176,7 +176,7 @@ extern void sig_from_string(void* signature, const char* str);
 
 
 
-// Markus Iser: The following class just wraps all necessary stuff from above to produce md5 hashes from sequences of characters
+// Ashlin Iser: The following class just wraps all necessary stuff from above to produce md5 hashes from sequences of characters
 
 #include <string>
 
