@@ -95,8 +95,14 @@ void CNF::BaseFeatures1::load_feature_record() {
     setFeature("invhorn", (double)inv_horn);
     setFeature("positive", (double)positive);
     setFeature("negative", (double)negative);
+    // remove the first dummy element before computing statistics
+    std::swap(variable_horn.front(), variable_horn.back());
+    variable_horn.pop_back();
     std::vector<double> stats = getDistributionStats(variable_horn);
     setFeatures({ "hornvars_mean", "hornvars_variance", "hornvars_min", "hornvars_max", "hornvars_entropy" }, stats.begin(), stats.end());
+    // remove the first dummy element before computing statistics
+    std::swap(variable_inv_horn.front(), variable_inv_horn.back());
+    variable_inv_horn.pop_back();
     stats = getDistributionStats(variable_inv_horn);
     setFeatures({ "invhornvars_mean", "invhornvars_variance", "invhornvars_min", "invhornvars_max", "invhornvars_entropy" }, stats.begin(), stats.end());
     stats = getDistributionStats(balance_clause);
@@ -149,8 +155,14 @@ void CNF::BaseFeatures2::run() {
 void CNF::BaseFeatures2::load_feature_records() {
     std::vector<double> stats = getDistributionStats(vcg_cdegree);
     setFeatures({ "vcg_cdegree_mean", "vcg_cdegree_variance", "vcg_cdegree_min", "vcg_cdegree_max", "vcg_cdegree_entropy" }, stats.begin(), stats.end());
+    // remove the first dummy element before computing statistics
+    std::swap(vcg_vdegree.front(), vcg_vdegree.back());
+    vcg_vdegree.pop_back();
     stats = getDistributionStats(vcg_vdegree);
     setFeatures({ "vcg_vdegree_mean", "vcg_vdegree_variance", "vcg_vdegree_min", "vcg_vdegree_max", "vcg_vdegree_entropy" }, stats.begin(), stats.end());
+    // remove the first dummy element before computing statistics
+    std::swap(vg_degree.front(), vg_degree.back());
+    vg_degree.pop_back();
     stats = getDistributionStats(vg_degree);
     setFeatures({ "vg_degree_mean", "vg_degree_variance", "vg_degree_min", "vg_degree_max", "vg_degree_entropy" }, stats.begin(), stats.end());
     stats = getDistributionStats(clause_degree);
