@@ -1,6 +1,6 @@
 /**
  * MIT License
- * Copyright (c) 2024 Markus Iser, Christoph Jabs
+ * Copyright (c) 2025 Ashlin Iser, Christoph Jabs
  */
 
 #include "WCNFBaseFeatures.h"

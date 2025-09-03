@@ -1,5 +1,5 @@
 /*************************************************************************************************
-CNFTools -- Copyright (c) 2015, Markus Iser, KIT - Karlsruhe Institute of Technology
+CNFTools -- Copyright (c) 2015, Ashlin Iser, KIT - Karlsruhe Institute of Technology
 
 --------------- Former Glucose Copyrights
 

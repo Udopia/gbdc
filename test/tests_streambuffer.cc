@@ -1,7 +1,7 @@
 /**
  * Some tests for gbdc
  * 
- * @author Markus Iser 
+ * @author Ashlin Iser 
  */
 
 #include <stdio.h>

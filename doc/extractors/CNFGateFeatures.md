@@ -43,4 +43,4 @@ Distributions features are `mean`, `variance`, `min`, `max` and `entropy`.
 
 ## References
 
-- [1] Markus Iser: _Recognition and Exploitation of Gate Structure in SAT Solving_, 2020.
+- [1] Ashlin Iser: _Recognition and Exploitation of Gate Structure in SAT Solving_, 2020.
