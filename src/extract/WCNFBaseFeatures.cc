@@ -1,6 +1,6 @@
 /**
  * MIT License
- * Copyright (c) 2024 Markus Iser, Christoph Jabs
+ * Copyright (c) 2025 Ashlin Iser, Christoph Jabs
  */
 
 #include "WCNFBaseFeatures.h"
@@ -139,13 +139,20 @@ void WCNF::BaseFeatures1::run() {
 void WCNF::BaseFeatures1::load_feature_record() {
     setFeature("h_clauses", (double)n_hard_clauses);
     setFeature("variables", (double)n_vars);
-    setFeatures({ "h_cls1", "h_cls2", "h_cls3", "h_cls4", "h_cls5", "h_cls6", "h_cls7", "h_cls8", "h_cls9", "h_cls10p" }, hard_clause_sizes.begin(), hard_clause_sizes.end());
+    std::vector<double> clause_sizes_double(hard_clause_sizes.begin()+1, hard_clause_sizes.end());
+    setFeatures({ "h_cls1", "h_cls2", "h_cls3", "h_cls4", "h_cls5", "h_cls6", "h_cls7", "h_cls8", "h_cls9", "h_cls10p" }, clause_sizes_double.begin(), clause_sizes_double.end());
     setFeature("h_horn", (double)horn);
     setFeature("h_invhorn", (double)inv_horn);
     setFeature("h_positive", (double)positive);
     setFeature("h_negative", (double)negative);
+    // remove the first dummy element before computing statistics
+    std::swap(variable_horn.front(), variable_horn.back());
+    variable_horn.pop_back();
     std::vector<double> stats = getDistributionStats(variable_horn);
     setFeatures({ "h_hornvars_mean", "h_hornvars_variance", "h_hornvars_min", "h_hornvars_max", "h_hornvars_entropy" }, stats.begin(), stats.end());
+    // remove the first dummy element before computing statistics
+    std::swap(variable_inv_horn.front(), variable_inv_horn.back());
+    variable_inv_horn.pop_back();
     stats = getDistributionStats(variable_inv_horn);
     setFeatures({ "h_invhornvars_mean", "h_invhornvars_variance", "h_invhornvars_min", "h_invhornvars_max", "h_invhornvars_entropy" }, stats.begin(), stats.end());
     stats = getDistributionStats(balance_clause);
@@ -154,7 +161,9 @@ void WCNF::BaseFeatures1::load_feature_record() {
     setFeatures({ "h_balancevars_mean", "h_balancevars_variance", "h_balancevars_min", "h_balancevars_max", "h_balancevars_entropy" }, stats.begin(), stats.end());
     setFeature("s_clauses", (double)n_soft_clauses);
     setFeature("s_weight_sum", (double)weight_sum);
-    setFeatures({ "s_cls1", "s_cls2", "s_cls3", "s_cls4", "s_cls5", "s_cls6", "s_cls7", "s_cls8", "s_cls9", "s_cls10p" }, soft_clause_sizes.begin(), soft_clause_sizes.end());
+    clause_sizes_double.clear();
+    std::copy(soft_clause_sizes.begin()+1, soft_clause_sizes.end(), std::back_inserter(clause_sizes_double));
+    setFeatures({ "s_cls1", "s_cls2", "s_cls3", "s_cls4", "s_cls5", "s_cls6", "s_cls7", "s_cls8", "s_cls9", "s_cls10p" }, clause_sizes_double.begin(), clause_sizes_double.end());
     stats = getDistributionStats(weights);
     setFeatures({ "s_weight_mean", "s_weight_variance", "s_weight_min", "s_weight_max", "s_weight_entropy" }, stats.begin(), stats.end());
 }
@@ -250,8 +259,14 @@ void WCNF::BaseFeatures2::run() {
 void WCNF::BaseFeatures2::load_feature_records() {
     std::vector<double> stats = getDistributionStats(vcg_cdegree);
     setFeatures({ "h_vcg_cdegree_mean", "h_vcg_cdegree_variance", "h_vcg_cdegree_min", "h_vcg_cdegree_max", "h_vcg_cdegree_entropy" }, stats.begin(), stats.end());
+    // remove the first dummy element before computing statistics
+    std::swap(vcg_vdegree.front(), vcg_vdegree.back());
+    vcg_vdegree.pop_back();
     stats = getDistributionStats(vcg_vdegree);
     setFeatures({ "h_vcg_vdegree_mean", "h_vcg_vdegree_variance", "h_vcg_vdegree_min", "h_vcg_vdegree_max", "h_vcg_vdegree_entropy" }, stats.begin(), stats.end());
+    // remove the first dummy element before computing statistics
+    std::swap(vg_degree.front(), vg_degree.back());
+    vg_degree.pop_back();
     stats = getDistributionStats(vg_degree);
     setFeatures({ "h_vg_degree_mean", "h_vg_degree_variance", "h_vg_degree_min", "h_vg_degree_max", "h_vg_degree_entropy" }, stats.begin(), stats.end());
     stats = getDistributionStats(clause_degree);
