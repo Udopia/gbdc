@@ -34,7 +34,7 @@ class CNFFormula {
     unsigned total_literals;
 
  public:
-    CNFFormula() : formula(), variables(0) { }
+    CNFFormula() : formula(), variables(0), total_literals(0) { }
 
     explicit CNFFormula(const char* filename) : CNFFormula() {
         readDimacsFromFile(filename);
@@ -77,21 +77,22 @@ class CNFFormula {
     }
 
     inline void clear() {
+        for (Cl* clause : formula) delete clause;
         formula.clear();
+        variables = 0;
+        total_literals = 0;
     }
 
-    // create gapless representation of variables
     void normalizeVariableNames() {
-        std::vector<unsigned> name;
-        name.resize(variables+1, 0);
-        unsigned int max = 0;
+        std::vector<unsigned> map(variables + 1, 0);
+        unsigned next = 1;
         for (Cl* clause : formula) {
             for (Lit& lit : *clause) {
-                if (name[lit.var()] == 0) name[lit.var()] = max++;
-                lit = Lit(name[lit.var()], lit.sign());
+                if (map[lit.var()] == 0) map[lit.var()] = next++;
+                lit = Lit(map[lit.var()], lit.sign());
             }
         }
-        variables = max;
+        variables = next - 1;
     }
 
     void readDimacsFromFile(const char* filename) {
