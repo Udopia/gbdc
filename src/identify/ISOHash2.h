@@ -40,7 +40,7 @@ namespace CNF {
 
 struct IsoHash2Settings {
     std::uint64_t max_iterations = 6;
-    bool print_stats = true;
+    bool print_stats = false;
 };
 
 class IsoHash2 {
