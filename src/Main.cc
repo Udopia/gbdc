@@ -63,6 +63,7 @@ int main(int argc, char** argv) {
     argparse.add_argument("-t", "--timeout").default_value(0).scan<'i', int>().help("Time limit in seconds");
     argparse.add_argument("-m", "--memout").default_value(0).scan<'i', int>().help("Memory limit in MB");
     argparse.add_argument("-f", "--fileout").default_value(0).scan<'i', int>().help("File size limit in MB"); 
+    argparse.add_argument("--max-iters").default_value(6).scan<'i', int>().help("Maximum Isohash2 iterations before stopping");
 
     try {
         argparse.parse_args(argc, argv);
@@ -120,7 +121,9 @@ int main(int argc, char** argv) {
         } 
         else if (toolname == "isohash2") {
             if (ext == ".cnf") {
-                std::cout << CNF::isohash2(filename.c_str()) << std::endl;
+                CNF::IsoHash2Settings config;
+                config.max_iterations = argparse.get<int>("--max-iters");
+                std::cout << CNF::isohash2(filename.c_str(), config) << std::endl;
             }
         } 
         else if (toolname == "normalize") {
