@@ -179,7 +179,7 @@ PYBIND11_MODULE(gbdc, m) {
     m.def("opb_base_feature_names", &feature_names<OPB::BaseFeatures>, "Get OPB Base Feature Names");
     m.def("gbdhash", &CNF::gbdhash, "Calculates GBD-Hash (md5 of normalized file) of given DIMACS CNF file.", py::arg("filename"));
     m.def("isohash", &CNF::isohash, "Calculates ISO-Hash (md5 of sorted degree sequence) of given DIMACS CNF file.", py::arg("filename"));
-    m.def("isohash2", &CNF::isohash2, "Calculates the more advanced ISO-Hash2 (xxhash of Weisfeiler Leman coloring) of given DIMACS CNF file.", py::arg("filename"));
+    m.def("isohash2", [](const char* filename, int max_iters) { CNF::IsoHash2Settings config; config.max_iterations = max_iters; return CNF::isohash2(filename, config); }, "Calculates the more advanced ISO-Hash2 (xxhash of Weisfeiler Leman coloring) of given DIMACS CNF file.", py::arg("filename"), py::arg("max_iters") = 6);
     m.def("opbhash", &OPB::gbdhash, "Calculates OPB-Hash (md5 of normalized file) of given OPB file.", py::arg("filename"));
     m.def("pqbfhash", &PQBF::gbdhash, "Calculates PQBF-Hash (md5 of normalized file) of given PQBF file.", py::arg("filename"));
     m.def("wcnfhash", &WCNF::gbdhash, "Calculates WCNF-Hash (md5 of normalized file) of given WCNF file.", py::arg("filename"));

@@ -30,17 +30,17 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <iomanip>
 #include <iostream>
 
-// #ifndef XXH_INLINE_ALL
+#ifndef XXH_INLINE_ALL
 #define XXH_INLINE_ALL
-// #endif
+#endif
 #include "src/external/xxhash/xxhash.h"
 #include "src/util/CNFFormula.h"
 
 namespace CNF {
 
-struct Settings {
+struct IsoHash2Settings {
     uint64_t max_iterations = 6;
-    bool print_stats = false;
+    bool print_stats = true;
 };
 
 class IsoHash2 {
@@ -70,6 +70,20 @@ private:
         Hash n = 1;
     };
 
+    struct Signature {
+        Hash p;
+        Hash n;
+        uint32_t original_index;
+
+        bool operator<(const Signature& other) const {
+            if (p != other.p) return p < other.p;
+            return n < other.n;
+        }
+        bool operator==(const Signature& other) const {
+            return p == other.p && n == other.n;
+        }
+    };
+
     struct ColorFunction {
         std::vector<LitColors> colors_by_var;
 
@@ -83,10 +97,12 @@ private:
         }
     };
 
-    const Settings& settings;
+    const IsoHash2Settings& settings;
     const CNFFormula& cnf;
 
     ColorFunction color_functions[2];
+
+    std::vector<Signature> sort_buffer;
 
     inline ColorFunction& current_color(std::uint64_t round) { return color_functions[round % 2]; }
     inline const ColorFunction& current_color(std::uint64_t round) const { return color_functions[round % 2]; }
@@ -98,11 +114,11 @@ private:
         return XXH3_64bits(data, len);
     }
 
-    Hash variable_hash(const LitColors& lc) const {
-        Hash data[2];
-        if (lc.p > lc.n) { data[0] = lc.n; data[1] = lc.p; }
-        else { data[0] = lc.p; data[1] = lc.n; }
-        return hash_bytes(data, sizeof(data));
+    static inline Hash fast_mix(Hash k) { // mix64variant13 [Steele et al. 2014]
+        k ^= k >> 30; k *= 0xbf58476d1ce4e5b9ULL;
+        k ^= k >> 27; k *= 0x94d049bb133111ebULL;
+        k ^= k >> 31;
+        return k;
     }
 
     Hash clause_hash(const Clause& clause, std::uint64_t round) const {
@@ -110,29 +126,46 @@ private:
         for (const Literal lit : clause) {
             combined+=current_color(round)(lit);
         }
-        return hash_bytes(&combined, sizeof(combined));
+        return fast_mix(combined);
     }
 
     Fingerprint finalize(std::uint64_t round) {
         auto& next_vec = next_color(round).colors_by_var;
         const auto& cur_vec = current_color(round).colors_by_var;
+        const size_t num_vars = cnf.nVars();
 
-        Hash acc_sum = 0;
-        Hash acc_xor = 0;
-
-        for (size_t var_id = 1; var_id <= cnf.nVars(); ++var_id) {
+        for (size_t var_id = 1; var_id <= num_vars; ++var_id) {
             auto& agg_lc = next_vec[var_id];
             const auto& cur_lc = cur_vec[var_id];
 
             const Hash features_p[3] = {cur_lc.p, agg_lc.p, cur_lc.n};
-            agg_lc.p = hash_bytes(features_p, sizeof(features_p));
+            Hash h_p = hash_bytes(features_p, sizeof(features_p));
 
             const Hash features_n[3] = {cur_lc.n, agg_lc.n, cur_lc.p};
-            agg_lc.n = hash_bytes(features_n, sizeof(features_n));
+            Hash h_n = hash_bytes(features_n, sizeof(features_n));
 
-            const Hash vh = variable_hash(agg_lc);
-            acc_sum += vh;
-            acc_xor ^= vh;
+            sort_buffer[var_id - 1] = {h_p, h_n, (uint32_t)var_id};
+        }
+
+        std::sort(sort_buffer.begin(), sort_buffer.end());
+
+        Hash acc_sum = 0;
+        Hash acc_xor = 0;
+        Hash current_rank = 0;
+
+        for (size_t i = 0; i < num_vars; ++i) {
+            if (i > 0 && !(sort_buffer[i] == sort_buffer[i-1])) {
+                current_rank++;
+            }
+
+            Hash stable_color = fast_mix(current_rank);
+
+            uint32_t original_idx = sort_buffer[i].original_index;
+            next_vec[original_idx].p = stable_color;
+            next_vec[original_idx].n = stable_color;
+
+            acc_sum += stable_color;
+            acc_xor ^= stable_color;
         }
 
         return {acc_sum, acc_xor};
@@ -154,10 +187,11 @@ private:
     }
 
 public:
-    IsoHash2(const CNFFormula& formula, const Settings& s) :
+    IsoHash2(const CNFFormula& formula, const IsoHash2Settings& s) :
         settings(s),
         cnf(formula),
-        color_functions{ColorFunction(cnf.nVars()), ColorFunction(cnf.nVars())}
+        color_functions{ColorFunction(cnf.nVars()), ColorFunction(cnf.nVars())},
+        sort_buffer(cnf.nVars())
     {}
 
     Stats run() {
@@ -194,14 +228,13 @@ public:
     }
 };
 
-inline IsoHash2::Stats isohash2_stats(const char* filename, const Settings& s = {}) {
+inline IsoHash2::Stats isohash2_stats(const char* filename, const IsoHash2Settings& s = {}) {
     CNFFormula cnf(filename);
     IsoHash2 hasher(cnf, s);
     return hasher.run();
 }
 
-inline std::string isohash2(const char* filename) {
-    const Settings& s = {};
+inline std::string isohash2(const char* filename, const IsoHash2Settings& s = {}) {
     const auto stats = isohash2_stats(filename, s);
 
     std::ostringstream oss;
