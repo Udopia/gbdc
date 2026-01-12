@@ -28,6 +28,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/identify/GBDHash.h"
 #include "src/identify/ISOHash.h"
+#include "src/identify/ISOHash2.h"
 
 #include "src/util/SolverTypes.h"
 
@@ -47,10 +48,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 int main(int argc, char** argv) {
     argparse::ArgumentParser argparse("CNF Tools");
 
-    argparse.add_argument("tool").help("Select Tool: id, isohash, normalize, sanitize, checksani, cnf2kis, cnf2bip, extract, gates")
+    argparse.add_argument("tool").help("Select Tool: id, isohash, isohash2, normalize, sanitize, checksani, cnf2kis, cnf2bip, extract, gates")
         .default_value("identify")
         .action([](const std::string& value) {
-            static const std::vector<std::string> choices = { "id", "isohash", "normalize", "sanitize", "checksani", "cnf2kis", "cnf2bip", "extract", "gates" };
+            static const std::vector<std::string> choices = { "id", "isohash", "isohash2", "normalize", "sanitize", "checksani", "cnf2kis", "cnf2bip", "extract", "gates" };
             if (std::find(choices.begin(), choices.end(), value) != choices.end()) {
                 return value;
             }
@@ -115,6 +116,11 @@ int main(int argc, char** argv) {
             }
             else if (ext == ".wcnf") {
                 std::cout << WCNF::isohash(filename.c_str()) << std::endl;
+            }
+        } 
+        else if (toolname == "isohash2") {
+            if (ext == ".cnf") {
+                std::cout << CNF::isohash2(filename.c_str()) << std::endl;
             }
         } 
         else if (toolname == "normalize") {
