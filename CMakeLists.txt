@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.15)
 project(gbdc VERSION 1.0 LANGUAGES CXX)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
 
@@ -12,17 +14,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CADICAL_DIR ${CMAKE_BINARY_DIR}/solvers/src/cadical_external/build)
 set(CADICAL_LIB ${CADICAL_DIR}/libcadical.a)
 if (EXISTS ${CADICAL_LIB})
-    message(STATUS "Cadical already built")
+    message(STATUS "Cadical found at ${CADICAL_LIB}")
     add_library(cadical STATIC IMPORTED)
     set_target_properties(cadical PROPERTIES IMPORTED_LOCATION "${CADICAL_LIB}")
 else()
     message(STATUS "Building Cadical")
     include(ExternalProject)
+
     ExternalProject_Add(cadical_external
         GIT_REPOSITORY https://github.com/arminbiere/cadical.git
         GIT_TAG master
         PREFIX solvers
-        CONFIGURE_COMMAND ./configure "CXXFLAGS=-fPIC"
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CXXFLAGS=-fPIC CFLAGS=-fPIC ./configure
         BUILD_COMMAND make -j
         INSTALL_COMMAND ""
         BUILD_BYPRODUCTS "${CADICAL_LIB}"
@@ -31,7 +34,10 @@ else()
 endif()
     
 add_library(solver STATIC IMPORTED)
-add_dependencies(solver cadical_external)
+if (NOT EXISTS ${CADICAL_LIB})
+    add_dependencies(solver cadical_external)
+endif()
+
 set_target_properties(solver PROPERTIES IMPORTED_LOCATION "${CADICAL_LIB}")
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -66,3 +72,4 @@ add_test(NAME Test_StreamBuffer COMMAND "test/tests_streambuffer")
 # add_test(NAME Test_Feature_Extraction COMMAND "test/tests_feature_extraction")
 add_test(NAME Test_StreamCompressor COMMAND "test/tests_streamcompressor")
 add_test(NAME Test_GBDLib COMMAND "test/tests_gbdlib")
+add_test(NAME Test_IsoHash2 COMMAND "test/tests_isohash2")
