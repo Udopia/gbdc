@@ -31,6 +31,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/identify/GBDHash.h"
 #include "src/identify/ISOHash.h"
+#include "src/identify/ISOHash2.h"
 
 #include "src/extract/CNFSaniCheck.h"
 #include "src/extract/CNFBaseFeatures.h"
@@ -178,6 +179,7 @@ PYBIND11_MODULE(gbdc, m) {
     m.def("opb_base_feature_names", &feature_names<OPB::BaseFeatures>, "Get OPB Base Feature Names");
     m.def("gbdhash", &CNF::gbdhash, "Calculates GBD-Hash (md5 of normalized file) of given DIMACS CNF file.", py::arg("filename"));
     m.def("isohash", &CNF::isohash, "Calculates ISO-Hash (md5 of sorted degree sequence) of given DIMACS CNF file.", py::arg("filename"));
+    m.def("isohash2", [](const char* filename) { return CNF::isohash2(filename); }, "Calculates the more advanced ISO-Hash2 (xxhash of Weisfeiler Leman coloring) of given DIMACS CNF file.", py::arg("filename"));
     m.def("opbhash", &OPB::gbdhash, "Calculates OPB-Hash (md5 of normalized file) of given OPB file.", py::arg("filename"));
     m.def("pqbfhash", &PQBF::gbdhash, "Calculates PQBF-Hash (md5 of normalized file) of given PQBF file.", py::arg("filename"));
     m.def("wcnfhash", &WCNF::gbdhash, "Calculates WCNF-Hash (md5 of normalized file) of given WCNF file.", py::arg("filename"));
