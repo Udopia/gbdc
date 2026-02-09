@@ -18,11 +18,11 @@ before-all = "yum install -y libarchive-devel make"
 
 [project]
 name = "gbdc"
-version = "0.3.3"
+version = "0.3.4"
 description = "Extension Module for GBD"
 
 authors = [
-  { name = "Ashlin Iser", email = "iser@kit.edu" },
+  { name = "Ashlin Iser", email = "ashlin.iser@kit.edu" },
   { name = "Christoph Jabs", email = "christoph.jabs@helsinki.fi" },
 ]
 
