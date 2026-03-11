@@ -35,7 +35,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace CNF {
 
 struct IsoHash2Settings {
-    int max_iterations = 20; // 0 = until stabilized
+    int max_iterations = 31; // 0 = until stabilized
     bool print_stats = false;
 };
 
