@@ -43,6 +43,22 @@ jobs:
       with:
         python-version: '3.x'
 
+    - name: Cache cibuildwheel downloads
+      uses: actions/cache@v4
+      with:
+        path: ~/Library/Caches/cibuildwheel
+        key: cibw-macos-${{ runner.os }}-${{ hashFiles('pyproject.toml', '.github/workflows/build_wheels.yml') }}
+        restore-keys: |
+          cibw-macos-${{ runner.os }}-
+
+    - name: Prefetch virtualenv bootstrap
+      shell: bash
+      run: |
+        mkdir -p ~/Library/Caches/cibuildwheel
+        curl -fL --retry 6 --retry-delay 10 --retry-all-errors \
+          -o ~/Library/Caches/cibuildwheel/virtualenv-20.30.0.pyz \
+          https://raw.githubusercontent.com/pypa/get-virtualenv/20.30.0/public/virtualenv.pyz
+
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.23
       env:
