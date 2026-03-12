@@ -46,6 +46,8 @@ jobs:
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.23
       env:
+        CIBW_ARCHS_MACOS: "x86_64 arm64"
+        MACOSX_DEPLOYMENT_TARGET: "11.0"
         CIBW_BEFORE_ALL_MACOS: |
           brew install libarchive pybind11 make python
           ln -sf "$(brew --prefix make)/libexec/gnubin/make" /usr/local/bin/make
