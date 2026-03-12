@@ -59,6 +59,13 @@ jobs:
           -o ~/Library/Caches/cibuildwheel/virtualenv-20.30.0.pyz \
           https://raw.githubusercontent.com/pypa/get-virtualenv/20.30.0/public/virtualenv.pyz
 
+    - name: Clean stale build directories
+      shell: bash
+      run: |
+        rm -rf solvers/src/cadical_external/build
+        rm -rf build/
+        rm -rf *.egg-info
+
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.23
       env:
