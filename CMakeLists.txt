@@ -19,6 +19,23 @@ endif()
 set(CADICAL_PREFIX "${CMAKE_BINARY_DIR}/solvers-${CADICAL_ARCH_SUFFIX}")
 set(CADICAL_DIR ${CADICAL_PREFIX}/src/cadical_external/build)
 set(CADICAL_LIB ${CADICAL_DIR}/libcadical.a)
+
+set(CADICAL_CFLAGS "-fPIC")
+set(CADICAL_CXXFLAGS "-fPIC")
+
+if(APPLE)
+    if(CMAKE_OSX_DEPLOYMENT_TARGET)
+        set(CADICAL_CFLAGS "${CADICAL_CFLAGS} -mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
+        set(CADICAL_CXXFLAGS "${CADICAL_CXXFLAGS} -mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
+    endif()
+    if(CMAKE_OSX_ARCHITECTURES)
+        foreach(CADICAL_ARCH IN LISTS CMAKE_OSX_ARCHITECTURES)
+            set(CADICAL_CFLAGS "${CADICAL_CFLAGS} -arch ${CADICAL_ARCH}")
+            set(CADICAL_CXXFLAGS "${CADICAL_CXXFLAGS} -arch ${CADICAL_ARCH}")
+        endforeach()
+    endif()
+endif()
+
 if (EXISTS ${CADICAL_LIB})
     message(STATUS "Cadical found at ${CADICAL_LIB}")
     add_library(cadical STATIC IMPORTED)
@@ -31,7 +48,7 @@ else()
         GIT_REPOSITORY https://github.com/arminbiere/cadical.git
         GIT_TAG master
         PREFIX ${CADICAL_PREFIX}
-        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CXXFLAGS=-fPIC CFLAGS=-fPIC ./configure
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env "CXXFLAGS=${CADICAL_CXXFLAGS}" "CFLAGS=${CADICAL_CFLAGS}" ./configure
         BUILD_COMMAND make -j
         INSTALL_COMMAND ""
         BUILD_BYPRODUCTS "${CADICAL_LIB}"
