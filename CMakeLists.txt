@@ -11,7 +11,13 @@ include(CTest)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-set(CADICAL_DIR ${CMAKE_BINARY_DIR}/solvers/src/cadical_external/build)
+set(CADICAL_ARCH_SUFFIX "${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+if(APPLE AND CMAKE_OSX_ARCHITECTURES)
+    string(REPLACE ";" "_" CADICAL_ARCH_SUFFIX "macos-${CMAKE_OSX_ARCHITECTURES}")
+endif()
+
+set(CADICAL_PREFIX "${CMAKE_BINARY_DIR}/solvers-${CADICAL_ARCH_SUFFIX}")
+set(CADICAL_DIR ${CADICAL_PREFIX}/src/cadical_external/build)
 set(CADICAL_LIB ${CADICAL_DIR}/libcadical.a)
 if (EXISTS ${CADICAL_LIB})
     message(STATUS "Cadical found at ${CADICAL_LIB}")
@@ -24,7 +30,7 @@ else()
     ExternalProject_Add(cadical_external
         GIT_REPOSITORY https://github.com/arminbiere/cadical.git
         GIT_TAG master
-        PREFIX solvers
+        PREFIX ${CADICAL_PREFIX}
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CXXFLAGS=-fPIC CFLAGS=-fPIC ./configure
         BUILD_COMMAND make -j
         INSTALL_COMMAND ""
