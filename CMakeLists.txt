@@ -87,6 +87,36 @@ target_link_libraries(gbdctool PUBLIC ${LIBS} solver util extract transform)
 # target_include_directories(gbdctool PUBLIC "${PROJECT_SOURCE_DIR}")
 set_property(TARGET gbdctool PROPERTY OUTPUT_NAME gbdc)
 
+# Per-tool commands: thin `gbd-<tool>` executables realised as symlinks to the single `gbdc`
+# binary, which dispatches on its invocation name (argv[0]). See src/Main.cc.
+set(GBD_TOOL_NAMES
+    gbd-extract-base gbd-extract-gate gbd-extract-wcnf gbd-extract-opb
+    gbd-checksani gbd-isohash gbd-isohash2 gbd-identify
+    gbd-cnf2kis gbd-cnf2bip gbd-sanitize gbd-normalize)
+
+foreach(toolname IN LISTS GBD_TOOL_NAMES)
+    add_custom_command(TARGET gbdctool POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+                "$<TARGET_FILE_NAME:gbdctool>" "$<TARGET_FILE_DIR:gbdctool>/${toolname}"
+        COMMENT "Creating symlink ${toolname} -> gbdc")
+endforeach()
+
+# Install the binary and per-tool symlinks. Prefer the wheel scripts dir (scikit-build-core)
+# so the tools land on PATH; fall back to a conventional bin directory otherwise.
+if(DEFINED SKBUILD_SCRIPTS_DIR)
+    set(GBD_TOOL_BINDIR "${SKBUILD_SCRIPTS_DIR}")
+else()
+    set(GBD_TOOL_BINDIR "bin")
+endif()
+
+install(TARGETS gbdctool RUNTIME DESTINATION "${GBD_TOOL_BINDIR}")
+install(CODE "
+    foreach(toolname ${GBD_TOOL_NAMES})
+        execute_process(COMMAND \${CMAKE_COMMAND} -E create_symlink
+            gbdc \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/${GBD_TOOL_BINDIR}/\${toolname}\")
+    endforeach()
+")
+
 pybind11_add_module(gbdc src/gbdlib.cc)
 target_link_libraries(gbdc PUBLIC ${LIBS} solver util extract transform)
 install(TARGETS gbdc DESTINATION .)

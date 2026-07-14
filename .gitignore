@@ -31,6 +31,7 @@ gbdhash
 cnftools
 
 build/
+build*/
 debug/
 asan/
 .vscode/
@@ -39,6 +40,7 @@ dist/
 gbdc.egg-info/
 .idea/
 build-artifacts*.zip
+*.zip
 benchmarks/
 test.cnf
 test.db
