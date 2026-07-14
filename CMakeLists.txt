@@ -111,9 +111,12 @@ endif()
 
 install(TARGETS gbdctool RUNTIME DESTINATION "${GBD_TOOL_BINDIR}")
 install(CODE "
+    set(_bindir \"${GBD_TOOL_BINDIR}\")
+    if(NOT IS_ABSOLUTE \"\${_bindir}\")
+        set(_bindir \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/\${_bindir}\")
+    endif()
     foreach(toolname ${GBD_TOOL_NAMES})
-        execute_process(COMMAND \${CMAKE_COMMAND} -E create_symlink
-            gbdc \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/${GBD_TOOL_BINDIR}/\${toolname}\")
+        execute_process(COMMAND \${CMAKE_COMMAND} -E create_symlink gbdc \"\${_bindir}/\${toolname}\")
     endforeach()
 ")
 

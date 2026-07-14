@@ -440,7 +440,7 @@ int main(int argc, char** argv) {
             "Tool: identify, isohash, isohash2, normalize, sanitize, checksani, "
             "cnf2kis, cnf2bip, base, gate, wcnfbase, opbbase");
     }
-    program.add_argument("file").help("Path to input file");
+    program.add_argument("file").remaining().help("Path to input file");
     program.add_argument("-o", "--output").default_value(std::string("-"))
         .help("Output file for transformers (default: stderr)");
     program.add_argument("-z", "--compress").default_value(std::string("none"))
@@ -475,7 +475,13 @@ int main(int argc, char** argv) {
         }
     }
 
-    const std::string filename = program.get("file");
+    const auto files = program.present<std::vector<std::string>>("file");
+    if (!files || files->empty()) {
+        std::cerr << "No input file given" << std::endl;
+        std::cerr << program;
+        return 1;
+    }
+    const std::string filename = files->front();
     const std::string output = program.get("output");
     const std::string compress = program.get("compress");
 
