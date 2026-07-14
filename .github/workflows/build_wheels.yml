@@ -1,5 +1,8 @@
 name: Build Wheels
-on: workflow_dispatch
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
 
 jobs:
 # LINUX
@@ -88,22 +91,46 @@ jobs:
         name: wheels-macos
         path: wheelhouse/*.whl
 
-# PUBLISH to PYPI
-  release:
-    needs: [build-linux, build-macos]
+# SOURCE DISTRIBUTION
+  build-sdist:
     runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install build dependencies
+      run: sudo apt-get update && sudo apt-get install -y libarchive-dev
+
+    - name: Build sdist
+      run: |
+        python -m pip install --upgrade -q build twine
+        python -m build --sdist
+        twine check dist/*.tar.gz
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: sdist
+        path: dist/*.tar.gz
+
+# PUBLISH to PYPI (Trusted Publishing / OIDC)
+  release:
+    needs: [build-linux, build-macos, build-sdist]
+    runs-on: ubuntu-latest
+    # Configure a PyPI Trusted Publisher for project "gbdc" pointing at this
+    # repository, workflow "build_wheels.yml", and environment "pypi".
+    environment:
+      name: pypi
+      url: https://pypi.org/p/gbdc
+    permissions:
+      id-token: write
 
     steps:
     - uses: actions/download-artifact@v4
       with:
-        pattern: wheels-*
-        path: wheelhouse
+        path: dist
         merge-multiple: true
 
     - name: Publish to PyPI
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      run: |
-        python -m pip install --upgrade -q twine
-        twine upload --skip-existing wheelhouse/*.whl --verbose
+      uses: pypa/gh-action-pypi-publish@release/v1
