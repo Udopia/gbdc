@@ -110,15 +110,21 @@ else()
 endif()
 
 install(TARGETS gbdctool RUNTIME DESTINATION "${GBD_TOOL_BINDIR}")
-install(CODE "
-    set(_bindir \"${GBD_TOOL_BINDIR}\")
-    if(NOT IS_ABSOLUTE \"\${_bindir}\")
-        set(_bindir \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/\${_bindir}\")
-    endif()
-    foreach(toolname ${GBD_TOOL_NAMES})
-        execute_process(COMMAND \${CMAKE_COMMAND} -E create_symlink gbdc \"\${_bindir}/\${toolname}\")
-    endforeach()
-")
+
+# For local/source installs, also expose the per-tool `gbd-<tool>` commands as symlinks to the
+# single `gbdc` binary. Wheel builds (scikit-build-core, SKBUILD_SCRIPTS_DIR defined) ship only the
+# single `gbdc` binary to keep the distribution small; gbd invokes tools as `gbdc <tool>` there.
+if(NOT DEFINED SKBUILD_SCRIPTS_DIR)
+    install(CODE "
+        set(_bindir \"${GBD_TOOL_BINDIR}\")
+        if(NOT IS_ABSOLUTE \"\${_bindir}\")
+            set(_bindir \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/\${_bindir}\")
+        endif()
+        foreach(toolname ${GBD_TOOL_NAMES})
+            execute_process(COMMAND \${CMAKE_COMMAND} -E create_symlink gbdc \"\${_bindir}/\${toolname}\")
+        endforeach()
+    ")
+endif()
 
 pybind11_add_module(gbdc src/gbdlib.cc)
 target_link_libraries(gbdc PUBLIC ${LIBS} solver util extract transform)
