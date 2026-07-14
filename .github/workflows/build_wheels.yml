@@ -5,21 +5,24 @@ on:
   workflow_dispatch:
 
 jobs:
-# LINUX
+# LINUX (native runners per arch, no QEMU emulation)
   build-linux:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { arch: x86_64, runner: ubuntu-latest }
+          - { arch: aarch64, runner: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.runner }}
     steps:
     - uses: actions/checkout@v4
     - uses: webfactory/ssh-agent@v0.9.0
-      with: 
+      with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
-      with: { platforms: all }
 
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.23
+      env:
+        CIBW_ARCHS_LINUX: ${{ matrix.arch }}
       with: { output-dir: wheelhouse }
 
     - name: Validate wheels
@@ -31,12 +34,15 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: wheels-linux
+        name: wheels-linux-${{ matrix.arch }}
         path: wheelhouse/*.whl
 
 # macOS
   build-macos:
     runs-on: macos-latest
+    strategy:
+      matrix:
+        python: [cp310, cp311, cp312]
     steps:
     - uses: actions/checkout@v4
     - uses: webfactory/ssh-agent@v0.9.0
@@ -50,9 +56,9 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/Library/Caches/cibuildwheel
-        key: cibw-macos-${{ runner.os }}-${{ hashFiles('pyproject.toml', '.github/workflows/build_wheels.yml') }}
+        key: cibw-macos-${{ matrix.python }}-${{ hashFiles('pyproject.toml', '.github/workflows/build_wheels.yml') }}
         restore-keys: |
-          cibw-macos-${{ runner.os }}-
+          cibw-macos-${{ matrix.python }}-
 
     - name: Prefetch virtualenv bootstrap
       shell: bash
@@ -72,6 +78,7 @@ jobs:
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.23
       env:
+        CIBW_BUILD: "${{ matrix.python }}-*"
         CIBW_ARCHS_MACOS: "x86_64 arm64"
         MACOSX_DEPLOYMENT_TARGET: "11.0"
         CIBW_BEFORE_ALL_MACOS: |
@@ -88,7 +95,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: wheels-macos
+        name: wheels-macos-${{ matrix.python }}
         path: wheelhouse/*.whl
 
 # SOURCE DISTRIBUTION
