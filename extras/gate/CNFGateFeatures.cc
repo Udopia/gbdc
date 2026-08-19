@@ -3,11 +3,11 @@
  * Copyright (c) 2025 Ashlin Iser 
  */
 
-#include "src/extract/CNFGateFeatures.h"
+#include "CNFGateFeatures.h"
 
 #include "src/util/SolverTypes.h"
-#include "src/extract/gates/GateFormula.h"
-#include "src/extract/gates/GateAnalyzer.h"
+#include "gates/GateFormula.h"
+#include "gates/GateAnalyzer.h"
 #include "src/util/CaptureDistribution.h"
 
 CNF::GateFeatures::GateFeatures(const char* filename) : filename_(filename) { 

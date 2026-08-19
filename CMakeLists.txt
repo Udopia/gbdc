@@ -11,58 +11,6 @@ include(CTest)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-set(CADICAL_ARCH_SUFFIX "${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
-if(APPLE AND CMAKE_OSX_ARCHITECTURES)
-    string(REPLACE ";" "_" CADICAL_ARCH_SUFFIX "macos-${CMAKE_OSX_ARCHITECTURES}")
-endif()
-
-set(CADICAL_PREFIX "${CMAKE_BINARY_DIR}/solvers-${CADICAL_ARCH_SUFFIX}")
-set(CADICAL_DIR ${CADICAL_PREFIX}/src/cadical_external/build)
-set(CADICAL_LIB ${CADICAL_DIR}/libcadical.a)
-
-set(CADICAL_CFLAGS "-fPIC")
-set(CADICAL_CXXFLAGS "-fPIC")
-
-if(APPLE)
-    if(CMAKE_OSX_DEPLOYMENT_TARGET)
-        set(CADICAL_CFLAGS "${CADICAL_CFLAGS} -mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
-        set(CADICAL_CXXFLAGS "${CADICAL_CXXFLAGS} -mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
-    endif()
-    if(CMAKE_OSX_ARCHITECTURES)
-        foreach(CADICAL_ARCH IN LISTS CMAKE_OSX_ARCHITECTURES)
-            set(CADICAL_CFLAGS "${CADICAL_CFLAGS} -arch ${CADICAL_ARCH}")
-            set(CADICAL_CXXFLAGS "${CADICAL_CXXFLAGS} -arch ${CADICAL_ARCH}")
-        endforeach()
-    endif()
-endif()
-
-if (EXISTS ${CADICAL_LIB})
-    message(STATUS "Cadical found at ${CADICAL_LIB}")
-    add_library(cadical STATIC IMPORTED)
-    set_target_properties(cadical PROPERTIES IMPORTED_LOCATION "${CADICAL_LIB}")
-else()
-    message(STATUS "Building Cadical")
-    include(ExternalProject)
-
-    ExternalProject_Add(cadical_external
-        GIT_REPOSITORY https://github.com/arminbiere/cadical.git
-        GIT_TAG master
-        PREFIX ${CADICAL_PREFIX}
-        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env "CXXFLAGS=${CADICAL_CXXFLAGS}" "CFLAGS=${CADICAL_CFLAGS}" ./configure
-        BUILD_COMMAND make -j
-        INSTALL_COMMAND ""
-        BUILD_BYPRODUCTS "${CADICAL_LIB}"
-        BUILD_IN_SOURCE 1
-    )
-endif()
-    
-add_library(solver STATIC IMPORTED)
-if (NOT EXISTS ${CADICAL_LIB})
-    add_dependencies(solver cadical_external)
-endif()
-
-set_target_properties(solver PROPERTIES IMPORTED_LOCATION "${CADICAL_LIB}")
-
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     execute_process(
         COMMAND brew --prefix libarchive
@@ -83,7 +31,7 @@ add_subdirectory("src")
 add_subdirectory("test")
 
 add_executable(gbdctool src/Main.cc)
-target_link_libraries(gbdctool PUBLIC ${LIBS} solver util extract transform)
+target_link_libraries(gbdctool PUBLIC ${LIBS} util extract transform)
 # target_include_directories(gbdctool PUBLIC "${PROJECT_SOURCE_DIR}")
 set_property(TARGET gbdctool PROPERTY OUTPUT_NAME gbdc)
 
@@ -127,7 +75,7 @@ if(NOT DEFINED SKBUILD_SCRIPTS_DIR)
 endif()
 
 pybind11_add_module(gbdc src/gbdlib.cc)
-target_link_libraries(gbdc PUBLIC ${LIBS} solver util extract transform)
+target_link_libraries(gbdc PUBLIC ${LIBS} util extract transform)
 install(TARGETS gbdc DESTINATION .)
 
 add_test(NAME Test_StreamBuffer COMMAND "test/tests_streambuffer")

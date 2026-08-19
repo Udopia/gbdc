@@ -33,9 +33,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/util/CNFFormula.h"
 
-#include "src/extract/gates/GateFormula.h"
-#include "src/extract/gates/BlockList.h"
-#include "src/extract/gates/OccurrenceList.h"
+#include "GateFormula.h"
+#include "BlockList.h"
+#include "OccurrenceList.h"
 
 
 class GateAnalyzer {

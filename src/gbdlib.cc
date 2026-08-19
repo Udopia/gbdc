@@ -35,17 +35,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/extract/CNFSaniCheck.h"
 #include "src/extract/CNFBaseFeatures.h"
-#include "src/extract/CNFGateFeatures.h"
 #include "src/extract/WCNFBaseFeatures.h"
 #include "src/extract/OPBBaseFeatures.h"
 
 #include "src/transform/cnf2kis.h"
 #include "src/transform/cnf2cnf.h"
-#include "src/util/ResourceLimits.h"
 
-// #include "src/util/pybind11/include/pybind11/pybind11.h"
-// #include "src/util/pybind11/include/pybind11/stl.h"
-// #include "src/util/pybind11/include/pybind11/functional.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 #include "pybind11/functional.h"
@@ -104,7 +99,7 @@ py::dict sanitise(const std::string filename, const std::string output) {
     return dict;
 }
 
-py::dict checksani(const std::string filename, const size_t rlim, const size_t mlim) {
+py::dict checksani(const std::string filename) {
     py::dict dict;
     CNF::SaniCheck ana(filename.c_str(), true);
     ana.run();
@@ -131,50 +126,34 @@ std::vector<std::string> checksani_feature_names() {
 
 template <typename Extractor>
 auto feature_names() {
-    auto ex = Extractor("");
-    auto names = ex.getNames();
-    names.push_back("status");
-    return names;
+    return Extractor("").getNames();
 }
 
 template <typename Extractor>
-py::dict extract_features(const std::string filepath, const size_t rlim, const size_t mlim) {
+py::dict extract_features(const std::string filepath) {
     py::dict dict;
     Extractor stats(filepath.c_str());
-    ResourceLimits limits(rlim, mlim);
-    limits.set_rlimits();
-    try {
-        stats.run();
-        dict["status"] = (double)limits.get_runtime();
-        const auto names = stats.getNames();
-        const auto features = stats.getFeatures();
-        for (size_t i = 0; i < features.size(); ++i) {
-            dict[py::str(names[i])] = features[i];
-        }
-    }
-    catch (TimeLimitExceeded &e) {
-        dict[py::str("status")] = "timeout";
-    }
-    catch (MemoryLimitExceeded &e) {
-        dict[py::str("status")] = "memout";
+    stats.run();
+    const auto names = stats.getNames();
+    const auto features = stats.getFeatures();
+    for (size_t i = 0; i < features.size(); ++i) {
+        dict[py::str(names[i])] = features[i];
     }
     return dict;
 }
 
 PYBIND11_MODULE(gbdc, m) {
     m.doc() = "GBDC Python Bindings";
-    m.def("extract_base_features", &extract_features<CNF::BaseFeatures>, "Extract cnf base features", py::arg("filepath"), py::arg("rlim"), py::arg("mlim"));
-    m.def("extract_gate_features", &extract_features<CNF::GateFeatures>, "Extract cnf gate features", py::arg("filepath"), py::arg("rlim"), py::arg("mlim"));
-    m.def("extract_wcnf_base_features", &extract_features<WCNF::BaseFeatures>, "Extract wcnf base features", py::arg("filepath"), py::arg("rlim"), py::arg("mlim"));
-    m.def("extract_opb_base_features", &extract_features<OPB::BaseFeatures>, "Extract opb base features", py::arg("filepath"), py::arg("rlim"), py::arg("mlim"));
+    m.def("extract_base_features", &extract_features<CNF::BaseFeatures>, "Extract cnf base features", py::arg("filepath"));
+    m.def("extract_wcnf_base_features", &extract_features<WCNF::BaseFeatures>, "Extract wcnf base features", py::arg("filepath"));
+    m.def("extract_opb_base_features", &extract_features<OPB::BaseFeatures>, "Extract opb base features", py::arg("filepath"));
     m.def("version", &version, "Return current version of gbdc.");
     m.def("cnf2kis", &cnf2kis, "Create k-ISP Instance from given CNF Instance.", py::arg("filename"), py::arg("output"));
     m.def("normalise", &normalise, "Print normalised CNF to output file: whitespace and header normalised, comments removed.", py::arg("filename"), py::arg("output"));
     m.def("sanitise", &sanitise, "Print sanitised CNF to output file: no duplicate literals in clauses and no tautologic clauses.", py::arg("filename"), py::arg("output"));
-    m.def("checksani", &checksani, "Check normalisation and sanitation status of given cnf.", py::arg("filename"), py::arg("rlim"), py::arg("mlim"));
+    m.def("checksani", &checksani, "Check normalisation and sanitation status of given cnf.", py::arg("filename"));
     m.def("checksani_feature_names", &checksani_feature_names, "Get checksani feature names");
     m.def("base_feature_names", &feature_names<CNF::BaseFeatures>, "Get Base Feature Names");
-    m.def("gate_feature_names", &feature_names<CNF::GateFeatures>, "Get Gate Feature Names");
     m.def("wcnf_base_feature_names", &feature_names<WCNF::BaseFeatures>, "Get WCNF Base Feature Names");
     m.def("opb_base_feature_names", &feature_names<OPB::BaseFeatures>, "Get OPB Base Feature Names");
     m.def("gbdhash", &CNF::gbdhash, "Calculates GBD-Hash (md5 of normalized file) of given DIMACS CNF file.", py::arg("filename"));

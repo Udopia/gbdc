@@ -9,7 +9,6 @@
 #include "src/extract/CNFBaseFeatures.h"
 #include "src/extract/OPBBaseFeatures.h"
 #include "src/extract/WCNFBaseFeatures.h"
-#include "src/extract/CNFGateFeatures.h"
 
 #include "test/Util.h"
 
@@ -41,13 +40,6 @@ TEST_CASE("Feature extraction")
         const auto test_file = test_dir + "cnf_test.cnf.xz";
         const auto expected_record_file = records_dir + "cnf_base.txt";
         extract<CNF::BaseFeatures>(test_file.c_str(), expected_record_file.c_str());
-    }
-
-    SUBCASE("CNF gates")
-    {
-        const auto test_file = test_dir + "cnf_test.cnf.xz";
-        const auto expected_record_file = records_dir + "cnf_gates.txt";
-        extract<CNF::GateFeatures>(test_file.c_str(), expected_record_file.c_str());
     }
 
     SUBCASE("WCNF base")
