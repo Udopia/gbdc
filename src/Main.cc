@@ -55,16 +55,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "src/identify/ISOHash.h"
 #include "src/identify/ISOHash2.h"
 
-#include "src/util/ResourceLimits.h"
 #include "src/util/StreamCompressor.h"
-
 #include "src/transform/cnf2bip.h"
 #include "src/transform/cnf2kis.h"
 #include "src/transform/cnf2cnf.h"
 
 #include "src/extract/CNFSaniCheck.h"
 #include "src/extract/CNFBaseFeatures.h"
-#include "src/extract/CNFGateFeatures.h"
 #include "src/extract/WCNFBaseFeatures.h"
 #include "src/extract/OPBBaseFeatures.h"
 
@@ -84,7 +81,6 @@ std::string tool_from_invocation(const std::string& argv0) {
     const std::string name = basename_of(argv0);
     static const std::vector<std::pair<std::string, std::string>> map = {
         {"gbd-extract-base", "base"},
-        {"gbd-extract-gate", "gate"},
         {"gbd-extract-wcnf", "wcnfbase"},
         {"gbd-extract-opb", "opbbase"},
         {"gbd-checksani", "checksani"},
@@ -106,7 +102,6 @@ std::string tool_from_invocation(const std::string& argv0) {
 std::string canonical_tool(const std::string& tool) {
     if (tool == "id" || tool == "hash") return "identify";
     if (tool == "extract") return "base";
-    if (tool == "gates") return "gate";
     return tool;
 }
 
@@ -141,10 +136,6 @@ IExtractor* make_extractor(const std::string& tool, const std::string& ext, cons
         if (ext == ".cnf") return new CNF::BaseFeatures(filename.c_str());
         throw std::runtime_error("base extractor requires a .cnf file");
     }
-    if (tool == "gate") {
-        if (ext == ".cnf") return new CNF::GateFeatures(filename.c_str());
-        throw std::runtime_error("gate extractor requires a .cnf file");
-    }
     if (tool == "wcnfbase") {
         if (ext == ".wcnf") return new WCNF::BaseFeatures(filename.c_str());
         throw std::runtime_error("wcnf extractor requires a .wcnf file");
@@ -159,37 +150,14 @@ IExtractor* make_extractor(const std::string& tool, const std::string& ext, cons
 /* Names of the features produced by an extractor tool (used by --feature-names). */
 std::vector<std::string> extractor_feature_names(const std::string& tool) {
     if (tool == "base") return CNF::BaseFeatures("").getNames();
-    if (tool == "gate") return CNF::GateFeatures("").getNames();
     if (tool == "wcnfbase") return WCNF::BaseFeatures("").getNames();
     if (tool == "opbbase") return OPB::BaseFeatures("").getNames();
     throw std::runtime_error("unknown extractor: " + tool);
 }
 
-int run_extractor(const std::string& tool, const std::string& filename, const std::string& ext,
-                  ResourceLimits& limits, Mode mode) {
-    IExtractor* extractor = nullptr;
-    try {
-        extractor = make_extractor(tool, ext, filename);
-        extractor->run();
-    } catch (TimeLimitExceeded&) {
-        delete extractor;
-        if (mode == Mode::GBD) {
-            std::cout << "status timeout" << std::endl;
-            std::cout << "runtime " << limits.get_runtime() << std::endl;
-            return 0;
-        }
-        std::cerr << "Time Limit Exceeded" << std::endl;
-        return 1;
-    } catch (MemoryLimitExceeded&) {
-        delete extractor;
-        if (mode == Mode::GBD) {
-            std::cout << "status memout" << std::endl;
-            std::cout << "runtime " << limits.get_runtime() << std::endl;
-            return 0;
-        }
-        std::cerr << "Memory Limit Exceeded" << std::endl;
-        return 1;
-    }
+int run_extractor(const std::string& tool, const std::string& filename, const std::string& ext, Mode mode) {
+    IExtractor* const extractor = make_extractor(tool, ext, filename);
+    extractor->run();
 
     const std::vector<std::string> names = extractor->getNames();
     const std::vector<double> features = extractor->getFeatures();
@@ -198,8 +166,6 @@ int run_extractor(const std::string& tool, const std::string& filename, const st
         for (size_t i = 0; i < names.size(); ++i) {
             std::cout << names[i] << " " << format_value(features[i]) << std::endl;
         }
-        std::cout << "status success" << std::endl;
-        std::cout << "runtime " << limits.get_runtime() << std::endl;
     } else {
         for (const std::string& name : names) std::cout << name << " ";
         std::cout << std::endl;
@@ -231,7 +197,6 @@ int run_checksani(const std::string& filename, Mode mode) {
     };
     if (mode == Mode::GBD) {
         for (const Flag& f : flags) std::cout << f.name << " " << (f.value ? "yes" : "no") << std::endl;
-        std::cout << "status success" << std::endl;
     } else {
         std::cout << "hash " << CNF::gbdhash(filename.c_str()) << std::endl;
         std::cout << "filename " << filename << std::endl;
@@ -294,7 +259,7 @@ CompressionFormat compression_format(const std::string& name) {
  * In --gbd mode stdout instead carries the feature/metadata stream, so -o is required (and gbd
  * always passes it). */
 int run_transformer(const std::string& tool, const std::string& filename, const std::string& output,
-                    const std::string& compress, ResourceLimits& limits, Mode mode) {
+                    const std::string& compress, Mode mode) {
     const bool has_output = !(output.empty() || output == "-");
     if (mode == Mode::GBD && !has_output) {
         throw std::runtime_error("transformer requires -o/--output in --gbd mode");
@@ -371,8 +336,6 @@ int run_transformer(const std::string& tool, const std::string& filename, const 
         if (tool == "cnf2kis" || tool == "sanitize") {
             std::cout << "to_cnf " << CNF::gbdhash(filename.c_str()) << std::endl;
         }
-        std::cout << "status success" << std::endl;
-        std::cout << "runtime " << limits.get_runtime() << std::endl;
     } else {
         std::cerr << "Produced " << local << " with hash " << hash << std::endl;
     }
@@ -394,7 +357,7 @@ std::vector<std::pair<std::string, std::string>> transformer_feature_names(const
 /* --- Dispatch helpers ---------------------------------------------------------------------- */
 
 bool is_extractor(const std::string& tool) {
-    return tool == "base" || tool == "gate" || tool == "wcnfbase" || tool == "opbbase";
+    return tool == "base" || tool == "wcnfbase" || tool == "opbbase";
 }
 
 bool is_transformer(const std::string& tool) {
@@ -445,9 +408,6 @@ int main(int argc, char** argv) {
         .help("Output file for transformers (default: stderr)");
     program.add_argument("-z", "--compress").default_value(std::string("none"))
         .help("Compression for -o output: none, xz, gz, or bz2");
-    program.add_argument("-t", "--tlim").default_value(0).scan<'i', int>().help("Time limit in seconds");
-    program.add_argument("-m", "--mlim").default_value(0).scan<'i', int>().help("Memory limit in MB");
-    program.add_argument("-f", "--flim").default_value(0).scan<'i', int>().help("Output file size limit in MB");
     program.add_argument("--max-iters").scan<'i', int>().help("Maximum isohash2 iterations");
     program.add_argument("--gbd").default_value(false).implicit_value(true)
         .help("Emit machine-readable output for gbd");
@@ -485,33 +445,20 @@ int main(int argc, char** argv) {
     const std::string output = program.get("output");
     const std::string compress = program.get("compress");
 
-    ResourceLimits limits(program.get<int>("tlim"), program.get<int>("mlim"), program.get<int>("flim"));
-    limits.set_rlimits();
-
     const std::string ext = detect_extension(filename);
     std::cerr << "c Running: " << tool << " " << filename << std::endl;
 
     try {
-        if (is_extractor(tool)) return run_extractor(tool, filename, ext, limits, mode);
+        if (is_extractor(tool)) return run_extractor(tool, filename, ext, mode);
         if (tool == "checksani") return run_checksani(filename, mode);
         if (tool == "identify") return run_identify(filename, ext);
         if (tool == "isohash") return run_isohash(filename, ext, mode);
         if (tool == "isohash2") return run_isohash2(filename, ext, program, mode);
-        if (is_transformer(tool)) return run_transformer(tool, filename, output, compress, limits, mode);
+        if (is_transformer(tool)) return run_transformer(tool, filename, output, compress, mode);
         std::cerr << "Unknown tool: " << tool << std::endl;
         return 1;
     } catch (std::bad_alloc&) {
         std::cerr << "Memory Limit Exceeded" << std::endl;
-        return 1;
-    } catch (MemoryLimitExceeded&) {
-        std::cerr << "Memory Limit Exceeded" << std::endl;
-        return 1;
-    } catch (TimeLimitExceeded&) {
-        std::cerr << "Time Limit Exceeded" << std::endl;
-        return 1;
-    } catch (FileSizeLimitExceeded&) {
-        if (!output.empty() && output != "-") std::remove(output.c_str());
-        std::cerr << "File Size Limit Exceeded" << std::endl;
         return 1;
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
