@@ -10,19 +10,19 @@ jobs:
     strategy:
       matrix:
         include:
-          - { arch: x86_64, runner: ubuntu-latest }
-          - { arch: aarch64, runner: ubuntu-24.04-arm }
+          - { arch: x86_64, runner: ubuntu-latest, march: x86-64 }
+          - { arch: aarch64, runner: ubuntu-24.04-arm, march: armv8-a }
     runs-on: ${{ matrix.runner }}
     steps:
     - uses: actions/checkout@v4
-    - uses: webfactory/ssh-agent@v0.9.0
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
     - name: Build wheels
-      uses: pypa/cibuildwheel@v2.23
+      uses: pypa/cibuildwheel@v4.2.0
       env:
         CIBW_ARCHS_LINUX: ${{ matrix.arch }}
+        # Portable baseline ISA + statically linked libstdc++/libgcc so wheels run on
+        # older glibc hosts without SIGILL or GLIBCXX version-mismatch errors.
+        CIBW_ENVIRONMENT_LINUX: 'CFLAGS="-O3 -march=${{ matrix.march }}" CXXFLAGS="-O3 -march=${{ matrix.march }}" LDFLAGS="-static-libstdc++ -static-libgcc"'
       with: { output-dir: wheelhouse }
 
     - name: Validate wheels
@@ -37,17 +37,11 @@ jobs:
         name: wheels-linux-${{ matrix.arch }}
         path: wheelhouse/*.whl
 
-# macOS
+# macOS (single runner builds every target version for both archs)
   build-macos:
     runs-on: macos-latest
-    strategy:
-      matrix:
-        python: [cp310, cp311, cp312]
     steps:
     - uses: actions/checkout@v4
-    - uses: webfactory/ssh-agent@v0.9.0
-      with: 
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
     - uses: actions/setup-python@v5
       with:
         python-version: '3.x'
@@ -56,9 +50,9 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/Library/Caches/cibuildwheel
-        key: cibw-macos-${{ matrix.python }}-${{ hashFiles('pyproject.toml', '.github/workflows/build_wheels.yml') }}
+        key: cibw-macos-${{ hashFiles('pyproject.toml', '.github/workflows/build_wheels.yml') }}
         restore-keys: |
-          cibw-macos-${{ matrix.python }}-
+          cibw-macos-
 
     - name: Prefetch virtualenv bootstrap
       shell: bash
@@ -71,16 +65,16 @@ jobs:
     - name: Clean stale build directories
       shell: bash
       run: |
-        rm -rf solvers-*/src/cadical_external/build
         rm -rf build/
         rm -rf *.egg-info
 
     - name: Build wheels
-      uses: pypa/cibuildwheel@v2.23
+      uses: pypa/cibuildwheel@v4.2.0
       env:
-        CIBW_BUILD: "${{ matrix.python }}-*"
         CIBW_ARCHS_MACOS: "x86_64 arm64"
         MACOSX_DEPLOYMENT_TARGET: "11.0"
+        # Homebrew installs libarchive keg-only; point CMake/pkg-config at its prefix.
+        CIBW_ENVIRONMENT_MACOS: 'CMAKE_PREFIX_PATH="$(brew --prefix libarchive)" PKG_CONFIG_PATH="$(brew --prefix libarchive)/lib/pkgconfig"'
         CIBW_BEFORE_ALL_MACOS: |
           brew install libarchive pybind11 make python
           ln -sf "$(brew --prefix make)/libexec/gnubin/make" /usr/local/bin/make
@@ -95,7 +89,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: wheels-macos-${{ matrix.python }}
+        name: wheels-macos
         path: wheelhouse/*.whl
 
 # SOURCE DISTRIBUTION

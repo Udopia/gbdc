@@ -13,13 +13,12 @@ A description of the supported domains, feature extractors, and instance transfo
 
 ## Installation from PyPI
 * Pre-built distributions for Linux and MacOS.
-* Requires at least Python 3.8.0 (3.10.0 for Apple Silicon).
+* Requires at least Python 3.10.0.
 * Installation via `pip install gbdc`
 
 ## Installation from Source
 
 * GBDC uses `libarchive` for reading from a large variety of compressed formats (in some systems provided by the package `libarchive-dev`).
-* Some GBDC functions use an [IPASIR](https://github.com/biotomas/ipasir) SAT Solver. GBDC's build-system pulls the external SAT Solver [CaDiCaL](http://fmv.jku.at/cadical/) by A. Biere (MIT licensed).
 
 ### Steps:
 1. **Install Dependencies** (libarchive, pybind, ninja)
