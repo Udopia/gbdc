@@ -59,10 +59,38 @@ jobs:
       env:
         CIBW_ARCHS_MACOS: "arm64"
         MACOSX_DEPLOYMENT_TARGET: "11.0"
-        # Native arm64 build: Homebrew's keg-only libarchive (all backends, right arch)
-        # is bundled into the wheel by delocate. Point CMake/pkg-config at the keg.
-        CIBW_ENVIRONMENT_MACOS: 'CMAKE_PREFIX_PATH="$(brew --prefix libarchive)" PKG_CONFIG_PATH="$(brew --prefix libarchive)/lib/pkgconfig"'
-        CIBW_BEFORE_ALL_MACOS: brew install libarchive
+        # Wheel-only: build a fully static libarchive + compression backends targeting
+        # macOS 11.0 into /tmp/deps, so the extension is self-contained (delocate bundles
+        # nothing) and installs on macOS 11+. CMake links it statically via pkg-config.
+        CIBW_ENVIRONMENT_MACOS: 'CMAKE_PREFIX_PATH="/tmp/deps" PKG_CONFIG_PATH="/tmp/deps/lib/pkgconfig" MACOSX_DEPLOYMENT_TARGET="11.0"'
+        CIBW_BEFORE_ALL_MACOS: |
+          set -eo pipefail
+          export MACOSX_DEPLOYMENT_TARGET=11.0
+          export PKG_CONFIG_PATH=/tmp/deps/lib/pkgconfig
+          mkdir -p /tmp/deps
+          cd /tmp
+
+          # liblzma (.xz) -- 5.6.2 is the clean release after CVE-2024-3094
+          curl -sSL https://github.com/tukaani-project/xz/releases/download/v5.6.2/xz-5.6.2.tar.gz | tar xz
+          cd xz-5.6.2 && ./configure --prefix=/tmp/deps --enable-static --disable-shared && make -j"$(sysctl -n hw.ncpu)" install && cd /tmp
+
+          # liblz4 (.lz4)
+          curl -sSL https://github.com/lz4/lz4/archive/refs/tags/v1.9.4.tar.gz | tar xz
+          cd lz4-1.9.4 && make -j"$(sysctl -n hw.ncpu)" BUILD_SHARED=no PREFIX=/tmp/deps install && cd /tmp
+
+          # libzstd (.zst)
+          curl -sSL https://github.com/facebook/zstd/releases/download/v1.5.6/zstd-1.5.6.tar.gz | tar xz
+          cd zstd-1.5.6 && make -j"$(sysctl -n hw.ncpu)" BUILD_SHARED=no PREFIX=/tmp/deps install && cd /tmp
+
+          # Drop any shared libs so downstream links resolve to the static archives only.
+          rm -f /tmp/deps/lib/*.dylib /tmp/deps/lib/*.so*
+
+          # Full libarchive (.tar/.zip/.7z + .gz/.bz2 via the universal system zlib/bz2)
+          curl -sSL https://github.com/libarchive/libarchive/releases/download/v3.7.7/libarchive-3.7.7.tar.gz | tar xz
+          cd libarchive-3.7.7
+          ./configure --prefix=/tmp/deps --enable-static --disable-shared \
+            CPPFLAGS="-I/tmp/deps/include" LDFLAGS="-L/tmp/deps/lib"
+          make -j"$(sysctl -n hw.ncpu)" install
       with: { output-dir: wheelhouse }
 
     - name: Validate wheels
