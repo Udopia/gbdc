@@ -18,10 +18,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    # Add ssh-key to clone repository cadical
-    - uses: webfactory/ssh-agent@v0.9.0
-      with: 
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
     - name: Setup Libraries
       run: |
