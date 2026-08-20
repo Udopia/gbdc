@@ -37,7 +37,7 @@ jobs:
         name: wheels-linux-${{ matrix.arch }}
         path: wheelhouse/*.whl
 
-# macOS (single runner builds every target version for both archs)
+# macOS (native Apple Silicon / arm64 runner)
   build-macos:
     runs-on: macos-latest
     steps:
@@ -54,34 +54,15 @@ jobs:
         restore-keys: |
           cibw-macos-
 
-    - name: Prefetch virtualenv bootstrap
-      shell: bash
-      run: |
-        mkdir -p ~/Library/Caches/cibuildwheel
-        curl -fL --retry 6 --retry-delay 10 --retry-all-errors \
-          -o ~/Library/Caches/cibuildwheel/virtualenv-20.30.0.pyz \
-          https://raw.githubusercontent.com/pypa/get-virtualenv/20.30.0/public/virtualenv.pyz
-
-    - name: Clean stale build directories
-      shell: bash
-      run: |
-        rm -rf build/
-        rm -rf *.egg-info
-
     - name: Build wheels
       uses: pypa/cibuildwheel@v4.2.0
       env:
-        CIBW_ARCHS_MACOS: "x86_64 arm64"
+        CIBW_ARCHS_MACOS: "arm64"
         MACOSX_DEPLOYMENT_TARGET: "11.0"
-        # Universal (x86_64+arm64) static libarchive is built in before-all so both
-        # slices link on the arm64 runner; point CMake/pkg-config at that prefix.
-        CIBW_ENVIRONMENT_MACOS: 'CMAKE_PREFIX_PATH="/tmp/libarchive" PKG_CONFIG_PATH="/tmp/libarchive/lib/pkgconfig"'
-        CIBW_BEFORE_ALL_MACOS: |
-          brew install pybind11 make
-          curl -sSL https://github.com/libarchive/libarchive/releases/download/v3.7.7/libarchive-3.7.7.tar.gz | tar xz
-          cd libarchive-3.7.7
-          ./configure --prefix=/tmp/libarchive --enable-static --disable-shared CFLAGS="-arch x86_64 -arch arm64 -O3"
-          make -j$(sysctl -n hw.ncpu) install
+        # Native arm64 build: Homebrew's keg-only libarchive (all backends, right arch)
+        # is bundled into the wheel by delocate. Point CMake/pkg-config at the keg.
+        CIBW_ENVIRONMENT_MACOS: 'CMAKE_PREFIX_PATH="$(brew --prefix libarchive)" PKG_CONFIG_PATH="$(brew --prefix libarchive)/lib/pkgconfig"'
+        CIBW_BEFORE_ALL_MACOS: brew install libarchive
       with: { output-dir: wheelhouse }
 
     - name: Validate wheels
