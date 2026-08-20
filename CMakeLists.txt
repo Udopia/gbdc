@@ -27,6 +27,17 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 
 find_package(LibArchive REQUIRED)
+
+# A static libarchive (self-contained macOS wheels) carries none of its compression
+# backends; expand it to the full static link line (lzma/zstd/lz4/zlib/bz2/...) via
+# pkg-config. Shared/system libarchive (local & Linux builds) is left untouched.
+if(LibArchive_LIBRARIES MATCHES "\\.a$")
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBARCHIVE_PC REQUIRED libarchive)
+    set(LibArchive_LIBRARIES ${LIBARCHIVE_PC_STATIC_LDFLAGS})
+    set(LibArchive_INCLUDE_DIRS ${LIBARCHIVE_PC_STATIC_INCLUDE_DIRS})
+endif()
+
 include_directories(${LibArchive_INCLUDE_DIRS})
 set(LIBS ${LIBS} md5 ${LibArchive_LIBRARIES})
 

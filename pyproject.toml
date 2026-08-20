@@ -13,7 +13,7 @@ cmake.build-type = "Release"
 # (manylinux) and musl (musllinux); 32-bit and alternative interpreters are dropped.
 [tool.cibuildwheel]
 build = "cp310-* cp311-* cp312-* cp313-* cp314-*"
-skip = "*_i686 *-win32 pp*"
+skip = "*_i686 *-win32"
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"
 # Smoke-test every wheel by importing the compiled extension in an isolated env.
