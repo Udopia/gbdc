@@ -85,10 +85,12 @@ jobs:
           # Drop any shared libs so downstream links resolve to the static archives only.
           rm -f /tmp/deps/lib/*.dylib /tmp/deps/lib/*.so*
 
-          # Full libarchive (.tar/.zip/.7z + .gz/.bz2 via the universal system zlib/bz2)
+          # Full libarchive. Skip iconv/xml2/expat (charset + .xar only, not in our
+          # format list): their pkg-config Requires can't be resolved without further static requirements.
           curl -sSL https://github.com/libarchive/libarchive/releases/download/v3.7.7/libarchive-3.7.7.tar.gz | tar xz
           cd libarchive-3.7.7
           ./configure --prefix=/tmp/deps --enable-static --disable-shared \
+            --without-iconv --without-xml2 --without-expat \
             CPPFLAGS="-I/tmp/deps/include" LDFLAGS="-L/tmp/deps/lib"
           make -j"$(sysctl -n hw.ncpu)" install
       with: { output-dir: wheelhouse }
