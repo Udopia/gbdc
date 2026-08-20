@@ -12,13 +12,18 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    # Prefer Homebrew's keg-only libarchive for local/source builds; CI wheel builds
+    # supply libarchive via CMAKE_PREFIX_PATH, so a missing brew formula is not fatal.
     execute_process(
         COMMAND brew --prefix libarchive
         OUTPUT_VARIABLE LIBARCHIVE_PREFIX
         OUTPUT_STRIP_TRAILING_WHITESPACE
-        COMMAND_ERROR_IS_FATAL ANY
+        RESULT_VARIABLE LIBARCHIVE_BREW_RESULT
+        ERROR_QUIET
     )
-    set(LibArchive_INCLUDE_DIR "${LIBARCHIVE_PREFIX}/include")
+    if(LIBARCHIVE_BREW_RESULT EQUAL 0 AND EXISTS "${LIBARCHIVE_PREFIX}/include/archive.h")
+        set(LibArchive_INCLUDE_DIR "${LIBARCHIVE_PREFIX}/include")
+    endif()
 endif()
 
 find_package(LibArchive REQUIRED)

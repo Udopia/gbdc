@@ -73,11 +73,15 @@ jobs:
       env:
         CIBW_ARCHS_MACOS: "x86_64 arm64"
         MACOSX_DEPLOYMENT_TARGET: "11.0"
-        # Homebrew installs libarchive keg-only; point CMake/pkg-config at its prefix.
-        CIBW_ENVIRONMENT_MACOS: 'CMAKE_PREFIX_PATH="$(brew --prefix libarchive)" PKG_CONFIG_PATH="$(brew --prefix libarchive)/lib/pkgconfig"'
+        # Universal (x86_64+arm64) static libarchive is built in before-all so both
+        # slices link on the arm64 runner; point CMake/pkg-config at that prefix.
+        CIBW_ENVIRONMENT_MACOS: 'CMAKE_PREFIX_PATH="/tmp/libarchive" PKG_CONFIG_PATH="/tmp/libarchive/lib/pkgconfig"'
         CIBW_BEFORE_ALL_MACOS: |
-          brew install libarchive pybind11 make python
-          ln -sf "$(brew --prefix make)/libexec/gnubin/make" /usr/local/bin/make
+          brew install pybind11 make
+          curl -sSL https://github.com/libarchive/libarchive/releases/download/v3.7.7/libarchive-3.7.7.tar.gz | tar xz
+          cd libarchive-3.7.7
+          ./configure --prefix=/tmp/libarchive --enable-static --disable-shared CFLAGS="-arch x86_64 -arch arm64 -O3"
+          make -j$(sysctl -n hw.ncpu) install
       with: { output-dir: wheelhouse }
 
     - name: Validate wheels
