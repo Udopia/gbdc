@@ -51,6 +51,38 @@ static std::vector<fs::path> sample_files(std::vector<fs::path> files, std::mt19
     return files;
 }
 
+TEST_CASE("IsoHash2 uses MD5") {
+    CNFFormula formula;
+    CNF::IsoHash2Settings config;
+    CNF::IsoHash2 hasher(formula, config);
+    CHECK(hasher.run().hash == "d41d8cd98f00b204e9800998ecf8427e");
+}
+
+TEST_CASE("IsoHash2 stopping is invariant under consistent polarity flips") {
+    auto hash_formula = [](bool flip) {
+        CNFFormula formula;
+        const std::vector<std::vector<int>> clauses = {{-1, 2}, {1}, {-3}, {-2, 3}, {2}};
+        for (const auto& literals : clauses) {
+            Cl clause;
+            for (int literal : literals) {
+                if (flip && (literal == 1 || literal == -1)) literal = -literal;
+                clause.emplace_back(literal < 0 ? -literal : literal, literal < 0);
+            }
+            formula.readClause(clause.begin(), clause.end());
+        }
+        CNF::IsoHash2Settings config;
+        CNF::IsoHash2 hasher(formula, config);
+        return hasher.run();
+    };
+
+    const auto original = hash_formula(false);
+    const auto flipped = hash_formula(true);
+    CHECK(original.hash == flipped.hash);
+    CHECK(original.hash.size() == 32);
+    CHECK(original.round == 4);
+    CHECK(flipped.round == 4);
+}
+
 TEST_CASE("IsoHash2 Robustness") {
     const fs::path scrambled_root = find_scrambled_root();
     REQUIRE_MESSAGE(!scrambled_root.empty(),

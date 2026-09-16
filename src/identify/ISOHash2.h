@@ -25,11 +25,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <iostream>
 #include <cstdint>
 #include <cstring>
-#include <iomanip>
-#include <sstream>
+#include <string>
 
-#define XXH_INLINE_ALL
-#include "src/external/xxhash/xxhash.h"
+#include "src/external/md5/md5.h"
 #include "src/util/CNFFormula.h"
 
 namespace CNF {
@@ -46,7 +44,7 @@ public:
     using Literal = Lit;
 
     struct Stats {
-        Hash hash = 0;
+        std::string hash;
         int round = 0;
         bool stabilized = false;
     };
@@ -93,13 +91,6 @@ private:
 
     inline ColorFunction& new_color() { return color_functions[(stats.round + 1) % 2]; }
     inline const ColorFunction& new_color() const { return color_functions[(stats.round + 1) % 2]; }
-
-    inline Hash state_hash_oriented(const LitColors& lc) const {
-        Hash p = lc.val[0];
-        Hash n = lc.val[1];
-        Hash x = p ^ rotl64(n, 1);
-        return fast_mix(x + 0x9e3779b97f4a7c15ULL);
-    }
 
     inline Hash state_hash_canonical(const LitColors& lc) const {
         Hash p = lc.val[0];
@@ -156,20 +147,22 @@ private:
     }
 
     bool check_stabilization() {
-        const size_t n = cnf.nVars();
-        if (partition_buffer.size() != n) partition_buffer.resize(n);
+        const size_t num_vars = cnf.nVars();
+        const size_t num_literals = 2 * num_vars;
+        if (partition_buffer.size() != num_literals) partition_buffer.resize(num_literals);
 
         const auto& current_colors = old_color().colors_by_var;
-        for (size_t i = 1; i <= n; ++i) {
-            partition_buffer[i - 1] = state_hash_oriented(current_colors[i]);
+        for (size_t i = 1; i <= num_vars; ++i) {
+            partition_buffer[2 * (i - 1)] = current_colors[i].val[0];
+            partition_buffer[2 * (i - 1) + 1] = current_colors[i].val[1];
         }
 
         std::sort(partition_buffer.begin(), partition_buffer.end());
 
         size_t current_partition_count = 0;
-        if (n > 0) {
+        if (num_literals > 0) {
             current_partition_count = 1;
-            for (size_t i = 1; i < n; ++i) {
+            for (size_t i = 1; i < num_literals; ++i) {
                 current_partition_count += (partition_buffer[i] != partition_buffer[i - 1]);
             }
         }
@@ -217,7 +210,14 @@ public:
             partition_buffer[i - 1] = state_hash_canonical(final_colors[i]);
         }
         std::sort(partition_buffer.begin(), partition_buffer.end());
-        stats.hash = XXH3_64bits(partition_buffer.data(), partition_buffer.size() * sizeof(Hash));
+
+        MD5 md5;
+        md5.consume(
+            reinterpret_cast<const char*>(partition_buffer.data()),
+            partition_buffer.size() * sizeof(Hash)
+        );
+        stats.hash = md5.produce();
+
         return stats;
     }
 };
@@ -229,12 +229,7 @@ inline IsoHash2::Stats isohash2_stats(const char* filename, const IsoHash2Settin
 }
 
 inline std::string isohash2(const char* filename, const IsoHash2Settings& s = {}) {
-    const auto stats = isohash2_stats(filename, s);
-
-    std::ostringstream oss;
-    oss << std::hex << std::setw(16) << std::setfill('0') << std::nouppercase << stats.hash;
-
-    return oss.str();
+    return isohash2_stats(filename, s).hash;
 }
 
 } // namespace CNF
