@@ -65,22 +65,22 @@ foreach(toolname IN LISTS GBD_TOOL_NAMES)
         COMMENT "Creating symlink ${toolname} -> gbdc")
 endforeach()
 
-# Install the binary and per-tool symlinks. Prefer the wheel scripts dir (scikit-build-core)
-# so the tools land on PATH; fall back to a conventional bin directory otherwise.
+# Install the CLI. Wheel builds (scikit-build-core, SKBUILD_SCRIPTS_DIR defined) ship the compiled
+# `gbdc` binary as package data inside platlib and expose the `gbdc` command through a Python
+# console-script entry point (see gbdc_cli.py and [project.scripts] in pyproject.toml). The ELF
+# binary is deliberately kept out of the wheel's scripts directory: auditwheel would otherwise
+# relocate it and leave a shim that resolves the binary via sysconfig.get_path("platlib"), which
+# points at the global site-packages and so breaks `pip install --user` installs
+# (pypa/auditwheel#340). gbd invokes tools as `gbdc <tool>`, so a single binary suffices.
 if(DEFINED SKBUILD_SCRIPTS_DIR)
-    set(GBD_TOOL_BINDIR "${SKBUILD_SCRIPTS_DIR}")
+    install(TARGETS gbdctool RUNTIME DESTINATION "gbdc.scripts")
+    install(FILES "${PROJECT_SOURCE_DIR}/gbdc_cli.py" DESTINATION .)
 else()
-    set(GBD_TOOL_BINDIR "bin")
-endif()
-
-install(TARGETS gbdctool RUNTIME DESTINATION "${GBD_TOOL_BINDIR}")
-
-# For local/source installs, also expose the per-tool `gbd-<tool>` commands as symlinks to the
-# single `gbdc` binary. Wheel builds (scikit-build-core, SKBUILD_SCRIPTS_DIR defined) ship only the
-# single `gbdc` binary to keep the distribution small; gbd invokes tools as `gbdc <tool>` there.
-if(NOT DEFINED SKBUILD_SCRIPTS_DIR)
+    # Plain CMake install (`make install`): put the tools on PATH and expose the per-tool
+    # `gbd-<tool>` commands as symlinks to the single dispatching `gbdc` binary.
+    install(TARGETS gbdctool RUNTIME DESTINATION "bin")
     install(CODE "
-        set(_bindir \"${GBD_TOOL_BINDIR}\")
+        set(_bindir \"bin\")
         if(NOT IS_ABSOLUTE \"\${_bindir}\")
             set(_bindir \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/\${_bindir}\")
         endif()
