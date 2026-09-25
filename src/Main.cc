@@ -57,6 +57,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "src/util/StreamCompressor.h"
 #include "src/transform/cnf2bip.h"
+#include "src/transform/cnf2lig.h"
 #include "src/transform/cnf2kis.h"
 #include "src/transform/cnf2cnf.h"
 
@@ -89,6 +90,7 @@ std::string tool_from_invocation(const std::string& argv0) {
         {"gbd-identify", "identify"},
         {"gbd-cnf2kis", "cnf2kis"},
         {"gbd-cnf2bip", "cnf2bip"},
+        {"gbd-cnf2lig", "cnf2lig"},
         {"gbd-sanitize", "sanitize"},
         {"gbd-normalize", "normalize"},
     };
@@ -310,6 +312,11 @@ int run_transformer(const std::string& tool, const std::string& filename, const 
             derived.emplace_back("nodes", format_value(gen.getFeature("nodes")));
             derived.emplace_back("edges", format_value(gen.getFeature("edges")));
             gen.run();
+        } else if (tool == "cnf2lig") {
+            CNF::cnf2lig gen(filename.c_str(), "");
+            derived.emplace_back("nodes", format_value(gen.getFeature("nodes")));
+            derived.emplace_back("edges", format_value(gen.getFeature("edges")));
+            gen.run();
         } else {
             std::cout.rdbuf(real_cout);
             throw std::runtime_error("unknown transformer: " + tool);
@@ -349,7 +356,7 @@ std::vector<std::pair<std::string, std::string>> transformer_feature_names(const
     }
     if (tool == "sanitize") return {{"local", ""}, {"to_cnf", ""}};
     if (tool == "normalize") return {{"local", ""}};
-    if (tool == "cnf2bip") return {{"local", ""}, {"nodes", "empty"}, {"edges", "empty"}};
+    if (tool == "cnf2bip" || tool == "cnf2lig") return {{"local", ""}, {"nodes", "empty"}, {"edges", "empty"}};
     throw std::runtime_error("unknown transformer: " + tool);
 }
 
@@ -361,7 +368,7 @@ bool is_extractor(const std::string& tool) {
 }
 
 bool is_transformer(const std::string& tool) {
-    return tool == "cnf2kis" || tool == "sanitize" || tool == "normalize" || tool == "cnf2bip";
+    return tool == "cnf2kis" || tool == "sanitize" || tool == "normalize" || tool == "cnf2bip" || tool == "cnf2lig";
 }
 
 int print_feature_names(const std::string& tool, Mode mode) {
@@ -401,7 +408,7 @@ int main(int argc, char** argv) {
     if (invocation_tool.empty()) {
         program.add_argument("tool").help(
             "Tool: identify, isohash, isohash2, normalize, sanitize, checksani, "
-            "cnf2kis, cnf2bip, base, gate, wcnfbase, opbbase");
+            "cnf2kis, cnf2bip, cnf2lig, base, gate, wcnfbase, opbbase");
     }
     program.add_argument("file").remaining().help("Path to input file");
     program.add_argument("-o", "--output").default_value(std::string("-"))

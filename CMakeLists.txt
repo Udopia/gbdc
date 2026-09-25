@@ -56,7 +56,7 @@ set_property(TARGET gbdctool PROPERTY OUTPUT_NAME gbdc)
 set(GBD_TOOL_NAMES
     gbd-extract-base gbd-extract-gate gbd-extract-wcnf gbd-extract-opb
     gbd-checksani gbd-isohash gbd-isohash2 gbd-identify
-    gbd-cnf2kis gbd-cnf2bip gbd-sanitize gbd-normalize)
+    gbd-cnf2kis gbd-cnf2bip gbd-cnf2lig gbd-sanitize gbd-normalize)
 
 foreach(toolname IN LISTS GBD_TOOL_NAMES)
     add_custom_command(TARGET gbdctool POST_BUILD
