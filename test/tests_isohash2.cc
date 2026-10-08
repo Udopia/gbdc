@@ -5,6 +5,9 @@
 #include <algorithm>
 #include <exception>
 #include <iostream>
+#include <fstream>
+#include <cstdlib>
+#include <unistd.h>
 
 #include "src/identify/ISOHash2.h"
 
@@ -81,6 +84,61 @@ TEST_CASE("IsoHash2 stopping is invariant under consistent polarity flips") {
     CHECK(original.hash.size() == 32);
     CHECK(original.round == 4);
     CHECK(flipped.round == 4);
+}
+
+static CNF::IsoHash2::Stats hash_dimacs(const std::string& dimacs,
+                                      const CNF::IsoHash2Settings& config) {
+    std::string pattern = (fs::temp_directory_path() / "gbdc-isohash2-XXXXXX").string();
+    const int fd = mkstemp(pattern.data());
+    REQUIRE(fd != -1);
+    close(fd);
+    struct Cleanup {
+        fs::path path;
+        ~Cleanup() {
+            std::error_code error;
+            fs::remove(path, error);
+        }
+    } cleanup{pattern};
+    std::ofstream out(pattern);
+    out << dimacs;
+    out.close();
+    REQUIRE(out.good());
+    return CNF::isohash2_stats(pattern.c_str(), config);
+}
+
+TEST_CASE("IsoHash2 filename hashing is invariant under sparse variable renaming") {
+    std::string original = "p cnf 1 1\n1 0\n";
+    std::string renamed;
+
+    SUBCASE("unit variable with unused lower IDs") {
+        renamed = "p cnf 10 1\n10 0\n";
+    }
+    SUBCASE("unused variables in the header") {
+        renamed = "p cnf 100 1\n1 0\n";
+    }
+    SUBCASE("sparse variable with flipped polarity") {
+        renamed = "p cnf 10 1\n-10 0\n";
+    }
+    SUBCASE("multiple variables with gaps") {
+        original = "p cnf 3 5\n-1 2 0\n1 0\n-3 0\n-2 3 0\n2 0\n";
+        renamed = "p cnf 30 5\n-10 20 0\n10 0\n-30 0\n-20 30 0\n20 0\n";
+    }
+    SUBCASE("sparse permutation with reordered clauses and literals") {
+        original = "p cnf 3 5\n-1 2 0\n1 0\n-3 0\n-2 3 0\n2 0\n";
+        // Rename 1 -> 30, 2 -> 10, 3 -> 20, and flip variable 2.
+        renamed = "p cnf 30 5\n-10 0\n20 10 0\n-20 0\n30 0\n-10 -30 0\n";
+    }
+
+    for (int max_iterations : {1, 6, 31, 0}) {
+        CAPTURE(max_iterations);
+        CNF::IsoHash2Settings config;
+        config.max_iterations = max_iterations;
+        const auto expected = hash_dimacs(original, config);
+        const auto actual = hash_dimacs(renamed, config);
+        CHECK(actual.hash == expected.hash);
+        CHECK(actual.round == expected.round);
+        CHECK(actual.stabilized == expected.stabilized);
+    }
 }
 
 TEST_CASE("IsoHash2 Robustness") {

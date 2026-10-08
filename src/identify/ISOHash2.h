@@ -224,6 +224,7 @@ public:
 
 inline IsoHash2::Stats isohash2_stats(const char* filename, const IsoHash2Settings& s = {}) {
     CNFFormula cnf(filename);
+    cnf.normalizeVariableNames();
     IsoHash2 hasher(cnf, s);
     return hasher.run();
 }
