@@ -1,6 +1,6 @@
 # GBDC: Global Benchmark Database, C++ Extension Module
 
-[![Build-Test](https://github.com/Udopia/gbdc/actions/workflows/build_test.yml/badge.svg?branch=master)](https://github.com/Udopia/gbdc/actions/workflows/build_test.yml)
+[![Build-Test](https://github.com/Udopia/gbdc/actions/workflows/build_test.yml/badge.svg?branch=main)](https://github.com/Udopia/gbdc/actions/workflows/build_test.yml)
 
 [GBDC](https://github.com/Udopia/gbdc) provides efficient implementations of functions for benchmark instance identification, instance feature extraction and instance transformation.
 GBDC provides a command-line tool as well as the Python package `gbdc`.
