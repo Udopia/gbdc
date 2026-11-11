@@ -1,12 +1,45 @@
 name: Build Wheels
 on:
-  release:
-    types: [published]
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
+# VERSION CHECK: a release is cut whenever the version in pyproject.toml has no
+# matching git tag yet. workflow_dispatch always builds, but only publishes if the
+# tag is missing (so a failed run can be retried without double-publishing).
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      release: ${{ steps.version.outputs.release }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Read version and check for existing tag
+      id: version
+      run: |
+        set -euo pipefail
+        VERSION="$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+        TAG="gbdc-${VERSION}"
+        if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null; then
+          echo "Tag ${TAG} already exists; nothing to release."
+          RELEASE=false
+        else
+          echo "Tag ${TAG} does not exist; a release will be created."
+          RELEASE=true
+        fi
+        {
+          echo "version=${VERSION}"
+          echo "tag=${TAG}"
+          echo "release=${RELEASE}"
+        } >> "$GITHUB_OUTPUT"
+
 # LINUX (native runners per arch, no QEMU emulation)
   build-linux:
+    needs: check-version
+    if: needs.check-version.outputs.release == 'true' || github.event_name == 'workflow_dispatch'
     strategy:
       matrix:
         include:
@@ -39,6 +72,8 @@ jobs:
 
 # macOS (native Apple Silicon / arm64 runner)
   build-macos:
+    needs: check-version
+    if: needs.check-version.outputs.release == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v4
@@ -109,6 +144,8 @@ jobs:
 
 # SOURCE DISTRIBUTION
   build-sdist:
+    needs: check-version
+    if: needs.check-version.outputs.release == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -130,9 +167,10 @@ jobs:
         name: sdist
         path: dist/*.tar.gz
 
-# PUBLISH to PYPI (Trusted Publishing / OIDC)
+# PUBLISH to PYPI (Trusted Publishing / OIDC) and create the GitHub release
   release:
-    needs: [build-linux, build-macos, build-sdist]
+    needs: [check-version, build-linux, build-macos, build-sdist]
+    if: needs.check-version.outputs.release == 'true'
     runs-on: ubuntu-latest
     # Configure a PyPI Trusted Publisher for project "gbdc" pointing at this
     # repository, workflow "build_wheels.yml", and environment "pypi".
@@ -141,6 +179,7 @@ jobs:
       url: https://pypi.org/p/gbdc
     permissions:
       id-token: write
+      contents: write
 
     steps:
     - uses: actions/download-artifact@v4
@@ -150,3 +189,24 @@ jobs:
 
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        # Idempotent on retry: if PyPI already has this version (e.g. the GitHub
+        # release step below failed last time), don't fail the whole run.
+        skip-existing: true
+
+    - name: Create GitHub release
+      env:
+        GH_TOKEN: ${{ github.token }}
+        TAG: ${{ needs.check-version.outputs.tag }}
+        VERSION: ${{ needs.check-version.outputs.version }}
+      run: |
+        set -euo pipefail
+        if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          echo "Release $TAG already exists; skipping."
+          exit 0
+        fi
+        gh release create "$TAG" dist/* \
+          --repo "$GITHUB_REPOSITORY" \
+          --target "$GITHUB_SHA" \
+          --title "GBDC $VERSION" \
+          --generate-notes
